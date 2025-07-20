@@ -1,0 +1,231 @@
+/* ShowForm.css - Professional Enterprise Style */
+:root {
+  --primary: #3a5af5;
+  --primary-light: #4a6ef7;
+  --primary-dark: #2c4bd4;
+  --accent: #00c9ff;
+  --success: #00c853;
+  --error: #ff4444;
+  --warning: #ffbb33;
+  --dark: #1a237e;
+  --text-primary: #2d3748;
+  --text-secondary: #4a5568;
+  --light: #f7fafc;
+  --gray-light: #edf2f7;
+  --gray-medium: #e2e8f0;
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Form Container */
+.role-form {
+  max-width: 640px;
+  margin: 2rem auto;
+  padding: 2.5rem;
+  background: white;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--gray-medium);
+}
+
+/* Form Header */
+.role-form h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+  text-align: center;
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.role-form h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 3px;
+}
+
+/* Form Inputs */
+.role-form input {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.9375rem;
+  border: 1px solid var(--gray-medium);
+  border-radius: var(--border-radius-md);
+  transition: var(--transition);
+  background-color: white;
+  color: var(--text-primary);
+}
+
+.role-form input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(58, 90, 245, 0.1);
+}
+
+.role-form input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+/* File Input Groups */
+.file-group {
+  margin-bottom: 1.5rem;
+}
+
+.file-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.file-group .file-input-container {
+  position: relative;
+  border: 1px dashed var(--gray-medium);
+  border-radius: var(--border-radius-md);
+  padding: 1.5rem;
+  text-align: center;
+  transition: var(--transition);
+  background-color: var(--light);
+}
+
+.file-group .file-input-container:hover {
+  border-color: var(--primary);
+  background-color: rgba(58, 90, 245, 0.03);
+}
+
+.file-group input[type="file"] {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-group .file-input-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--text-secondary);
+}
+
+.file-group .file-input-label svg {
+  margin-bottom: 0.5rem;
+  color: var(--primary);
+}
+
+.file-group .file-input-text {
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.file-group .file-input-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.file-group .file-selected {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* Submit Button */
+.role-form button {
+  width: 100%;
+  padding: 0.9375rem;
+  margin-top: 0.5rem;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.role-form button:hover {
+  background-color: var(--primary-dark);
+  box-shadow: var(--shadow-sm);
+}
+
+.role-form button:active {
+  transform: translateY(1px);
+}
+
+.role-form button:disabled {
+  background-color: var(--gray-medium);
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+  .role-form {
+    padding: 2rem 1.5rem;
+    margin: 1rem;
+    border-radius: var(--border-radius-md);
+  }
+  
+  .role-form h2 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Validation States */
+.role-form .input-error {
+  border-color: var(--error);
+}
+
+.role-form .error-message {
+  font-size: 0.75rem;
+  color: var(--error);
+  margin-top: -0.75rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+/* Loading State */
+.role-form .loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.role-form .loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
