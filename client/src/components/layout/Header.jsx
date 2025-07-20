@@ -14,7 +14,7 @@ export default function Header() {
     { name: "Home", href: "/" },
     { name: "Verify Medicine", href: "/verify-drug" },
     { name: "Emergency Stock", href: "/emergency-locator" },
-    { name: "Portal", href: "/portal" },
+   
   ];
 
   const roleBasedNavigation = {

@@ -64,10 +64,16 @@
     height: 2rem;
     color: var(--primary);
     transition: all 0.3s ease;
+    position: absolute;
+    right: 135%;
   }
   .logo-text {
+    font-weight: 700;
+    position: absolute;
+    right: 120%;
+    font-size: 1.25rem;
     color: rgb(18, 18, 59) !important; 
-    transition: color 0.3s ease;
+    
   }
   
   /* Then modify the media query at the bottom to preserve the blue color: */
@@ -76,11 +82,6 @@
       padding: 0 1.25rem;
     }
     
-    .logo-text {
-      font-size: 1.25rem;
-      color: rgb(18, 18, 59) !important; 
-      position: relative;
-    }
     
     .mobile-nav-content {
       padding: 1.25rem;

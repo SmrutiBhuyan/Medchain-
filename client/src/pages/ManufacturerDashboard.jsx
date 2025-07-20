@@ -1,36 +1,53 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
-import JsBarcode from 'jsbarcode';
 import './ManufacturerDashboard.css';
+import BarcodeScannerComponent from "react-qr-barcode-scanner";
 
-const BarcodeDisplay = ({ barcodeNumber }) => {
+// Dynamic import for JsBarcode
+let JsBarcode;
+if (typeof window !== 'undefined') {
+  import('jsbarcode').then(module => {
+    JsBarcode = module.default;
+  });
+}
+
+const BarcodeDisplay = ({ value, format = "CODE128" }) => {
   const barcodeRef = useRef(null);
 
   useEffect(() => {
-    if (barcodeRef.current && barcodeNumber) {
-      JsBarcode(barcodeRef.current, barcodeNumber, {
-        format: "CODE128",
-        lineColor: "#000",
-        width: 2,
-        height: 60,
-        displayValue: true,
-        fontSize: 14,
-        margin: 10
-      });
+    if (barcodeRef.current && value && JsBarcode) {
+      try {
+        JsBarcode(barcodeRef.current, value, {
+          format,
+          lineColor: "#2c3e50",
+          width: 2,
+          height: 60,
+          displayValue: true,
+          fontSize: 14,
+          margin: 10,
+          background: "transparent"
+        });
+      } catch (error) {
+        console.error("Barcode generation error:", error);
+      }
     }
-  }, [barcodeNumber]);
+  }, [value, format]);
 
-  return <svg ref={barcodeRef} />;
+  return <svg ref={barcodeRef} className="barcode-svg" />;
 };
 
 export default function ManufacturerDashboard() {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [barcodeOption, setBarcodeOption] = useState('generate');
   const [drugs, setDrugs] = useState([]);
   const [batches, setBatches] = useState([]);
   const [shipments, setShipments] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [distributors, setDistributors] = useState([]);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scannedBarcode, setScannedBarcode] = useState('');
+  const [scanResult, setScanResult] = useState(null);
   
   const [newDrug, setNewDrug] = useState({
     name: '',
@@ -39,7 +56,9 @@ export default function ManufacturerDashboard() {
     expiryDate: '',
     batchNumber: '',
     manufacturingDate: '',
-    image: null
+    image: null,
+    existingBarcode: '',
+    barcodeType: 'GS1'
   });
 
   const [newShipment, setNewShipment] = useState({
@@ -49,10 +68,59 @@ export default function ManufacturerDashboard() {
     destination: ''
   });
 
+  const startScanner = () => {
+    setIsScanning(true);
+    setScannedBarcode('');
+    setScanResult(null);
+  };
+
+  const stopScanner = () => {
+    setIsScanning(false);
+  };
+
+  const handleScan = (err, result) => {
+    if (result) {
+      const code = result.text;
+      setScannedBarcode(code);
+      verifyScannedBarcode(code);
+      stopScanner();
+    }
+  };
+
+  const verifyScannedBarcode = (barcode) => {
+    const drug = drugs.find(d => d.barcode === barcode);
+    if (drug) {
+      const batch = batches.find(b => b.drugId === drug.id);
+      setScanResult({
+        type: 'success',
+        message: 'Valid MedChain product found',
+        drug,
+        batch
+      });
+    } else {
+      setScanResult({
+        type: 'error',
+        message: 'Product not found in database'
+      });
+    }
+  };
+
+  const handleUseScannedBarcode = () => {
+    if (scannedBarcode) {
+      setNewDrug(prev => ({
+        ...prev,
+        existingBarcode: scannedBarcode,
+        barcodeOption: 'existing'
+      }));
+      setBarcodeOption('existing');
+      stopScanner();
+    }
+  };
+
   // Simulate fetching data
   useEffect(() => {
     setTimeout(() => {
-      // Sample drugs with barcodes
+      // Sample drugs with both barcode types
       setDrugs([
         { 
           id: 1, 
@@ -60,8 +128,10 @@ export default function ManufacturerDashboard() {
           composition: 'Paracetamol', 
           batchNumber: 'BATCH001', 
           expiryDate: '2024-12-31', 
-          barcode: 'BC10012345',
-          manufacturingDate: '2023-01-10'
+          barcode: 'MC10012345',
+          barcodeType: 'MedChain',
+          manufacturingDate: '2023-01-10',
+          barcodeOption: 'generate'
         },
         { 
           id: 2, 
@@ -69,8 +139,10 @@ export default function ManufacturerDashboard() {
           composition: 'Ibuprofen', 
           batchNumber: 'BATCH002', 
           expiryDate: '2025-06-30', 
-          barcode: 'BC10023456',
-          manufacturingDate: '2023-02-15'
+          barcode: '012345678905',
+          barcodeType: 'GS1',
+          manufacturingDate: '2023-02-15',
+          barcodeOption: 'existing'
         }
       ]);
 
@@ -93,18 +165,6 @@ export default function ManufacturerDashboard() {
           status: 'delivered', 
           date: '2023-03-15',
           trackingNumber: 'TRK1001'
-        },
-        { 
-          id: 2, 
-          batchId: 1, 
-          drugId: 1,
-          quantity: 200, 
-          distributor: 'Distributor B', 
-          distributorId: 'DIST002',
-          destination: 'City Y', 
-          status: 'in_transit', 
-          date: '2023-04-01',
-          trackingNumber: 'TRK1002'
         }
       ]);
 
@@ -120,17 +180,6 @@ export default function ManufacturerDashboard() {
           status: 'pending',
           reporter: 'Pharmacy Z',
           location: 'City X'
-        },
-        { 
-          id: 2, 
-          type: 'missing_scan', 
-          batchId: 2, 
-          drugId: 2,
-          message: 'Missing scan at Warehouse 3', 
-          date: '2023-04-05', 
-          status: 'investigating',
-          lastScan: 'Warehouse 2',
-          missingAt: 'Warehouse 3'
         }
       ]);
 
@@ -159,12 +208,27 @@ export default function ManufacturerDashboard() {
 
   const createDrug = (e) => {
     e.preventDefault();
-    const barcodeNumber = `BC${Math.floor(10000000 + Math.random() * 90000000)}`;
-    const newDrugWithBarcode = {
-      ...newDrug,
-      id: drugs.length + 1,
-      barcode: barcodeNumber
-    };
+    let newDrugWithBarcode;
+    
+    if (barcodeOption === 'generate') {
+      const barcodeNumber = `MC${Math.floor(10000000 + Math.random() * 90000000)}`;
+      newDrugWithBarcode = {
+        ...newDrug,
+        id: drugs.length + 1,
+        barcode: barcodeNumber,
+        barcodeOption: 'generate',
+        barcodeType: 'MedChain'
+      };
+    } else {
+      newDrugWithBarcode = {
+        ...newDrug,
+        id: drugs.length + 1,
+        barcode: newDrug.existingBarcode,
+        barcodeOption: 'existing',
+        barcodeType: newDrug.barcodeType
+      };
+    }
+    
     setDrugs([...drugs, newDrugWithBarcode]);
     setNewDrug({
       name: '',
@@ -173,9 +237,12 @@ export default function ManufacturerDashboard() {
       expiryDate: '',
       batchNumber: '',
       manufacturingDate: '',
-      image: null
+      image: null,
+      existingBarcode: '',
+      barcodeType: 'GS1'
     });
-    alert(`Drug created with barcode ${barcodeNumber} and recorded on blockchain`);
+    
+    alert(`Drug created with ${barcodeOption === 'generate' ? 'new MedChain' : 'existing'} barcode`);
   };
 
   const createShipment = (e) => {
@@ -207,6 +274,7 @@ export default function ManufacturerDashboard() {
       distributorId: '',
       destination: ''
     });
+    
     alert(`Shipment initiated for ${drug?.name} (${batch.quantity} units) to ${distributor?.name}. Blockchain transaction recorded.`);
   };
 
@@ -240,40 +308,56 @@ export default function ManufacturerDashboard() {
   return (
     <div className="manufacturer-dashboard">
       <header className="dashboard-header">
-        <div className="header-content">
-          <h1>Manufacturer Dashboard</h1>
-          <div className="user-info">
-            <span>Welcome, {user?.name}</span>
-            <span className="wallet-address">Wallet: {user?.walletAddress}</span>
-            <button onClick={logout} className="logout-btn">Logout</button>
+        <div className="header-container">
+          <div className="header-left">
+            <h1>MedChain Manufacturer Portal</h1>
+            <p className="wallet-address">Blockchain Wallet: {user?.walletAddress}</p>
+          </div>
+          <div className="header-right">
+            <div className="user-info">
+              <span className="user-name">{user?.name}</span>
+              <span className="user-org">{user?.organization}</span>
+            </div>
+            <button onClick={logout} className="logout-btn">
+              <i className="fas fa-sign-out-alt"></i> Logout
+            </button>
           </div>
         </div>
       </header>
 
       <div className="dashboard-container">
         <aside className="sidebar">
+          <div className="sidebar-header">
+            <div className="logo-container">
+              <div className="logo">MC</div>
+              <span>Manufacturer</span>
+            </div>
+          </div>
           <nav>
             <ul>
               <li className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
-                <a href="#dashboard">Dashboard</a>
+                <i className="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
               </li>
               <li className={activeTab === 'drugs' ? 'active' : ''} onClick={() => setActiveTab('drugs')}>
-                <a href="#drugs">Drug Creation</a>
+                <i className="fas fa-pills"></i>
+                <span>Drug Creation</span>
               </li>
               <li className={activeTab === 'batches' ? 'active' : ''} onClick={() => setActiveTab('batches')}>
-                <a href="#batches">Batch Management</a>
+                <i className="fas fa-boxes"></i>
+                <span>Batch Management</span>
               </li>
               <li className={activeTab === 'shipments' ? 'active' : ''} onClick={() => setActiveTab('shipments')}>
-                <a href="#shipments">Shipments</a>
+                <i className="fas fa-truck"></i>
+                <span>Shipments</span>
               </li>
               <li className={activeTab === 'alerts' ? 'active' : ''} onClick={() => setActiveTab('alerts')}>
-                <a href="#alerts">Counterfeit Alerts</a>
+                <i className="fas fa-exclamation-triangle"></i>
+                <span>Alerts</span>
               </li>
               <li className={activeTab === 'analytics' ? 'active' : ''} onClick={() => setActiveTab('analytics')}>
-                <a href="#analytics">Analytics</a>
-              </li>
-              <li className={activeTab === 'partners' ? 'active' : ''} onClick={() => setActiveTab('partners')}>
-                <a href="#partners">Partner Management</a>
+                <i className="fas fa-chart-line"></i>
+                <span>Analytics</span>
               </li>
             </ul>
           </nav>
@@ -282,42 +366,61 @@ export default function ManufacturerDashboard() {
         <main className="main-content">
           {activeTab === 'dashboard' && (
             <section className="overview-section">
-              <h2>Manufacturing Overview</h2>
+              <h2 className="section-title">
+                <i className="fas fa-tachometer-alt"></i> Manufacturing Overview
+              </h2>
+              
               <div className="stats-grid">
-                <div className="stat-card">
-                  <h3>Total Drugs</h3>
-                  <p className="stat-value">{drugs.length}</p>
-                  <p className="stat-label">Registered in system</p>
-                </div>
-                <div className="stat-card">
-                  <h3>Active Batches</h3>
-                  <p className="stat-value">{batches.length}</p>
-                  <p className="stat-label">In production/distribution</p>
-                </div>
-                <div className="stat-card">
-                  <h3>Open Shipments</h3>
-                  <p className="stat-value">{shipments.filter(s => s.status === 'in_transit').length}</p>
-                  <p className="stat-label">In transit to distributors</p>
-                </div>
-                <div className="stat-card">
-                  <h3>Active Alerts</h3>
-                  <p className="stat-value">{alerts.length}</p>
-                  <p className="stat-label">Requiring attention</p>
-                </div>
+                <StatCard 
+                  icon="pills"
+                  value={drugs.length}
+                  label="Total Drugs"
+                  trend="up"
+                  trendValue="12%"
+                />
+                <StatCard 
+                  icon="boxes"
+                  value={batches.length}
+                  label="Active Batches"
+                  trend="down"
+                  trendValue="5%"
+                />
+                <StatCard 
+                  icon="truck"
+                  value={shipments.filter(s => s.status === 'in_transit').length}
+                  label="Open Shipments"
+                  trend="up"
+                  trendValue="23%"
+                />
+                <StatCard 
+                  icon="exclamation-triangle"
+                  value={alerts.length}
+                  label="Active Alerts"
+                  trend="neutral"
+                />
               </div>
 
               <div className="recent-activity">
-                <h3>Recent Blockchain Transactions</h3>
+                <h3>
+                  <i className="fas fa-history"></i> Recent Blockchain Transactions
+                </h3>
                 <div className="activity-list">
                   {shipments.slice(0, 5).map(shipment => {
                     const drug = drugs.find(d => d.id === shipment.drugId);
                     return (
                       <div key={shipment.id} className="activity-item">
-                        <span className="activity-date">{shipment.date}</span>
-                        <span className="activity-desc">
-                          Shipped {shipment.quantity} units of {drug?.name} ({drug?.barcode}) to {shipment.distributor}
+                        <div className="activity-icon">
+                          <i className="fas fa-shipping-fast"></i>
+                        </div>
+                        <div className="activity-details">
+                          <span className="activity-date">{shipment.date}</span>
+                          <p className="activity-desc">
+                            Shipped {shipment.quantity} units of {drug?.name} to {shipment.distributor}
+                          </p>
+                        </div>
+                        <span className={`status-badge ${shipment.status}`}>
+                          {shipment.status.replace('_', ' ')}
                         </span>
-                        <span className={`status-badge ${shipment.status}`}>{shipment.status}</span>
                       </div>
                     );
                   })}
@@ -328,115 +431,232 @@ export default function ManufacturerDashboard() {
 
           {activeTab === 'drugs' && (
             <section className="drug-creation-section">
+              <h2 className="section-title">
+                <i className="fas fa-pills"></i> Drug Creation
+              </h2>
+              
               <div className="form-container">
-                <h2>Create New Drug</h2>
                 <form onSubmit={createDrug}>
-                  <div className="form-group">
-                    <label>Drug Name</label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={newDrug.name}
-                      onChange={handleDrugInputChange}
-                      required
-                      placeholder="e.g., Paracetamol 500mg"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Composition</label>
-                    <input
-                      type="text"
-                      name="composition"
-                      value={newDrug.composition}
-                      onChange={handleDrugInputChange}
-                      required
-                      placeholder="Active ingredients"
-                    />
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Batch Number</label>
-                      <input
-                        type="text"
-                        name="batchNumber"
-                        value={newDrug.batchNumber}
-                        onChange={handleDrugInputChange}
-                        required
-                        placeholder="e.g., BATCH001"
-                      />
+                  <div className="form-section">
+                    <h3>Basic Information</h3>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Drug Name*</label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={newDrug.name}
+                          onChange={handleDrugInputChange}
+                          required
+                          placeholder="e.g., Paracetamol 500mg"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Composition*</label>
+                        <input
+                          type="text"
+                          name="composition"
+                          value={newDrug.composition}
+                          onChange={handleDrugInputChange}
+                          required
+                          placeholder="Active ingredients"
+                        />
+                      </div>
                     </div>
-                    <div className="form-group">
-                      <label>Dosage Form</label>
-                      <input
-                        type="text"
-                        name="dosage"
-                        value={newDrug.dosage}
-                        onChange={handleDrugInputChange}
-                        required
-                        placeholder="e.g., Tablet, Capsule"
-                      />
+                    
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Batch Number*</label>
+                        <input
+                          type="text"
+                          name="batchNumber"
+                          value={newDrug.batchNumber}
+                          onChange={handleDrugInputChange}
+                          required
+                          placeholder="e.g., BATCH001"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Dosage Form*</label>
+                        <input
+                          type="text"
+                          name="dosage"
+                          value={newDrug.dosage}
+                          onChange={handleDrugInputChange}
+                          required
+                          placeholder="e.g., Tablet, Capsule"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Manufacturing Date*</label>
+                        <input
+                          type="date"
+                          name="manufacturingDate"
+                          value={newDrug.manufacturingDate}
+                          onChange={handleDrugInputChange}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Expiry Date*</label>
+                        <input
+                          type="date"
+                          name="expiryDate"
+                          value={newDrug.expiryDate}
+                          onChange={handleDrugInputChange}
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Manufacturing Date</label>
-                      <input
-                        type="date"
-                        name="manufacturingDate"
-                        value={newDrug.manufacturingDate}
-                        onChange={handleDrugInputChange}
-                        required
-                      />
+                  
+                  <div className="form-section">
+                    <h3>Barcode Options</h3>
+                    <div className="barcode-options">
+                      <div className="option-radio">
+                        <input
+                          type="radio"
+                          id="generate-barcode"
+                          name="barcodeOption"
+                          checked={barcodeOption === 'generate'}
+                          onChange={() => setBarcodeOption('generate')}
+                        />
+                        <label htmlFor="generate-barcode">
+                          <div className="option-content">
+                            <i className="fas fa-qrcode"></i>
+                            <span>Generate MedChain Barcode</span>
+                            <p>We'll create a unique identifier and barcode for this drug</p>
+                          </div>
+                        </label>
+                      </div>
+                      
+                      <div className="option-radio">
+                        <input
+                          type="radio"
+                          id="existing-barcode"
+                          name="barcodeOption"
+                          checked={barcodeOption === 'existing'}
+                          onChange={() => setBarcodeOption('existing')}
+                        />
+                        <label htmlFor="existing-barcode">
+                          <div className="option-content">
+                            <i className="fas fa-barcode"></i>
+                            <span>Use Existing Barcode</span>
+                            <p>Map to an existing GS1 or manufacturer barcode</p>
+                          </div>
+                        </label>
+                      </div>
                     </div>
+                    
+                    {barcodeOption === 'existing' && (
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Existing Barcode*</label>
+                          <div className="barcode-input-group">
+                            <input
+                              type="text"
+                              name="existingBarcode"
+                              value={newDrug.existingBarcode}
+                              onChange={handleDrugInputChange}
+                              required={barcodeOption === 'existing'}
+                              placeholder="Enter the existing barcode"
+                            />
+                            <button 
+                              type="button" 
+                              className="scan-btn"
+                              onClick={startScanner}
+                            >
+                              <i className="fas fa-camera"></i> Scan
+                            </button>
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label>Barcode Type*</label>
+                          <select
+                            name="barcodeType"
+                            value={newDrug.barcodeType}
+                            onChange={handleDrugInputChange}
+                            required={barcodeOption === 'existing'}
+                          >
+                            <option value="GS1">GS1</option>
+                            <option value="UPC">UPC</option>
+                            <option value="EAN">EAN</option>
+                            <option value="OTHER">Other</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="form-section">
+                    <h3>Packaging Image</h3>
                     <div className="form-group">
-                      <label>Expiry Date</label>
-                      <input
-                        type="date"
-                        name="expiryDate"
-                        value={newDrug.expiryDate}
-                        onChange={handleDrugInputChange}
-                        required
-                      />
+                      <label>Upload Packaging Image*</label>
+                      <div className="file-upload">
+                        <label>
+                          <i className="fas fa-cloud-upload-alt"></i>
+                          <span>{newDrug.image ? newDrug.image.name : 'Choose file...'}</span>
+                          <input
+                            type="file"
+                            name="image"
+                            onChange={handleDrugInputChange}
+                            accept="image/*"
+                            required
+                          />
+                        </label>
+                      </div>
                     </div>
                   </div>
-                  <div className="form-group">
-                    <label>Packaging Image (for barcode placement)</label>
-                    <input
-                      type="file"
-                      name="image"
-                      onChange={handleDrugInputChange}
-                      accept="image/*"
-                      required
-                    />
-                  </div>
+                  
                   <button type="submit" className="submit-btn">
-                    Create Drug & Generate Barcode
+                    <i className="fas fa-save"></i> Create Drug & Record on Blockchain
                   </button>
                 </form>
               </div>
 
               <div className="drugs-list">
-                <h3>Your Drugs</h3>
+                <h3>
+                  <i className="fas fa-list"></i> Your Drugs
+                </h3>
                 <div className="table-container">
                   <table>
                     <thead>
                       <tr>
                         <th>Name</th>
-                        <th>Composition</th>
                         <th>Batch</th>
                         <th>Expiry</th>
                         <th>Barcode</th>
+                        <th>Type</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {drugs.map(drug => (
                         <tr key={drug.id}>
                           <td>{drug.name}</td>
-                          <td>{drug.composition}</td>
                           <td>{drug.batchNumber}</td>
                           <td>{drug.expiryDate}</td>
                           <td className="barcode-cell">
-                            <BarcodeDisplay barcodeNumber={drug.barcode} />
+                            <BarcodeDisplay value={drug.barcode} />
+                          </td>
+                          <td>
+                            <span className={`barcode-type ${drug.barcodeOption}`}>
+                              {drug.barcodeOption === 'generate' ? 'MedChain' : drug.barcodeType}
+                            </span>
+                          </td>
+                          <td>
+                            <button 
+                              className="action-btn scan-btn"
+                              onClick={() => {
+                                setScannedBarcode(drug.barcode);
+                                verifyScannedBarcode(drug.barcode);
+                              }}
+                            >
+                              <i className="fas fa-search"></i> Verify
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -449,7 +669,9 @@ export default function ManufacturerDashboard() {
 
           {activeTab === 'batches' && (
             <section className="batch-section">
-              <h2>Batch Management</h2>
+              <h2 className="section-title">
+                <i className="fas fa-boxes"></i> Batch Management
+              </h2>
               <div className="batch-grid">
                 {batches.map(batch => {
                   const drug = drugs.find(d => d.id === batch.drugId);
@@ -464,7 +686,10 @@ export default function ManufacturerDashboard() {
                         <p><strong>Quantity:</strong> {batch.quantity} units</p>
                         <p><strong>Manufactured:</strong> {batch.manufacturingDate}</p>
                         <div className="batch-barcode">
-                          <BarcodeDisplay barcodeNumber={drug?.barcode || 'BC00000000'} />
+                          <BarcodeDisplay value={drug?.barcode || 'BC00000000'} />
+                          <p className="barcode-type-label">
+                            {drug?.barcodeOption === 'generate' ? 'MedChain' : drug?.barcodeType} Barcode
+                          </p>
                         </div>
                       </div>
                       <div className="batch-actions">
@@ -472,7 +697,7 @@ export default function ManufacturerDashboard() {
                           className="action-btn view-btn"
                           onClick={() => verifyBatch(batch.id)}
                         >
-                          Verify on Blockchain
+                          <i className="fas fa-shield-alt"></i> Verify on Blockchain
                         </button>
                         {batch.status === 'in_storage' && (
                           <button 
@@ -482,7 +707,7 @@ export default function ManufacturerDashboard() {
                               setActiveTab('shipments');
                             }}
                           >
-                            Initiate Shipment
+                            <i className="fas fa-truck-loading"></i> Initiate Shipment
                           </button>
                         )}
                       </div>
@@ -496,7 +721,9 @@ export default function ManufacturerDashboard() {
           {activeTab === 'shipments' && (
             <section className="shipment-section">
               <div className="shipment-form-container">
-                <h2>Create New Shipment</h2>
+                <h2 className="section-title">
+                  <i className="fas fa-truck"></i> Create New Shipment
+                </h2>
                 <form onSubmit={createShipment}>
                   <div className="form-group">
                     <label>Select Batch</label>
@@ -561,13 +788,15 @@ export default function ManufacturerDashboard() {
                     />
                   </div>
                   <button type="submit" className="submit-btn">
-                    Create Shipment & Log on Blockchain
+                    <i className="fas fa-paper-plane"></i> Create Shipment & Log on Blockchain
                   </button>
                 </form>
               </div>
 
               <div className="shipments-list">
-                <h3>Shipment History</h3>
+                <h3 className="section-title">
+                  <i className="fas fa-history"></i> Shipment History
+                </h3>
                 <div className="table-container">
                   <table>
                     <thead>
@@ -593,7 +822,7 @@ export default function ManufacturerDashboard() {
                             <td>{shipment.batchId}</td>
                             <td>{drug?.name || 'Unknown'}</td>
                             <td className="barcode-cell">
-                              {drug && <BarcodeDisplay barcodeNumber={drug.barcode} />}
+                              {drug && <BarcodeDisplay value={drug.barcode} />}
                             </td>
                             <td>{shipment.quantity}</td>
                             <td>{shipment.distributor}</td>
@@ -604,7 +833,9 @@ export default function ManufacturerDashboard() {
                               </span>
                             </td>
                             <td>
-                              <button className="action-btn view-btn">Details</button>
+                              <button className="action-btn view-btn">
+                                <i className="fas fa-eye"></i> Details
+                              </button>
                             </td>
                           </tr>
                         );
@@ -618,7 +849,9 @@ export default function ManufacturerDashboard() {
 
           {activeTab === 'alerts' && (
             <section className="alerts-section">
-              <h2>Counterfeit Alerts & Reports</h2>
+              <h2 className="section-title">
+                <i className="fas fa-exclamation-triangle"></i> Counterfeit Alerts & Reports
+              </h2>
               <div className="alerts-grid">
                 {alerts.map(alert => {
                   const drug = drugs.find(d => d.id === alert.drugId);
@@ -626,9 +859,9 @@ export default function ManufacturerDashboard() {
                     <div key={alert.id} className={`alert-card ${alert.type}`}>
                       <div className="alert-header">
                         <h3>
-                          {alert.type === 'counterfeit' && '🚨 Counterfeit Report'}
-                          {alert.type === 'missing_scan' && '⚠️ Missing Scan'}
-                          {alert.type === 'recall' && '🛑 Active Recall'}
+                          {alert.type === 'counterfeit' && <><i className="fas fa-ban"></i> Counterfeit Report</>}
+                          {alert.type === 'missing_scan' && <><i className="fas fa-search-minus"></i> Missing Scan</>}
+                          {alert.type === 'recall' && <><i className="fas fa-undo"></i> Active Recall</>}
                         </h3>
                         <span className="alert-date">{alert.date}</span>
                       </div>
@@ -639,7 +872,8 @@ export default function ManufacturerDashboard() {
                           <p><strong>Batch ID:</strong> {alert.batchId}</p>
                           {drug && (
                             <div className="shipment-barcode">
-                              <BarcodeDisplay barcodeNumber={drug.barcode} />
+                              <BarcodeDisplay value={drug.barcode} />
+                              <p>{drug.barcodeOption === 'generate' ? 'MedChain' : drug.barcodeType} Barcode</p>
                             </div>
                           )}
                           {alert.type === 'counterfeit' && (
@@ -651,15 +885,23 @@ export default function ManufacturerDashboard() {
                         </div>
                       </div>
                       <div className="alert-footer">
-                        <span className={`status-badge ${alert.status}`}>{alert.status}</span>
+                        <span className={`status-badge ${alert.status}`}>
+                          <i className={`fas ${
+                            alert.status === 'active' ? 'fa-exclamation-circle' :
+                            alert.status === 'pending' ? 'fa-clock' :
+                            'fa-search'
+                          }`}></i> {alert.status}
+                        </span>
                         <div className="alert-actions">
-                          <button className="action-btn view-btn">Details</button>
+                          <button className="action-btn view-btn">
+                            <i className="fas fa-eye"></i> Details
+                          </button>
                           {alert.type !== 'recall' && (
                             <button 
                               className="action-btn recall-btn"
                               onClick={() => handleRecall(alert.batchId)}
                             >
-                              Initiate Recall
+                              <i className="fas fa-undo"></i> Initiate Recall
                             </button>
                           )}
                         </div>
@@ -673,7 +915,9 @@ export default function ManufacturerDashboard() {
 
           {activeTab === 'analytics' && (
             <section className="analytics-section">
-              <h2>Manufacturing Analytics</h2>
+              <h2 className="section-title">
+                <i className="fas fa-chart-line"></i> Manufacturing Analytics
+              </h2>
               <div className="analytics-grid">
                 <div className="chart-container">
                   <h3>Drug Production</h3>
@@ -687,6 +931,9 @@ export default function ManufacturerDashboard() {
                             style={{ width: `${Math.min(100, Math.random() * 80 + 20)}%` }}
                           >
                             {drug.name}
+                            <span className="bar-value">
+                              {Math.floor(Math.random() * 1000)} units
+                            </span>
                           </div>
                         </div>
                       ))}
@@ -729,71 +976,105 @@ export default function ManufacturerDashboard() {
               </div>
             </section>
           )}
-
-          {activeTab === 'partners' && (
-            <section className="partners-section">
-              <h2>Partner Management</h2>
-              <div className="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Distributor</th>
-                      <th>Location</th>
-                      <th>Batches Received</th>
-                      <th>Last Shipment</th>
-                      <th>Trust Score</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {distributors.map(dist => {
-                      const distShipments = shipments.filter(s => s.distributorId === dist.id);
-                      return (
-                        <tr key={dist.id}>
-                          <td>{dist.name}</td>
-                          <td>{dist.location}</td>
-                          <td>{distShipments.length} batches</td>
-                          <td>
-                            {distShipments.length > 0 
-                              ? distShipments[distShipments.length - 1].date 
-                              : 'Never'}
-                          </td>
-                          <td>
-                            <div className="trust-meter">
-                              <div 
-                                className="trust-fill"
-                                style={{ 
-                                  width: `${dist.trustScore}%`,
-                                  backgroundColor: 
-                                    dist.trustScore >= 80 ? 'var(--success-color)' :
-                                    dist.trustScore >= 60 ? 'var(--warning-color)' :
-                                    'var(--danger-color)'
-                                }}
-                              ></div>
-                            </div>
-                            <span>{dist.trustScore}%</span>
-                          </td>
-                          <td>
-                            <span className={`status-badge ${
-                              dist.trustScore >= 80 ? 'trusted' :
-                              dist.trustScore >= 60 ? 'warning' :
-                              'danger'
-                            }`}>
-                              {dist.trustScore >= 80 ? 'Trusted' :
-                               dist.trustScore >= 60 ? 'Warning' :
-                               'Blacklisted'}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
         </main>
       </div>
+
+      {/* Barcode Scanner Modal */}
+      {isScanning && (
+        <div className="scanner-modal">
+          <div className="scanner-container">
+            <div className="scanner-header">
+              <h3>Scan Barcode</h3>
+              <button onClick={stopScanner} className="close-btn">
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="scanner-viewport">
+              <BarcodeScannerComponent
+                width={500}
+                height={300}
+                onUpdate={handleScan}
+              />
+            </div>
+            <div className="scanner-footer">
+              <p>Point your camera at a barcode to scan</p>
+              {scannedBarcode && (
+                <div className="scan-result">
+                  <p>Scanned: <strong>{scannedBarcode}</strong></p>
+                  <button 
+                    className="submit-btn"
+                    onClick={handleUseScannedBarcode}
+                  >
+                    Use This Barcode
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scan Result Modal */}
+      {scanResult && !isScanning && (
+        <div className="scan-result-modal">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>
+                {scanResult.type === 'success' ? (
+                  <><i className="fas fa-check-circle success-icon"></i> Valid Product</>
+                ) : (
+                  <><i className="fas fa-exclamation-circle error-icon"></i> Product Not Found</>
+                )}
+              </h3>
+              <button onClick={() => setScanResult(null)} className="close-btn">
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>{scanResult.message}</p>
+              
+              {scanResult.type === 'success' && scanResult.drug && (
+                <div className="product-details">
+                  <div className="product-barcode">
+                    <BarcodeDisplay value={scanResult.drug.barcode} />
+                  </div>
+                  <div className="product-info">
+                    <p><strong>Name:</strong> {scanResult.drug.name}</p>
+                    <p><strong>Batch:</strong> {scanResult.drug.batchNumber}</p>
+                    <p><strong>Manufactured:</strong> {scanResult.batch?.manufacturingDate}</p>
+                    <p><strong>Expiry:</strong> {scanResult.drug.expiryDate}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="submit-btn"
+                onClick={() => setScanResult(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+const StatCard = ({ icon, value, label, trend, trendValue }) => (
+  <div className="stat-card">
+    <div className="stat-icon">
+      <i className={`fas fa-${icon}`}></i>
+    </div>
+    <div className="stat-content">
+      <p className="stat-value">{value}</p>
+      <p className="stat-label">{label}</p>
+      {trend && (
+        <p className={`stat-trend ${trend}`}>
+          <i className={`fas fa-arrow-${trend}`}></i> {trendValue}
+        </p>
+      )}
+    </div>
+  </div>
+);
