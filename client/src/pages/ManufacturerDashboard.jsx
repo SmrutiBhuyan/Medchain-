@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import './ManufacturerDashboard.css';
+import { connectWallet, verifyDrug } from '../utils/Blockchain';
 import BarcodeScannerComponent from "react-qr-barcode-scanner";
 
 // Dynamic import for JsBarcode
@@ -48,6 +49,8 @@ export default function ManufacturerDashboard() {
   const [isScanning, setIsScanning] = useState(false);
   const [scannedBarcode, setScannedBarcode] = useState('');
   const [scanResult, setScanResult] = useState(null);
+  const [walletConnected, setWalletConnected] = useState(false);
+  const [walletAddress, setWalletAddress] = useState('');
   
   const [newDrug, setNewDrug] = useState({
     name: '',
@@ -87,23 +90,42 @@ export default function ManufacturerDashboard() {
     }
   };
 
-  const verifyScannedBarcode = (barcode) => {
-    const drug = drugs.find(d => d.barcode === barcode);
-    if (drug) {
-      const batch = batches.find(b => b.drugId === drug.id);
-      setScanResult({
-        type: 'success',
-        message: 'Valid MedChain product found',
-        drug,
-        batch
-      });
-    } else {
-      setScanResult({
-        type: 'error',
-        message: 'Product not found in database'
-      });
+  const verifyScannedBarcode = async (barcode) => {
+    try {
+        const result = await verifyDrug(barcode);
+        if (result) {
+            const drug = {
+                name: result.name,
+                batchNumber: result.batchNumber,
+                expiryDate: new Date(result.expiryDate * 1000).toISOString().split('T')[0],
+                barcode: result.barcode
+            };
+            
+            setScanResult({
+                type: 'success',
+                message: 'Valid MedChain product found on blockchain',
+                drug
+            });
+        }
+    } catch (error) {
+        setScanResult({
+            type: 'error',
+            message: 'Product not found on blockchain'
+        });
     }
-  };
+};
+
+const connectWalletHandler = async () => {
+    try {
+        const address = await connectWallet();
+        setWalletAddress(address);
+        setWalletConnected(true);
+        alert(`Wallet connected: ${address}`);
+    } catch (error) {
+        console.error("Wallet connection error:", error);
+        alert(`Wallet connection failed: ${error.message}`);
+    }
+};
 
   const handleUseScannedBarcode = () => {
     if (scannedBarcode) {
@@ -116,6 +138,24 @@ export default function ManufacturerDashboard() {
       stopScanner();
     }
   };
+
+  useEffect(() => {
+    const checkWalletConnection = async () => {
+        if (window.ethereum) {
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    setWalletAddress(accounts[0]);
+                    setWalletConnected(true);
+                }
+            } catch (error) {
+                console.error("Error checking wallet connection:", error);
+            }
+        }
+    };
+    
+    checkWalletConnection();
+}, []);
 
   // Simulate fetching data
   useEffect(() => {
@@ -206,77 +246,140 @@ export default function ManufacturerDashboard() {
     setNewShipment({ ...newShipment, [name]: value });
   };
 
-  const createDrug = (e) => {
+const createDrug = async (e) => {
     e.preventDefault();
-    let newDrugWithBarcode;
     
-    if (barcodeOption === 'generate') {
-      const barcodeNumber = `MC${Math.floor(10000000 + Math.random() * 90000000)}`;
-      newDrugWithBarcode = {
-        ...newDrug,
-        id: drugs.length + 1,
-        barcode: barcodeNumber,
-        barcodeOption: 'generate',
-        barcodeType: 'MedChain'
-      };
-    } else {
-      newDrugWithBarcode = {
-        ...newDrug,
-        id: drugs.length + 1,
-        barcode: newDrug.existingBarcode,
-        barcodeOption: 'existing',
-        barcodeType: newDrug.barcodeType
-      };
+    if (!walletConnected) {
+        alert("Please connect your wallet first");
+        return;
     }
-    
-    setDrugs([...drugs, newDrugWithBarcode]);
-    setNewDrug({
-      name: '',
-      composition: '',
-      dosage: '',
-      expiryDate: '',
-      batchNumber: '',
-      manufacturingDate: '',
-      image: null,
-      existingBarcode: '',
-      barcodeType: 'GS1'
-    });
-    
-    alert(`Drug created with ${barcodeOption === 'generate' ? 'new MedChain' : 'existing'} barcode`);
-  };
 
-  const createShipment = (e) => {
+    try {
+        let newDrugWithBarcode;
+        let barcode;
+        
+        if (barcodeOption === 'generate') {
+            barcode = `MC${Math.floor(10000000 + Math.random() * 90000000)}`;
+            newDrugWithBarcode = {
+                ...newDrug,
+                id: drugs.length + 1,
+                barcode,
+                barcodeOption: 'generate',
+                barcodeType: 'MedChain'
+            };
+        } else {
+            barcode = newDrug.existingBarcode;
+            newDrugWithBarcode = {
+                ...newDrug,
+                id: drugs.length + 1,
+                barcode,
+                barcodeOption: 'existing',
+                barcodeType: newDrug.barcodeType
+            };
+        }
+        
+        // First save to your backend
+        const { image, ...drugDataToSend } = newDrugWithBarcode;
+        console.log("Sending drug data", drugDataToSend);
+        
+        const formData = new FormData();
+        Object.entries(drugDataToSend).forEach(([key, value]) => {
+          if (key === "image" && value) {
+            formData.append(key, value); // File object
+          } else if (value !== undefined) {
+            formData.append(key, value);
+          }
+        });
+
+        const response = await fetch('http://localhost:5000/api/drugs', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                // Do NOT set Content-Type, browser will set it for FormData
+            },
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to save drug to database');
+        }
+        
+        const savedDrug = await response.json();
+        
+        // Update UI
+        setDrugs([...drugs, savedDrug]);
+        setNewDrug({
+            name: '',
+            composition: '',
+            dosage: '',
+            expiryDate: '',
+            batchNumber: '',
+            manufacturingDate: '',
+            image: null,
+            existingBarcode: '',
+            barcodeType: 'GS1'
+        });
+        
+        alert(`Drug created with ${barcodeOption === 'generate' ? 'new MedChain' : 'existing'} barcode. Blockchain transaction recorded.`);
+    } catch (error) {
+        console.error("Error creating drug:", error);
+        alert(`Failed to create drug: ${error.message}`);
+    }
+};
+
+  const createShipment = async (e) => {
     e.preventDefault();
-    const batch = batches.find(b => b.id === newShipment.batchId);
-    const drug = drugs.find(d => d.id === batch.drugId);
-    const distributor = distributors.find(d => d.id === newShipment.distributorId);
     
-    const newShipmentWithDetails = {
-      ...newShipment,
-      id: shipments.length + 1,
-      drugId: batch.drugId,
-      date: new Date().toISOString().split('T')[0],
-      status: 'in_transit',
-      distributor: distributor?.name || 'Unknown',
-      trackingNumber: `TRK${Math.floor(1000 + Math.random() * 9000)}`
-    };
-    
-    // Update batch status
-    const updatedBatches = batches.map(b => 
-      b.id === newShipment.batchId ? { ...b, status: 'shipped' } : b
-    );
-    
-    setBatches(updatedBatches);
-    setShipments([...shipments, newShipmentWithDetails]);
-    setNewShipment({
-      batchId: '',
-      quantity: '',
-      distributorId: '',
-      destination: ''
-    });
-    
-    alert(`Shipment initiated for ${drug?.name} (${batch.quantity} units) to ${distributor?.name}. Blockchain transaction recorded.`);
-  };
+    if (!walletConnected) {
+        alert("Please connect your wallet first");
+        return;
+    }
+
+    try {
+        const batch = batches.find(b => b.id === newShipment.batchId);
+        const drug = drugs.find(d => d.id === batch.drugId);
+        const distributor = distributors.find(d => d.id === newShipment.distributorId);
+        
+        // First save to your backend
+        const response = await fetch('http://localhost:5000/api/shipments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                ...newShipment,
+                drugId: batch.drugId,
+                distributorAddress: distributor.blockchainAddress // Add this to your distributor model
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to save shipment to database');
+        }
+        
+        const savedShipment = await response.json();
+        
+        // Update UI
+        const updatedBatches = batches.map(b => 
+            b.id === newShipment.batchId ? { ...b, status: 'shipped' } : b
+        );
+        
+        setBatches(updatedBatches);
+        setShipments([...shipments, savedShipment]);
+        setNewShipment({
+            batchId: '',
+            quantity: '',
+            distributorId: '',
+            destination: ''
+        });
+        
+        alert(`Shipment initiated for ${drug?.name} (${batch.quantity} units) to ${distributor?.name}. Blockchain transaction recorded.`);
+    } catch (error) {
+        console.error("Error creating shipment:", error);
+        alert(`Failed to create shipment: ${error.message}`);
+    }
+};
 
   const handleRecall = (batchId) => {
     const batch = batches.find(b => b.id === batchId);
@@ -299,11 +402,29 @@ export default function ManufacturerDashboard() {
     }
   };
 
-  const verifyBatch = (batchId) => {
-    const batch = batches.find(b => b.id === batchId);
-    const drug = drugs.find(d => d.id === batch.drugId);
-    alert(`Verifying ${drug?.name} (${drug?.barcode}) on blockchain...\n\nBlockchain verification complete: Authentic batch.`);
-  };
+ const verifyBatch = async (batchId) => {
+    try {
+        const batch = batches.find(b => b.id === batchId);
+        const drug = drugs.find(d => d.id === batch.drugId);
+        
+        console.log("Verifying barcode:", drug.barcode);
+        const result = await verifyDrug(drug.barcode);
+        
+        if (result) {
+            alert(`Verifying ${drug?.name} (${drug?.barcode}) on blockchain...\n\n` +
+                  `Blockchain verification complete:\n` +
+                  `- Drug: ${result.name}\n` +
+                  `- Batch: ${result.batchNumber}\n` +
+                  `- Manufacturer: ${result.manufacturer}\n` +
+                  `- Status: Authentic`);
+        } else {
+            alert("Batch not found on blockchain");
+        }
+    } catch (error) {
+        console.error("Verification error:", error);
+        alert("Failed to verify batch on blockchain");
+    }
+};
 
   return (
     <div className="manufacturer-dashboard">
@@ -311,7 +432,13 @@ export default function ManufacturerDashboard() {
         <div className="header-container">
           <div className="header-left">
             <h1>MedChain Manufacturer Portal</h1>
-            <p className="wallet-address">Blockchain Wallet: {user?.walletAddress}</p>
+            {walletConnected ? (
+        <p className="wallet-address">Blockchain Wallet: {walletAddress.substring(0, 6)}...{walletAddress.substring(walletAddress.length - 4)}</p>
+    ) : (
+        <button onClick={connectWalletHandler} className="connect-wallet-btn">
+            <i className="fas fa-wallet"></i> Connect Wallet
+        </button>
+    )}
           </div>
           <div className="header-right">
             <div className="user-info">
@@ -635,7 +762,7 @@ export default function ManufacturerDashboard() {
                     </thead>
                     <tbody>
                       {drugs.map(drug => (
-                        <tr key={drug.id}>
+                        <tr key={drug._id}>
                           <td>{drug.name}</td>
                           <td>{drug.batchNumber}</td>
                           <td>{drug.expiryDate}</td>
