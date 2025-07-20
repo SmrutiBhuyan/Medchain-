@@ -60,6 +60,16 @@ async function createShipmentOnBlockchain(shipmentData) {
     }
 }
 
+async function verifyShipment(barcode) {
+    try {
+        const drug = await contract.verifyDrug(barcode);
+        return { success: true, drug };
+    } catch (error) {
+        console.error("Blockchain error:", error);
+        return { success: false, error: error.message };
+    }
+}
+
 async function verifyDrugOnBlockchain(barcode) {
     try {
         const drug = await contract.verifyDrug(barcode);
@@ -74,5 +84,6 @@ export {
     createDrugOnBlockchain,
     createBatchOnBlockchain,
     createShipmentOnBlockchain,
-    verifyDrugOnBlockchain
+    verifyDrugOnBlockchain,
+    verifyShipment
 };

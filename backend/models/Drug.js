@@ -10,7 +10,11 @@ const drugSchema = new mongoose.Schema({
   image: { type: String }, // Store image path or URL if needed
   existingBarcode: { type: String },
   barcodeType: { type: String },
-  barcode: { type: String, required: true, unique: true }
+  barcode: { type: String, required: true, unique: true },
+  manufacturer: { type: String, required: true },
+  distributor: { type: String },
+  retailer: { type: String },
+  currentHolder: { type: String },
 }, {
   timestamps: true
 });
