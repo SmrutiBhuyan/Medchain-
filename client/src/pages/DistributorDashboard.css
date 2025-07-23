@@ -1,0 +1,270 @@
+/* styles.css or your main CSS file */
+
+/* Global Styles */
+body {
+    margin: 0;
+    font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+    background-color: #f5f7fa;
+    color: #333;
+  }
+  
+  /* Dashboard Layout */
+  .dashboard-container {
+    padding: 24px;
+    max-width: 1800px;
+    margin: 0 auto;
+  }
+  
+  /* Tab Navigation */
+  .tab-nav {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  
+  .tab-button {
+    text-transform: none;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    border-radius: 8px;
+    padding: 8px 16px;
+    transition: all 0.3s ease;
+  }
+  
+  .tab-button:hover {
+    transform: translateY(-2px);
+  }
+  
+  /* Cards */
+  .dashboard-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.12);
+    transition: transform 0.3s ease-in-out;
+    background-color: white;
+  }
+  
+  .dashboard-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .card-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .card-content {
+    padding: 24px;
+  }
+  
+  /* Tables */
+  .dashboard-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  
+  .dashboard-table thead {
+    background-color: #f5f5f5;
+  }
+  
+  .dashboard-table th {
+    font-weight: 600;
+    text-align: left;
+    padding: 12px 16px;
+    position: sticky;
+    top: 0;
+    background-color: #f5f5f5;
+    z-index: 10;
+  }
+  
+  .dashboard-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .dashboard-table tr:hover td {
+    background-color: #f9f9f9;
+  }
+  
+  /* Status Chips */
+  .status-chip {
+    font-weight: bold;
+    color: white;
+    border-radius: 16px;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+  }
+  
+  .status-pending {
+    background-color: #ffb74d;
+  }
+  
+  .status-in_stock {
+    background-color: #66bb6a;
+  }
+  
+  .status-received {
+    background-color: #4caf50;
+  }
+  
+  .status-recalled {
+    background-color: #f44336;
+  }
+  
+  /* Buttons */
+  .action-button {
+    text-transform: none;
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 8px 16px;
+    transition: all 0.3s ease;
+  }
+  
+  .action-button:hover {
+    transform: translateY(-2px);
+  }
+  
+  .primary-button {
+    background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+    color: white;
+  }
+  
+  .secondary-button {
+    background: linear-gradient(135deg, #757575 0%, #424242 100%);
+    color: white;
+  }
+  
+  /* Forms and Inputs */
+  .dashboard-input {
+    border-radius: 8px;
+  }
+  
+  .dashboard-input fieldset {
+    border-radius: 8px;
+  }
+  
+  .select-dropdown {
+    border-radius: 8px !important;
+  }
+  
+  /* Modals */
+  .dashboard-modal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    background-color: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    padding: 32px;
+    border-radius: 12px;
+    outline: none;
+  }
+  
+  .modal-header {
+    margin-bottom: 24px;
+  }
+  
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+  }
+  
+  /* Analytics Cards */
+  .analytics-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .analytics-value {
+    font-size: 3rem;
+    font-weight: 300;
+    text-align: center;
+    margin: auto 0;
+    color: #1976d2;
+  }
+  
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    .dashboard-container {
+      padding: 16px;
+    }
+    
+    .dashboard-modal {
+      width: 90%;
+      padding: 24px;
+    }
+    
+    .tab-nav {
+      flex-direction: column;
+      gap: 8px;
+    }
+  }
+  
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+  
+  /* Scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+  
+  /* Utility Classes */
+  .text-center {
+    text-align: center;
+  }
+  
+  .mb-3 {
+    margin-bottom: 16px;
+  }
+  
+  .mt-3 {
+    margin-top: 16px;
+  }
+  
+  .full-width {
+    width: 100%;
+  }
+  
+  /* Color Classes */
+  .text-primary {
+    color: #1976d2;
+  }
+  
+  .text-success {
+    color: #4caf50;
+  }
+  
+  .text-warning {
+    color: #ff9800;
+  }
+  
+  .text-error {
+    color: #f44336;
+  }

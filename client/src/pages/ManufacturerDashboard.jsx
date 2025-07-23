@@ -1,1310 +1,1193 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { FaPills, FaTachometerAlt, FaPlusCircle, FaCapsules, FaTruck, FaChartLine, FaBell, FaCog, FaChevronDown, FaUpload, FaDownload, FaFilter, FaSearch, FaEye, FaPaperPlane, FaChevronLeft, FaChevronRight, FaFileCsv, FaWallet } from 'react-icons/fa';
+import { Bar, Pie, Line } from '@ant-design/charts';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useAuth } from './AuthContext';
+import axios from 'axios';
 import './ManufacturerDashboard.css';
-import { connectWallet, verifyDrug } from '../utils/Blockchain';
-import BarcodeScannerComponent from "react-qr-barcode-scanner";
 
-// Dynamic import for JsBarcode
-let JsBarcode;
-if (typeof window !== 'undefined') {
-  import('jsbarcode').then(module => {
-    JsBarcode = module.default;
-  });
-}
+const ManufacturerDashboard = () => {
+  const { user, logout } = useAuth();  
+  const [activeTab, setActiveTab] = useState('drug-creation');
+  const [activeSubTab, setActiveSubTab] = useState('bulk');
+  const [walletAddress, setWalletAddress] = useState(null);
+  const [isConnectingWallet, setIsConnectingWallet] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
+  const [inventoryDrugs, setInventoryDrugs] = useState([]);
+  const [isLoadingInventory, setIsLoadingInventory] = useState(false);
 
-const BarcodeDisplay = ({ value, format = "CODE128" }) => {
-  const barcodeRef = useRef(null);
+  const [previewData, setPreviewData] = useState([]);
+  const [shipmentDrugs, setShipmentDrugs] = useState([]);
+const [selectedDrugs, setSelectedDrugs] = useState([]);
+const [distributors, setDistributors] = useState([]);
+const [isLoadingShipmentData, setIsLoadingShipmentData] = useState(false);
+const [shipmentForm, setShipmentForm] = useState({
+  distributor: '',
+  deliveryDate: '',
+  notes: ''
+});
+const [dashboardStats, setDashboardStats] = useState({
+  totalDrugs: 0,
+  activeShipments: 0,
+  nearExpiry: 0,
+  drugVolume: [],
+  shipmentsOverTime: []
+});
+const [isLoadingStats, setIsLoadingStats] = useState(false);
 
-  useEffect(() => {
-    if (barcodeRef.current && value && JsBarcode) {
-      try {
-        JsBarcode(barcodeRef.current, value, {
-          format,
-          lineColor: "#2c3e50",
-          width: 2,
-          height: 60,
-          displayValue: true,
-          fontSize: 14,
-          margin: 10,
-          background: "transparent"
-        });
-      } catch (error) {
-        console.error("Barcode generation error:", error);
-      }
-    }
-  }, [value, format]);
-
-  return <svg ref={barcodeRef} className="barcode-svg" />;
-};
-
-export default function ManufacturerDashboard() {
-  const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [barcodeOption, setBarcodeOption] = useState('generate');
-  const [drugs, setDrugs] = useState([]);
-  const [batches, setBatches] = useState([]);
-  const [shipments, setShipments] = useState([]);
-  const [alerts, setAlerts] = useState([]);
-  const [distributors, setDistributors] = useState([]);
-  const [isScanning, setIsScanning] = useState(false);
-  const [scannedBarcode, setScannedBarcode] = useState('');
-  const [scanResult, setScanResult] = useState(null);
-  const [walletConnected, setWalletConnected] = useState(false);
-  const [walletAddress, setWalletAddress] = useState('');
-  
-  const [newDrug, setNewDrug] = useState({
-    name: '',
-    composition: '',
-    dosage: '',
-    expiryDate: '',
-    batchNumber: '',
-    manufacturingDate: '',
-    image: null,
-    existingBarcode: '',
-    barcodeType: 'GS1'
-  });
-
-  const [newShipment, setNewShipment] = useState({
-    batchId: '',
-    quantity: '',
-    distributorId: '',
-    destination: ''
-  });
-
-  const startScanner = () => {
-    setIsScanning(true);
-    setScannedBarcode('');
-    setScanResult(null);
-  };
-
-  const stopScanner = () => {
-    setIsScanning(false);
-  };
-
-  const handleScan = (err, result) => {
-    if (result) {
-      const code = result.text;
-      setScannedBarcode(code);
-      verifyScannedBarcode(code);
-      stopScanner();
-    }
-  };
-
- const verifyScannedBarcode = async (barcode) => {
-    try {
-        const response = await fetch(`http://localhost:5000/api/drugs/verify/${barcode}`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-        });
-        
-        const result = await response.json();
-        
-        if (result.status === 'authentic') {
-            const drug = result.drug;
-            setScanResult({
-                type: 'success',
-                source: result.source,
-                message: result.source === 'blockchain' 
-                    ? 'Valid MedChain product found on blockchain' 
-                    : 'Valid product found in MedChain database',
-                drug: {
-                    ...drug,
-                    expiryDate: result.source === 'blockchain' 
-                        ? new Date(drug.expiryDate * 1000).toISOString().split('T')[0]
-                        : drug.expiryDate
-                }
-            });
-        } else {
-            setScanResult({
-                type: 'error',
-                message: 'Product not found in MedChain system'
-            });
-        }
-    } catch (error) {
-        console.error("Verification error:", error);
-        setScanResult({
-            type: 'error',
-            message: 'Error verifying product'
-        });
-    }
-};
-
-
-const connectWalletHandler = async () => {
-    try {
-        const address = await connectWallet();
-        setWalletAddress(address);
-        setWalletConnected(true);
-        alert(`Wallet connected: ${address}`);
-    } catch (error) {
-        console.error("Wallet connection error:", error);
-        alert(`Wallet connection failed: ${error.message}`);
-    }
-};
-
-  const handleUseScannedBarcode = () => {
-    if (scannedBarcode) {
-      setNewDrug(prev => ({
-        ...prev,
-        existingBarcode: scannedBarcode,
-        barcodeOption: 'existing'
-      }));
-      setBarcodeOption('existing');
-      stopScanner();
-    }
-  };
-
-  useEffect(() => {
-    const checkWalletConnection = async () => {
-        if (window.ethereum) {
-            try {
-                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-                if (accounts.length > 0) {
-                    setWalletAddress(accounts[0]);
-                    setWalletConnected(true);
-                }
-            } catch (error) {
-                console.error("Error checking wallet connection:", error);
-            }
-        }
-    };
-    
-    checkWalletConnection();
-}, []);
-
-  // Simulate fetching data
-  useEffect(() => {
-    setTimeout(() => {
-      // Sample alerts
-      setAlerts([
-        { 
-          id: 1, 
-          type: 'counterfeit', 
-          batchId: 1, 
-          drugId: 1,
-          message: 'Possible counterfeit reported from Pharmacy Z', 
-          date: '2023-03-28', 
-          status: 'pending',
-          reporter: 'Pharmacy Z',
-          location: 'City X'
-        }
-      ]);
-
-      // Sample distributors
-      setDistributors([
-        { id: 'DIST001', name: 'Distributor A', location: 'City X', trustScore: 95 },
-        { id: 'DIST002', name: 'Distributor B', location: 'City Y', trustScore: 75 },
-        { id: 'DIST003', name: 'Distributor C', location: 'City Z', trustScore: 40 }
-      ]);
-    }, 500);
-  }, []);
-
-  const handleDrugInputChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === 'image') {
-      setNewDrug({ ...newDrug, image: files[0] });
-    } else {
-      setNewDrug({ ...newDrug, [name]: value });
-    }
-  };
-
-  const handleShipmentInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewShipment({ ...newShipment, [name]: value });
-  };
-
-const createDrug = async (e) => {
-    e.preventDefault();
-    
-    if (!walletConnected) {
-        alert("Please connect your wallet first");
-        return;
-    }
-
-    if (!user || !user._id) {
-        alert("User information is missing. Please log in again.");
-        return;
-    }
-
-    try {
-        let newDrugWithBarcode;
-        let barcode;
-        
-        if (barcodeOption === 'generate') {
-            barcode = `MC${Math.floor(10000000 + Math.random() * 90000000)}`;
-            newDrugWithBarcode = {
-                ...newDrug,
-                barcode,  // Removed manual id assignment
-                barcodeOption: 'generate',
-                barcodeType: 'MedChain',
-            
-            };
-        } else {
-            barcode = newDrug.existingBarcode;
-            newDrugWithBarcode = {
-                ...newDrug,
-                barcode,  // Removed manual id assignment
-                barcodeOption: 'existing',
-                barcodeType: newDrug.barcodeType,
-               
-            };
-        }
-        
-        const formData = new FormData();
-        // Add all drug data to formData
-        Object.entries(newDrugWithBarcode).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-                formData.append(key, value);
-            }
-        });
-        // Add image file if exists
-        if (newDrug.image) {
-            formData.append('image', newDrug.image);
-        }
-        // Add manufacturer
-        formData.append('manufacturer', user._id);
-        console.log(formData);
-        
-        const response = await fetch('http://localhost:5000/api/drugs', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: formData
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to save drug to database');
-        }
-        
-        const savedDrug = await response.json();
-        console.log(savedDrug);
-        
-        
-        // Update UI
-        setDrugs([...drugs, savedDrug]);
-        setNewDrug({
-            name: '',
-            composition: '',
-            dosage: '',
-            expiryDate: '',
-            batchNumber: '',
-            manufacturingDate: '',
-            image: null,
-            existingBarcode: '',
-            barcodeType: 'GS1'
-        });
-        
-        alert(`Drug created successfully with barcode: ${barcode}`);
-    } catch (error) {
-        console.error("Error creating drug:", error);
-        alert(`Failed to create drug: ${error.message}`);
-    }
-};
-const createShipment = async (e) => {
-  e.preventDefault();
-  
-  if (!walletConnected) {
-      alert("Please connect your wallet first");
-      return;
-  }
-
+ 
+const fetchDashboardStats = async () => {
+  setIsLoadingStats(true);
   try {
-      const batch = batches.find(b => b.id === newShipment.batchId);
-      const drug = drugs.find(d => d.id === batch.drugId);
-      const distributor = distributors.find(d => d.id === newShipment.distributorId);
-      
-      // First update the drug with distributor info
-      const updateResponse = await fetch(`http://localhost:5000/api/drugs/${drug._id}`, {
-          method: 'PUT',
-          headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({
-              distributor: distributor.name,
-              currentHolder: distributor.name
-          })
-      });
-      
-      if (!updateResponse.ok) {
-          throw new Error('Failed to update drug with distributor info');
-      }
-      
-              // Then create shipment on blockchain
-              const blockchainResult = await createShipment({
-                batchId:batch.id,
-                quantity: newShipment.quantity,
-                 distributorAddress: distributor.blockchainAddress,
-                destination: newShipment.destination
-              })
+    const token = localStorage.getItem('token');
+    console.log('Token:', token); // Debugging
+    
+    if (!token) {
+      console.error('No authentication token found');
+      logout(); // Call logout to clear invalid session
+      return;
+    }
 
-              if (!blockchainResult.success) {
-            throw new Error('Blockchain transaction failed');
-        }
-
-      const shipmentResponse = await fetch('http://localhost:5000/api/shipments', {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({
-              ...newShipment,
-              drugId: drug._id,
-              distributorAddress: distributor.blockchainAddress,
-              blockchainTx: blockchainResult.txHash
-          })
-      });
-      
-      if (!shipmentResponse.ok) {
-             throw new Error('Failed to create shipment in database');
+    const response = await axios.get('http://localhost:5000/api/dashboard/stats', {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
-      
-      const savedShipment = await shipmentResponse.json();
-      
-      // Update UI
-      const updatedDrugs = drugs.map(d => 
-          d._id === drug._id ? { ...d, distributor: distributor.name, currentHolder: distributor.name } : d
-      );
-      
-      const updatedBatches = batches.map(b => 
-          b.id === newShipment.batchId ? { ...b, status: 'shipped' } : b
-      );
-      
-      setDrugs(updatedDrugs);
-      setBatches(updatedBatches);
-      setShipments([...shipments, savedShipment]);
-      setNewShipment({
-          batchId: '',
-          quantity: '',
-          distributorId: '',
-          destination: ''
-      });
-      
-      alert(`Shipment created successfully! Transaction hash: ${blockchainResult.txHash}...Shipment initiated for ${drug?.name} to ${distributor?.name}.`);
+    });
+    
+    if (response.data.success) {
+      setDashboardStats(response.data.stats);
+    }
   } catch (error) {
-      console.error("Error creating shipment:", error);
-      alert(`Failed to create shipment: ${error.message}`);
+    console.error('Error fetching dashboard stats:', error);
+    if (error.response?.status === 401) {
+      console.error('Session expired, please log in again');
+      logout(); // Call logout when token is invalid
+    }
+  } finally {
+    setIsLoadingStats(false);
   }
 };
+  const shipmentsData = [
+    { id: 'SH-2023-001', drugs: '3 drugs (250 units)', distributor: 'MediDistributors Inc.', status: 'delivered', date: '2023-05-15' },
+    { id: 'SH-2023-002', drugs: '2 drugs (180 units)', distributor: 'PharmaChain LLC', status: 'in-transit', date: '2023-06-02' },
+    { id: 'SH-2023-003', drugs: '5 drugs (420 units)', distributor: 'HealthPlus Distributors', status: 'processing', date: '2023-06-18' },
+    { id: 'SH-2023-004', drugs: '1 drug (75 units)', distributor: 'Global Pharma Logistics', status: 'cancelled', date: '2023-07-05' },
+  ];
 
-  const handleRecall = (batchId) => {
-    const batch = batches.find(b => b.id === batchId);
-    const drug = drugs.find(d => d.id === batch.drugId);
-    
-    if (confirm(`Initiate recall for ${drug?.name} (Batch ${batchId})? This will notify all supply chain partners.`)) {
-      const updatedAlerts = [...alerts, {
-        id: alerts.length + 1,
-        type: 'recall',
-        batchId,
-        drugId: drug.id,
-        message: `Recall initiated for ${drug.name} (Batch ${batchId})`,
-        date: new Date().toISOString().split('T')[0],
-        status: 'active',
-        initiatedBy: user.name
-      }];
+  const nearExpiryData = [
+    { name: 'Amoxicillin 250mg', batch: 'BATCH-2023-003', expiry: '2024-09-04', days: 408, stock: '500 units', status: 'monitor' },
+    { name: 'Loratadine 10mg', batch: 'BATCH-2023-006', expiry: '2024-10-15', days: 449, stock: '300 units', status: 'monitor' },
+    { name: 'Ciprofloxacin 500mg', batch: 'BATCH-2023-007', expiry: '2024-11-20', days: 485, stock: '200 units', status: 'monitor' },
+  ];
+
+  // Form state
+  const [drugForm, setDrugForm] = useState({
+    name: '',
+    batch: '',
+    quantity: '',
+    mfgDate: '',
+    expiryDate: '',
+    barcode: ''
+  });
+
+  const parseCSV = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
       
-      setAlerts(updatedAlerts);
-      alert(`Recall initiated for ${drug?.name} (Batch ${batchId}). Blockchain alert sent to all partners.`);
+      reader.onload = (event) => {
+        try {
+          const csvData = event.target.result;
+          const lines = csvData.split('\n').filter(line => line.trim() !== '');
+          
+          if (lines.length < 2) {
+            resolve([]);
+            return;
+          }
+  
+          const headers = lines[0].split(',').map(header => 
+            header.trim().toLowerCase().replace(/\s+/g, '')
+          );
+          
+          const result = [];
+          
+          for (let i = 1; i < lines.length; i++) {
+            const currentLine = lines[i].split(',');
+            const obj = {};
+            
+            for (let j = 0; j < headers.length; j++) {
+              if (currentLine[j]) {
+                obj[headers[j]] = currentLine[j].trim();
+              }
+            }
+            
+            // Ensure we have all required fields
+            if (obj.drugname || obj.name) {
+              result.push({
+                name: obj.drugname || obj.name,
+                batch: obj.batchnumber || obj.batch,
+                quantity: obj.quantity,
+                mfgDate: obj.manufacturingdate || obj.mfgdate || obj.mfgdate,
+                expiryDate: obj.expirydate || obj.expirydate,
+                barcode: obj.barcode || ''
+              });
+            }
+          }
+          
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      reader.onerror = (error) => reject(error);
+      reader.readAsText(file);
+    });
+  };
+  // File upload state
+  const [fileUploadState, setFileUploadState] = useState({
+    isDragging: false,
+    file: null
+  });
+
+  // Barcode Scanner Component
+  const BarcodeScanner = ({ onScan }) => {
+    const scannerRef = useRef(null);
+  
+    useEffect(() => {
+      const scanner = new Html5QrcodeScanner('barcode-scanner', {
+        fps: 10,
+        qrbox: 250
+      }, false);
+  
+      scanner.render((decodedText) => {
+        onScan(decodedText);
+        scanner.clear();
+      });
+  
+      scannerRef.current = scanner;
+  
+      return () => {
+        if (scannerRef.current) {
+          scannerRef.current.clear();
+        }
+      };
+    }, [onScan]);
+  
+    return <div id="barcode-scanner" style={{ width: '100%' }}></div>;
+  };
+
+  const handleScan = (barcode) => {
+    setDrugForm(prev => ({ ...prev, barcode }));
+    setShowScanner(false);
+  };
+
+  // Function to connect wallet (simulated)
+  const connectWallet = async () => {
+    setIsConnectingWallet(true);
+    try {
+      // In a real app, this would connect to MetaMask or another wallet provider
+      // For simulation, we'll use a timeout and mock address
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const mockAddress = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
+      setWalletAddress(mockAddress);
+    } catch (error) {
+      console.error('Wallet connection error:', error);
+    } finally {
+      setIsConnectingWallet(false);
     }
   };
 
-  const verifyBatch = async (batchId) => {
+  const disconnectWallet = () => {
+    setWalletAddress(null);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setDrugForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setFileUploadState(prev => ({ ...prev, isDragging: true }));
+  };
+
+  const handleDragLeave = () => {
+    setFileUploadState(prev => ({ ...prev, isDragging: false }));
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setFileUploadState({
+      isDragging: false,
+      file: e.dataTransfer.files[0]
+    });
+  };
+
+  const handleFileUpload = async (file) => {
     try {
-        const batch = batches.find(b => b.id === batchId);
-        const drug = drugs.find(d => d.id === batch.drugId);
-        
-        if (!drug) {
-            throw new Error("Drug not found");
+      const formData = new FormData();
+      formData.append('csvFile', file);
+      formData.append('manufacturerId', user._id);
+  
+      const response = await axios.post('http://localhost:5000/api/drugs/upload-csv', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
         }
-
-        const result = await verifyDrug(drug.barcode);
-        
-        if (result) {
-            alert(`Verifying ${drug?.name} (${drug?.barcode}) on blockchain...\n\n` +
-                  `Blockchain verification complete:\n` +
-                  `- Drug: ${result.name}\n` +
-                  `- Batch: ${result.batchNumber}\n` +
-                  `- Status: Authentic`);
-        } else {
-            alert("Batch not found on blockchain");
+      });
+  
+      if (response.data.success) {
+        alert(`Successfully imported ${response.data.importedCount} drugs`);
+        if (response.data.errorCount > 0) {
+          alert(`There were ${response.data.errorCount} errors during import`);
+          console.log('Import errors:', response.data.errors);
         }
+        setFileUploadState({
+          isDragging: false,
+          file: null
+        });
+      }
     } catch (error) {
-        console.error("Verification error:", error);
-        alert(`Failed to verify batch on blockchain: ${error.message}`);
+      console.error('Upload error:', error);
+      alert(`Upload failed: ${error.response?.data?.error || error.message}`);
     }
-};
+  };
 
+  const handleConfirmUpload = async () => {
+    try {
+      // Transform data to match backend expectations if needed
+      const formattedData = previewData.map(drug => ({
+        name: drug.drugname || drug.name,
+        batch: drug.batchnumber || drug.batch,
+        quantity: drug.quantity,
+        mfgDate: drug.manufacturingdate || drug.mfgdate || drug.mfgDate,
+        expiryDate: drug.expirydate || drug.expiryDate,
+        barcode: drug.barcode
+      }));
+  
+      const response = await axios.post('http://localhost:5000/api/drugs/bulk-create', {
+        drugs: formattedData,
+        manufacturerId: user._id
+      });
+  
+      if (response.data.success) {
+        alert(`Successfully created ${response.data.createdCount} drugs`);
+        setPreviewData([]); // Clear preview after successful upload
+      }
+    } catch (error) {
+      console.error('Bulk creation error:', error);
+      alert(error.response?.data?.error || 'Failed to create drugs');
+    }
+  };
+
+  const handleManualSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post('http://localhost:5000/api/drugs/create', {
+        ...drugForm,
+        manufacturerId: user._id
+      });
+  
+      if (response.data.success) {
+        alert(`Drug ${response.data.drug.name} created successfully!`);
+        // Add to preview data
+        setPreviewData(prev => [...prev, drugForm]);
+        setDrugForm({
+          name: '',
+          batch: '',
+          quantity: '',
+          mfgDate: '',
+          expiryDate: '',
+          barcode: ''
+        });
+      }
+    } catch (error) {
+      console.error('Creation error:', error);
+      alert(error.response?.data?.error || 'Failed to create drug');
+    }
+  };
+  // Status badge component
+  const StatusBadge = ({ status }) => {
+    const statusMap = {
+      'in-stock': { class: 'status-in-stock', text: 'In Stock' },
+      'shipped': { class: 'status-shipped', text: 'Shipped' },
+      'recalled': { class: 'status-recalled', text: 'Recalled' },
+      'expired': { class: 'status-expired', text: 'Expired' },
+      'delivered': { class: 'badge-success', text: 'Delivered' },
+      'in-transit': { class: 'badge-primary', text: 'In Transit' },
+      'processing': { class: 'badge-warning', text: 'Processing' },
+      'cancelled': { class: 'badge-danger', text: 'Cancelled' },
+      'monitor': { class: 'badge-warning', text: 'Monitor' }
+    };
+
+    return (
+      <span className={`status-badge ${statusMap[status]?.class || ''}`}>
+        {statusMap[status]?.text || status}
+      </span>
+    );
+  };
+
+  const fetchManufacturerDrugs = async () => {
+  setIsLoadingInventory(true);
+  try {
+    const response = await axios.get(`http://localhost:5000/api/drugs/manufacturer/${user._id}`);
+    console.log(response.data.drugs);
+    
+    setInventoryDrugs(response.data.drugs);
+  } catch (error) {
+    console.error('Error fetching drugs:', error);
+    alert('Failed to load inventory data');
+  } finally {
+    setIsLoadingInventory(false);
+  }
+};
 
 useEffect(() => {
-  if (user && user._id) {
-    const fetchManufacturerDrugs = async () => {
-      console.log("Fetching drugs for user:", user._id);
-      try {
-        const response = await fetch(`http://localhost:5000/api/drugs/manufacturer/${user._id}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-
-        if (response.ok) {
-          const drugsData = await response.json();
-          setDrugs(drugsData);
-        }
-      } catch (error) {
-        console.error("Error fetching drugs:", error);
-      }
-    };
+  console.log("Inside inventory");  
+  if (activeTab === 'inventory' && user?._id) {
     fetchManufacturerDrugs();
   }
-}, [user]);
+}, [activeTab, user?._id]);
+
+
+const fetchShipmentData = async () => {
+  setIsLoadingShipmentData(true);
+  try {
+    // Fetch manufacturer's drugs
+    const drugsResponse = await axios.get(`http://localhost:5000/api/drugs/manufacturer/${user._id}?status=in-stock`);
+    setShipmentDrugs(drugsResponse.data.drugs);
+    
+    // Fetch distributors
+    const distributorsResponse = await axios.get('http://localhost:5000/api/users/distributors');
+    setDistributors(distributorsResponse.data.distributors);
+  } catch (error) {
+    console.error('Error fetching shipment data:', error);
+    alert('Failed to load shipment data');
+  } finally {
+    setIsLoadingShipmentData(false);
+  }
+};
+
+const handleShipmentInputChange = (e) => {
+  const { name, value } = e.target;
+  setShipmentForm(prev => ({ ...prev, [name]: value }));
+};
+
+const handleDrugSelection = (drugId, isSelected) => {
+  setSelectedDrugs(prev => 
+    isSelected 
+      ? [...prev, drugId] 
+      : prev.filter(id => id !== drugId)
+  );
+};
+
+const handleShipmentSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    if (selectedDrugs.length === 0) {
+      alert('Please select at least one drug to ship');
+      return;
+    }
+
+    if (!shipmentForm.distributor) {
+      alert('Please select a distributor');
+      return;
+    }
+
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    };
+
+    const requestBody = {
+      drugs: selectedDrugs,
+      distributorId: shipmentForm.distributor,
+      manufacturerId: user._id,
+      estimatedDelivery: shipmentForm.deliveryDate,
+      notes: shipmentForm.notes
+    };
+
+    console.log('Sending shipment request:', requestBody); // Add this for debugging
+
+    const response = await axios.post(
+      'http://localhost:5000/api/shipments/create',
+      requestBody,
+      config
+    );
+
+    if (response.data.success) {
+      alert('Shipment created successfully!');
+      // Reset form
+      setSelectedDrugs([]);
+      setShipmentForm({
+        distributor: '',
+        deliveryDate: '',
+        notes: ''
+      });
+      // Refresh data
+      fetchShipmentData();
+    }
+  } catch (error) {
+    console.error('Shipment creation error:', error);
+    console.error('Error response:', error.response); // Add this for debugging
+    alert(error.response?.data?.error || 'Failed to create shipment');
+  }
+};
+// Call this when shipment tab is activated
+useEffect(() => {
+  if (activeTab === 'shipment' && user?._id) {
+    fetchShipmentData();
+  }
+}, [activeTab, user?._id]);
+
+useEffect(() => {
+  if (activeTab === 'dashboard' && user?._id) {
+    fetchDashboardStats();
+  }
+}, [activeTab, user?._id]);
 
   return (
-    <div className="manufacturer-dashboard">
-      <header className="dashboard-header">
-        <div className="header-container">
-          <div className="header-left">
-            <h1>MedChain Manufacturer Portal</h1>
-            {walletConnected ? (
-        <p className="wallet-address">Blockchain Wallet: {walletAddress.substring(0, 6)}...{walletAddress.substring(walletAddress.length - 4)}</p>
-    ) : (
-        <button onClick={connectWalletHandler} className="connect-wallet-btn">
-            <i className="fas fa-wallet"></i> Connect Wallet
-        </button>
-    )}
-          </div>
-          <div className="header-right">
-            <div className="user-info">
-              <span className="user-name">{user?.name}</span>
-              <span className="user-org">{user?.organization}</span>
-            </div>
-            <button onClick={logout} className="logout-btn">
-              <i className="fas fa-sign-out-alt"></i> Logout
-            </button>
-          </div>
+    <div className="dashboard">
+      {/* Sidebar */}
+      <div className="sidebar">
+        <div className="logo">
+          <FaPills />
+          <h1>PharmaTrack</h1>
         </div>
-      </header>
-
-      <div className="dashboard-container">
-        <aside className="sidebar">
-          <div className="sidebar-header">
-            <div className="logo-container">
-              <div className="logo">MC</div>
-              <span>Manufacturer</span>
-            </div>
-          </div>
-          <nav>
-            <ul>
-              <li className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
-                <i className="fas fa-tachometer-alt"></i>
-                <span>Dashboard</span>
-              </li>
-              <li className={activeTab === 'drugs' ? 'active' : ''} onClick={() => setActiveTab('drugs')}>
-                <i className="fas fa-pills"></i>
-                <span>Drug Creation</span>
-              </li>
-              <li className={activeTab === 'batches' ? 'active' : ''} onClick={() => setActiveTab('batches')}>
-                <i className="fas fa-boxes"></i>
-                <span>Batch Management</span>
-              </li>
-              <li className={activeTab === 'shipments' ? 'active' : ''} onClick={() => setActiveTab('shipments')}>
-                <i className="fas fa-truck"></i>
-                <span>Shipments</span>
-              </li>
-              <li className={activeTab === 'alerts' ? 'active' : ''} onClick={() => setActiveTab('alerts')}>
-                <i className="fas fa-exclamation-triangle"></i>
-                <span>Alerts</span>
-              </li>
-              <li className={activeTab === 'analytics' ? 'active' : ''} onClick={() => setActiveTab('analytics')}>
-                <i className="fas fa-chart-line"></i>
-                <span>Analytics</span>
-              </li>
-            </ul>
-          </nav>
-        </aside>
-
-        <main className="main-content">
-          {activeTab === 'dashboard' && (
-            <section className="overview-section">
-              <h2 className="section-title">
-                <i className="fas fa-tachometer-alt"></i> Manufacturing Overview
-              </h2>
-              
-              <div className="stats-grid">
-                <StatCard 
-                  icon="pills"
-                  value={drugs.length}
-                  label="Total Drugs"
-                  trend="up"
-                  trendValue="12%"
-                />
-                <StatCard 
-                  icon="boxes"
-                  value={batches.length}
-                  label="Active Batches"
-                  trend="down"
-                  trendValue="5%"
-                />
-                <StatCard 
-                  icon="truck"
-                  value={shipments.filter(s => s.status === 'in_transit').length}
-                  label="Open Shipments"
-                  trend="up"
-                  trendValue="23%"
-                />
-                <StatCard 
-                  icon="exclamation-triangle"
-                  value={alerts.length}
-                  label="Active Alerts"
-                  trend="neutral"
-                />
-              </div>
-
-              <div className="recent-activity">
-                <h3>
-                  <i className="fas fa-history"></i> Recent Blockchain Transactions
-                </h3>
-                <div className="activity-list">
-                  {shipments.slice(0, 5).map(shipment => {
-                    const drug = drugs.find(d => d.id === shipment.drugId);
-                    return (
-                      <div key={shipment.id} className="activity-item">
-                        <div className="activity-icon">
-                          <i className="fas fa-shipping-fast"></i>
-                        </div>
-                        <div className="activity-details">
-                          <span className="activity-date">{shipment.date}</span>
-                          <p className="activity-desc">
-                            Shipped {shipment.quantity} units of {drug?.name} to {shipment.distributor}
-                          </p>
-                        </div>
-                        <span className={`status-badge ${shipment.status}`}>
-                          {shipment.status.replace('_', ' ')}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </section>
-          )}
-
-          {activeTab === 'drugs' && (
-            <section className="drug-creation-section">
-              <h2 className="section-title">
-                <i className="fas fa-pills"></i> Drug Creation
-              </h2>
-              
-              <div className="form-container">
-                <form onSubmit={createDrug}>
-                  <div className="form-section">
-                    <h3>Basic Information</h3>
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>Drug Name*</label>
-                        <input
-                          type="text"
-                          name="name"
-                          value={newDrug.name}
-                          onChange={handleDrugInputChange}
-                          required
-                          placeholder="e.g., Paracetamol 500mg"
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Composition*</label>
-                        <input
-                          type="text"
-                          name="composition"
-                          value={newDrug.composition}
-                          onChange={handleDrugInputChange}
-                          required
-                          placeholder="Active ingredients"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>Batch Number*</label>
-                        <input
-                          type="text"
-                          name="batchNumber"
-                          value={newDrug.batchNumber}
-                          onChange={handleDrugInputChange}
-                          required
-                          placeholder="e.g., BATCH001"
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Dosage Form*</label>
-                        <input
-                          type="text"
-                          name="dosage"
-                          value={newDrug.dosage}
-                          onChange={handleDrugInputChange}
-                          required
-                          placeholder="e.g., Tablet, Capsule"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="form-row">
-                      <div className="form-group">
-                        <label>Manufacturing Date*</label>
-                        <input
-                          type="date"
-                          name="manufacturingDate"
-                          value={newDrug.manufacturingDate}
-                          onChange={handleDrugInputChange}
-                          required
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label>Expiry Date*</label>
-                        <input
-                          type="date"
-                          name="expiryDate"
-                          value={newDrug.expiryDate}
-                          onChange={handleDrugInputChange}
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="form-section">
-                    <h3>Barcode Options</h3>
-                    <div className="barcode-options">
-                      <div className="option-radio">
-                        <input
-                          type="radio"
-                          id="generate-barcode"
-                          name="barcodeOption"
-                          checked={barcodeOption === 'generate'}
-                          onChange={() => setBarcodeOption('generate')}
-                        />
-                        <label htmlFor="generate-barcode">
-                          <div className="option-content">
-                            <i className="fas fa-qrcode"></i>
-                            <span>Generate MedChain Barcode</span>
-                            <p>We'll create a unique identifier and barcode for this drug</p>
-                          </div>
-                        </label>
-                      </div>
-                      
-                      <div className="option-radio">
-                        <input
-                          type="radio"
-                          id="existing-barcode"
-                          name="barcodeOption"
-                          checked={barcodeOption === 'existing'}
-                          onChange={() => setBarcodeOption('existing')}
-                        />
-                        <label htmlFor="existing-barcode">
-                          <div className="option-content">
-                            <i className="fas fa-barcode"></i>
-                            <span>Use Existing Barcode</span>
-                            <p>Map to an existing GS1 or manufacturer barcode</p>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-                    
-                    {barcodeOption === 'existing' && (
-                      <div className="form-row">
-                        <div className="form-group">
-                          <label>Existing Barcode*</label>
-                          <div className="barcode-input-group">
-                            <input
-                              type="text"
-                              name="existingBarcode"
-                              value={newDrug.existingBarcode}
-                              onChange={handleDrugInputChange}
-                              required={barcodeOption === 'existing'}
-                              placeholder="Enter the existing barcode"
-                            />
-                            <button 
-                              type="button" 
-                              className="scan-btn"
-                              onClick={startScanner}
-                            >
-                              <i className="fas fa-camera"></i> Scan
-                            </button>
-                          </div>
-                        </div>
-                        <div className="form-group">
-                          <label>Barcode Type*</label>
-                          <select
-                            name="barcodeType"
-                            value={newDrug.barcodeType}
-                            onChange={handleDrugInputChange}
-                            required={barcodeOption === 'existing'}
-                          >
-                            <option value="GS1">GS1</option>
-                            <option value="UPC">UPC</option>
-                            <option value="EAN">EAN</option>
-                            <option value="OTHER">Other</option>
-                          </select>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="form-section">
-                    <h3>Packaging Image</h3>
-                    <div className="form-group">
-                      <label>Upload Packaging Image*</label>
-                      <div className="file-upload">
-                        <label>
-                          <i className="fas fa-cloud-upload-alt"></i>
-                          <span>{newDrug.image ? newDrug.image.name : 'Choose file...'}</span>
-                          <input
-                            type="file"
-                            name="image"
-                            onChange={handleDrugInputChange}
-                            accept="image/*"
-                            required
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <button type="submit" className="submit-btn">
-                    <i className="fas fa-save"></i> Create Drug & Record on Blockchain
-                  </button>
-                </form>
-              </div>
-
-              <div className="drugs-list">
-  <h3><i className="fas fa-list"></i> Your Drugs</h3>
-  <div className="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Batch</th>
-          <th>Manufacturer</th>
-          <th>Current Holder</th>
-          <th>Expiry</th>
-          <th>Barcode</th>
-          <th>Type</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {drugs.map(drug => (
-  <tr key={drug._id || drug.id}>
-    <td>{drug.name}</td>
-    <td>{drug.batchNumber}</td>
-    <td>{drug.manufacturer || user.organization}</td>
-    <td>
-      {drug.currentHolder || 'Manufacturer'}
-      {drug.distributor && ` → ${drug.distributor}`}
-      {drug.retailer && ` → ${drug.retailer}`}
-    </td>
-    <td>{new Date(drug.expiryDate).toLocaleDateString()}</td>
-    <td className="barcode-cell">
-      <BarcodeDisplay value={drug.barcode} />
-    </td>
-    <td>
-      <span className={`barcode-type ${drug.barcodeOption}`}>
-        {drug.barcodeOption === 'generate' ? 'MedChain' : drug.barcodeType}
-      </span>
-    </td>
-    <td>
-      <button 
-        className="action-btn scan-btn"
-        onClick={() => {
-          setScannedBarcode(drug.barcode);
-          verifyScannedBarcode(drug.barcode);
-        }}
-      >
-        <i className="fas fa-search"></i> Verify
-      </button>
-      <button 
-        className="action-btn track-btn"
-        onClick={() => trackSupplyChain(drug._id)}
-      >
-        <i className="fas fa-truck"></i> Track
-      </button>
-    </td>
-  </tr>
-))}
-
-      </tbody>
-    </table>
-  </div>
-</div>
-            </section>
-          )}
-
-          {activeTab === 'batches' && (
-            <section className="batch-section">
-              <h2 className="section-title">
-                <i className="fas fa-boxes"></i> Batch Management
-              </h2>
-              <div className="batch-grid">
-                {batches.map(batch => {
-                  const drug = drugs.find(d => d.id === batch.drugId);
-                  return (
-                    <div key={batch.id} className="batch-card">
-                      <div className="batch-header">
-                        <h3>{drug?.name || 'Unknown Drug'}</h3>
-                        <span className={`batch-status ${batch.status}`}>{batch.status}</span>
-                      </div>
-                      <div className="batch-details">
-                        <p><strong>Batch ID:</strong> {batch.id}</p>
-                        <p><strong>Quantity:</strong> {batch.quantity} units</p>
-                        <p><strong>Manufactured:</strong> {batch.manufacturingDate}</p>
-                        <div className="batch-barcode">
-                          <BarcodeDisplay value={drug?.barcode || 'BC00000000'} />
-                          <p className="barcode-type-label">
-                            {drug?.barcodeOption === 'generate' ? 'MedChain' : drug?.barcodeType} Barcode
-                          </p>
-                        </div>
-                      </div>
-                      <div className="batch-actions">
-                        <button 
-                          className="action-btn view-btn"
-                          onClick={() => verifyBatch(batch.id)}
-                        >
-                          <i className="fas fa-shield-alt"></i> Verify on Blockchain
-                        </button>
-                        {batch.status === 'in_storage' && (
-                          <button 
-                            className="action-btn ship-btn"
-                            onClick={() => {
-                              setNewShipment(prev => ({ ...prev, batchId: batch.id }));
-                              setActiveTab('shipments');
-                            }}
-                          >
-                            <i className="fas fa-truck-loading"></i> Initiate Shipment
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {activeTab === 'shipments' && (
-            <section className="shipment-section">
-              <div className="shipment-form-container">
-                <h2 className="section-title">
-                  <i className="fas fa-truck"></i> Create New Shipment
-                </h2>
-                <form onSubmit={createShipment}>
-                  <div className="form-group">
-                    <label>Select Batch</label>
-                    <select
-                      name="batchId"
-                      value={newShipment.batchId}
-                      onChange={handleShipmentInputChange}
-                      required
-                    >
-                      <option value="">Select a batch</option>
-                      {batches
-                        .filter(b => b.status === 'in_storage')
-                        .map(batch => {
-                          const drug = drugs.find(d => d.id === batch.drugId);
-                          return (
-                            <option key={batch.id} value={batch.id}>
-                              Batch {batch.id} ({drug?.name || 'Unknown'}) - {batch.quantity} units
-                            </option>
-                          );
-                        })}
-                    </select>
-                  </div>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Quantity</label>
-                      <input
-                        type="number"
-                        name="quantity"
-                        value={newShipment.quantity}
-                        onChange={handleShipmentInputChange}
-                        required
-                        min="1"
-                        placeholder="Units to ship"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label>Distributor</label>
-                      <select
-                        name="distributorId"
-                        value={newShipment.distributorId}
-                        onChange={handleShipmentInputChange}
-                        required
-                      >
-                        <option value="">Select distributor</option>
-                        {distributors.map(dist => (
-                          <option key={dist.id} value={dist.id}>
-                            {dist.name} ({dist.location}) - Trust: {dist.trustScore}%
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="form-group">
-                    <label>Destination</label>
-                    <input
-                      type="text"
-                      name="destination"
-                      value={newShipment.destination}
-                      onChange={handleShipmentInputChange}
-                      required
-                      placeholder="City, Country"
-                    />
-                  </div>
-                  <button type="submit" className="submit-btn">
-                    <i className="fas fa-paper-plane"></i> Create Shipment & Log on Blockchain
-                  </button>
-                </form>
-              </div>
-
-              <div className="shipments-list">
-                <h3 className="section-title">
-                  <i className="fas fa-history"></i> Shipment History
-                </h3>
-                <div className="table-container">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Batch</th>
-                        <th>Drug</th>
-                        <th>Barcode</th>
-                        <th>Quantity</th>
-                        <th>Distributor</th>
-                        <th>Destination</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {shipments.map(shipment => {
-                        const batch = batches.find(b => b.id === shipment.batchId);
-                        const drug = batch ? drugs.find(d => d.id === batch.drugId) : null;
-                        return (
-                          <tr key={shipment.id}>
-                            <td>{shipment.date}</td>
-                            <td>{shipment.batchId}</td>
-                            <td>{drug?.name || 'Unknown'}</td>
-                            <td className="barcode-cell">
-                              {drug && <BarcodeDisplay value={drug.barcode} />}
-                            </td>
-                            <td>{shipment.quantity}</td>
-                            <td>{shipment.distributor}</td>
-                            <td>{shipment.destination}</td>
-                            <td>
-                              <span className={`status-badge ${shipment.status}`}>
-                                {shipment.status}
-                              </span>
-                            </td>
-                            <td>
-                              <button className="action-btn view-btn">
-                                <i className="fas fa-eye"></i> Details
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {activeTab === 'alerts' && (
-            <section className="alerts-section">
-              <h2 className="section-title">
-                <i className="fas fa-exclamation-triangle"></i> Counterfeit Alerts & Reports
-              </h2>
-              <div className="alerts-grid">
-                {alerts.map(alert => {
-                  const drug = drugs.find(d => d.id === alert.drugId);
-                  return (
-                    <div key={alert.id} className={`alert-card ${alert.type}`}>
-                      <div className="alert-header">
-                        <h3>
-                          {alert.type === 'counterfeit' && <><i className="fas fa-ban"></i> Counterfeit Report</>}
-                          {alert.type === 'missing_scan' && <><i className="fas fa-search-minus"></i> Missing Scan</>}
-                          {alert.type === 'recall' && <><i className="fas fa-undo"></i> Active Recall</>}
-                        </h3>
-                        <span className="alert-date">{alert.date}</span>
-                      </div>
-                      <div className="alert-body">
-                        <p>{alert.message}</p>
-                        <div className="alert-details">
-                          <p><strong>Drug:</strong> {drug?.name || 'Unknown'}</p>
-                          <p><strong>Batch ID:</strong> {alert.batchId}</p>
-                          {drug && (
-                            <div className="shipment-barcode">
-                              <BarcodeDisplay value={drug.barcode} />
-                              <p>{drug.barcodeOption === 'generate' ? 'MedChain' : drug.barcodeType} Barcode</p>
-                            </div>
-                          )}
-                          {alert.type === 'counterfeit' && (
-                            <p><strong>Reported by:</strong> {alert.reporter} ({alert.location})</p>
-                          )}
-                          {alert.type === 'missing_scan' && (
-                            <p><strong>Last Scan:</strong> {alert.lastScan}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="alert-footer">
-                        <span className={`status-badge ${alert.status}`}>
-                          <i className={`fas ${
-                            alert.status === 'active' ? 'fa-exclamation-circle' :
-                            alert.status === 'pending' ? 'fa-clock' :
-                            'fa-search'
-                          }`}></i> {alert.status}
-                        </span>
-                        <div className="alert-actions">
-                          <button className="action-btn view-btn">
-                            <i className="fas fa-eye"></i> Details
-                          </button>
-                          {alert.type !== 'recall' && (
-                            <button 
-                              className="action-btn recall-btn"
-                              onClick={() => handleRecall(alert.batchId)}
-                            >
-                              <i className="fas fa-undo"></i> Initiate Recall
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {activeTab === 'analytics' && (
-            <section className="analytics-section">
-              <h2 className="section-title">
-                <i className="fas fa-chart-line"></i> Manufacturing Analytics
-              </h2>
-              <div className="analytics-grid">
-                <div className="chart-container">
-                  <h3>Drug Production</h3>
-                  <div className="chart-placeholder">
-                    <p>Monthly Production by Drug</p>
-                    <div className="bar-chart">
-                      {drugs.map(drug => (
-                        <div key={drug.id} className="bar-container">
-                          <div 
-                            className="bar" 
-                            style={{ width: `${Math.min(100, Math.random() * 80 + 20)}%` }}
-                          >
-                            {drug.name}
-                            <span className="bar-value">
-                              {Math.floor(Math.random() * 1000)} units
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="chart-container">
-                  <h3>Shipment Distribution</h3>
-                  <div className="chart-placeholder">
-                    <p>Geographical Distribution</p>
-                    <div className="map-grid">
-                      <div className="map-region">North: 35%</div>
-                      <div className="map-region">South: 25%</div>
-                      <div className="map-region">East: 30%</div>
-                      <div className="map-region">West: 10%</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="stats-container">
-                  <h3>Key Metrics</h3>
-                  <div className="metrics-grid">
-                    <div className="metric-card">
-                      <h4>Total Production</h4>
-                      <p>1,500 units</p>
-                    </div>
-                    <div className="metric-card">
-                      <h4>Shipped Last Month</h4>
-                      <p>700 units</p>
-                    </div>
-                    <div className="metric-card">
-                      <h4>Counterfeit Reports</h4>
-                      <p>{alerts.filter(a => a.type === 'counterfeit').length}</p>
-                    </div>
-                    <div className="metric-card">
-                      <h4>Trusted Partners</h4>
-                      <p>{distributors.filter(d => d.trustScore >= 80).length}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
-        </main>
+        <div className="nav-menu">
+          <a href="#" className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+            <FaTachometerAlt />
+            <span>Dashboard</span>
+          </a>
+          <a href="#" className={`nav-item ${activeTab === 'drug-creation' ? 'active' : ''}`} onClick={() => setActiveTab('drug-creation')}>
+            <FaPlusCircle />
+            <span>Create Drugs</span>
+          </a>
+          <a href="#" className={`nav-item ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>
+            <FaCapsules />
+            <span>Your Drugs</span>
+          </a>
+          <a href="#" className={`nav-item ${activeTab === 'shipment' ? 'active' : ''}`} onClick={() => setActiveTab('shipment')}>
+            <FaTruck />
+            <span>Shipments</span>
+          </a>
+          <a href="#" className={`nav-item ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>
+            <FaChartLine />
+            <span>Analytics</span>
+          </a>
+          <a href="#" className={`nav-item ${activeTab === 'recalls' ? 'active' : ''}`} onClick={() => setActiveTab('recalls')}>
+            <FaBell />
+            <span>Recalls</span>
+          </a>
+          <a href="#" className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
+            <FaCog />
+            <span>Settings</span>
+          </a>
+        </div>
       </div>
 
-      {/* Barcode Scanner Modal */}
-      {isScanning && (
-        <div className="scanner-modal">
-          <div className="scanner-container">
-            <div className="scanner-header">
-              <h3>Scan Barcode</h3>
-              <button onClick={stopScanner} className="close-btn">
-                <i className="fas fa-times"></i>
+      {/* Main Content */}
+      <div className="main-content">
+        <div className="header">
+          <h1 className="page-title">Manufacturer Dashboard</h1>
+          <div className="user-profile">
+            <div className="user-avatar">
+              {user?.name?.split(' ').map(n => n[0]).join('')}
+            </div>
+            <span>{user?.name || 'User'}</span>
+            {/* Wallet connection status */}
+            {walletAddress ? (
+              <div className="wallet-connected">
+                <span className="wallet-address">
+                  {`${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}`}
+                </span>
+                <button 
+                  onClick={disconnectWallet}
+                  className="btn btn-small btn-outline"
+                  style={{ marginLeft: '10px' }}
+                >
+                  Disconnect
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={connectWallet}
+                className="btn btn-small btn-primary"
+                disabled={isConnectingWallet}
+                style={{ marginLeft: '10px' }}
+              >
+                {isConnectingWallet ? 'Connecting...' : (
+                  <>
+                    <FaWallet /> Connect Wallet
+                  </>
+                )}
               </button>
-            </div>
-            <div className="scanner-viewport">
-              <BarcodeScannerComponent
-                width={500}
-                height={300}
-                onUpdate={handleScan}
-              />
-            </div>
-            <div className="scanner-footer">
-              <p>Point your camera at a barcode to scan</p>
-              {scannedBarcode && (
-                <div className="scan-result">
-                  <p>Scanned: <strong>{scannedBarcode}</strong></p>
-                  <button 
-                    className="submit-btn"
-                    onClick={handleUseScannedBarcode}
-                  >
-                    Use This Barcode
-                  </button>
+            )}
+             <button 
+    onClick={() => logout()}
+    className="btn btn-small btn-danger"
+    style={{ marginLeft: '10px' }}
+  >
+    Logout
+  </button>
+            <FaChevronDown />
+          </div>
+        </div>
+
+        {/* Stats Cards - Only shown on dashboard tab */}
+       {activeTab === 'dashboard' && (
+  <div className="grid">
+    <div className="stats-card">
+      <div className="icon primary">
+        <FaCapsules />
+      </div>
+      <h3>{isLoadingStats ? '...' : dashboardStats.totalDrugs.toLocaleString()}</h3>
+      <p>Total Drugs</p>
+    </div>
+    <div className="stats-card">
+      <div className="icon success">
+        <FaTruck />
+      </div>
+      <h3>{isLoadingStats ? '...' : dashboardStats.activeShipments}</h3>
+      <p>Active Shipments</p>
+    </div>
+    <div className="stats-card">
+      <div className="icon warning">
+        <FaBell />
+      </div>
+      <h3>{isLoadingStats ? '...' : dashboardStats.nearExpiry}</h3>
+      <p>Near Expiry</p>
+    </div>
+    <div className="stats-card">
+      <div className="icon danger">
+        <FaBell />
+      </div>
+      <h3>0</h3> {/* Placeholder for recalled batches */}
+      <p>Recalled Batches</p>
+    </div>
+  </div>
+)}
+        {/* Tabs for Main Sections */}
+        <div className="tabs">
+          <div className={`tab ${activeTab === 'drug-creation' ? 'active' : ''}`} onClick={() => setActiveTab('drug-creation')}>Drug Creation</div>
+          <div className={`tab ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>Your Drugs</div>
+          <div className={`tab ${activeTab === 'shipment' ? 'active' : ''}`} onClick={() => setActiveTab('shipment')}>Create Shipment</div>
+          <div className={`tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>Shipment History</div>
+          <div className={`tab ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>Analytics</div>
+        </div>
+
+        {/* Drug Creation Tab */}
+        {activeTab === 'drug-creation' && (
+          <>
+            <div className="card">
+              <div className="card-header">
+                <h2 className="card-title">Create New Drugs</h2>
+              </div>
+              <div className="tabs">
+                <div className={`tab ${activeSubTab === 'bulk' ? 'active' : ''}`} onClick={() => setActiveSubTab('bulk')}>Bulk Upload</div>
+                <div className={`tab ${activeSubTab === 'manual' ? 'active' : ''}`} onClick={() => setActiveSubTab('manual')}>Manual Entry</div>
+              </div>
+              
+              {activeSubTab === 'bulk' && (
+  <div className="tab-subcontent active" id="bulk">
+    <div 
+      className={`file-upload ${fileUploadState.isDragging ? 'dragging' : ''}`} 
+      id="csv-upload"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      onClick={() => document.getElementById('csv-file-input').click()}
+    >
+      <FaFileCsv />
+      <p>Drag & drop your CSV file here</p>
+      <p>or</p>
+      <input
+  type="file"
+  id="csv-file-input"
+  accept=".csv"
+  style={{ display: 'none' }}
+  onChange={async (e) => {
+    if (e.target.files.length > 0) {
+      const file = e.target.files[0];
+      setFileUploadState({
+        isDragging: false,
+        file
+      });
+      
+      try {
+        const parsedData = await parseCSV(file);
+        setPreviewData(parsedData);
+      } catch (error) {
+        console.error('Error parsing CSV:', error);
+        alert('Error parsing CSV file. Please check the format.');
+      }
+    }
+  }}
+/>
+      <button 
+        className="btn btn-primary"
+        onClick={(e) => {
+          e.stopPropagation();
+          document.getElementById('csv-file-input').click();
+        }}
+      >
+        <FaUpload /> Browse Files
+      </button>
+      <small>CSV template: Drug Name, Batch Number, Quantity, Manufacturing Date, Expiry Date</small>
+      
+      {fileUploadState.file && (
+  <div className="file-info">
+    <p>Selected file: {fileUploadState.file.name}</p>
+    <button 
+      className="btn btn-primary"
+      onClick={() => handleFileUpload(fileUploadState.file)}
+    >
+      Upload File
+    </button>
+  </div>
+)}
+    </div>
+  </div>
+)}
+              {activeSubTab === 'manual' && (
+                <div className="tab-subcontent active" id="manual">
+                  <form onSubmit={handleManualSubmit}>
+                    <div className="form-group">
+                      <label className="form-label">Drug Name*</label>
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        placeholder="Enter drug name"
+                        name="name"
+                        value={drugForm.name}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                      <div className="form-group">
+                        <label className="form-label">Batch Number*</label>
+                        <input 
+                          type="text" 
+                          className="form-control" 
+                          placeholder="Enter batch number"
+                          name="batch"
+                          value={drugForm.batch}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Quantity*</label>
+                        <input 
+                          type="number" 
+                          className="form-control" 
+                          placeholder="Enter quantity"
+                          name="quantity"
+                          value={drugForm.quantity}
+                          onChange={handleInputChange}
+                          min="1"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                      <div className="form-group">
+                        <label className="form-label">Manufacturing Date*</label>
+                        <input 
+                          type="date" 
+                          className="form-control"
+                          name="mfgDate"
+                          value={drugForm.mfgDate}
+                          onChange={handleInputChange}
+                          max={new Date().toISOString().split('T')[0]}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Expiry Date*</label>
+                        <input 
+                          type="date" 
+                          className="form-control"
+                          name="expiryDate"
+                          value={drugForm.expiryDate}
+                          onChange={handleInputChange}
+                          min={drugForm.mfgDate || new Date().toISOString().split('T')[0]}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Barcode (leave blank for auto-generation)</label>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input 
+                          type="text" 
+                          className="form-control" 
+                          placeholder="Enter custom barcode"
+                          name="barcode"
+                          value={drugForm.barcode}
+                          onChange={handleInputChange}
+                          pattern="[A-Za-z0-9-]+"
+                          title="Only letters, numbers and hyphens allowed"
+                        />
+                        <button 
+                          type="button" 
+                          className="btn btn-outline"
+                          onClick={() => setShowScanner(!showScanner)}
+                        >
+                          {showScanner ? 'Cancel Scan' : 'Scan Barcode'}
+                        </button>
+                      </div>
+                      {showScanner && <BarcodeScanner onScan={handleScan} />}
+                    </div>
+                    <div className="form-actions">
+                      <button 
+                        type="button" 
+                        className="btn btn-outline"
+                        onClick={() => setDrugForm({
+                          name: '',
+                          batch: '',
+                          quantity: '',
+                          mfgDate: '',
+                          expiryDate: '',
+                          barcode: ''
+                        })}
+                      >
+                        Clear
+                      </button>
+                      <button 
+                        type="submit" 
+                        className="btn btn-primary"
+                        disabled={!drugForm.name || !drugForm.batch || !drugForm.quantity || !drugForm.mfgDate || !drugForm.expiryDate}
+                      >
+                        <FaPlusCircle /> Create Drug
+                      </button>
+                    </div>
+                  </form>
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Scan Result Modal */}
-     {/* // Update the Scan Result Modal JSX in your return statement: */}
-{scanResult && !isScanning && (
-    <div className="scan-result-modal">
-        <div className="modal-content">
-            <div className="modal-header">
-                <h3>
-                    {scanResult.type === 'success' ? (
-                        <><i className="fas fa-check-circle success-icon"></i> Valid Product</>
-                    ) : (
-                        <><i className="fas fa-exclamation-circle error-icon"></i> Product Not Found</>
-                    )}
-                </h3>
-                <button onClick={() => setScanResult(null)} className="close-btn">
-                    <i className="fas fa-times"></i>
-                </button>
-            </div>
-            <div className="modal-body">
-                <p>{scanResult.message}</p>
-                
-                {scanResult.type === 'success' && scanResult.drug && (
-                    <div className="product-details-container">
-                        <div className="product-barcode-section">
-                            <BarcodeDisplay value={scanResult.drug.barcode} />
-                            {scanResult.source === 'blockchain' && (
-                                <div className="blockchain-badge">
-                                    <i className="fas fa-link"></i> Blockchain Verified
-                                </div>
-                            )}
-                            {scanResult.source === 'database' && (
-                                <div className="database-badge">
-                                    <i className="fas fa-database"></i> Database Record
-                                </div>
-                            )}
-                        </div>
-                        
-                        <div className="product-info-section">
-                            <h4>Product Information</h4>
-                            <div className="info-grid">
-                                <div className="info-item">
-                                    <span className="info-label">Name:</span>
-                                    <span className="info-value">{scanResult.drug.name}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">Batch:</span>
-                                    <span className="info-value">{scanResult.drug.batchNumber}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">Manufacturer:</span>
-                                    <span className="info-value">{scanResult.drug.manufacturer}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">Current Holder:</span>
-                                    <span className="info-value">{scanResult.drug.currentHolder || 'Manufacturer'}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">Composition:</span>
-                                    <span className="info-value">{scanResult.drug.composition}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">Dosage:</span>
-                                    <span className="info-value">{scanResult.drug.dosage}</span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">Manufacturing Date:</span>
-                                    <span className="info-value">
-                                        {new Date(scanResult.drug.manufacturingDate).toLocaleDateString()}
-                                    </span>
-                                </div>
-                                <div className="info-item">
-                                    <span className="info-label">Expiry Date:</span>
-                                    <span className="info-value">
-                                        {new Date(scanResult.drug.expiryDate).toLocaleDateString()}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-            <div className="modal-footer">
-                <button 
-                    className="submit-btn"
-                    onClick={() => setScanResult(null)}
-                >
-                    Close
-                </button>
-                {scanResult.type === 'success' && (
-                    <button 
-                        className="track-btn"
-                        onClick={() => trackSupplyChain(scanResult.drug._id)}
-                    >
-                        <i className="fas fa-truck"></i> Track Supply Chain
-                    </button>
-                )}
-            </div>
-        </div>
-    </div>
-)}
-    </div>
-  );
-}
-
-const StatCard = ({ icon, value, label, trend, trendValue }) => (
-  <div className="stat-card">
-    <div className="stat-icon">
-      <i className={`fas fa-${icon}`}></i>
-    </div>
-    <div className="stat-content">
-      <p className="stat-value">{value}</p>
-      <p className="stat-label">{label}</p>
-      {trend && (
-        <p className={`stat-trend ${trend}`}>
-          <i className={`fas fa-arrow-${trend}`}></i> {trendValue}
-        </p>
+            <div className="table-responsive">
+  <table>
+    <thead>
+      <tr>
+        <th>Drug Name</th>
+        <th>Batch No.</th>
+        <th>Quantity</th>
+        <th>Mfg. Date</th>
+        <th>Exp. Date</th>
+        <th>Barcode</th>
+      </tr>
+    </thead>
+    <tbody>
+      {previewData.map((drug, index) => (
+        <tr key={index}>
+          <td>{drug.name || 'N/A'}</td>
+          <td>{drug.batch || 'N/A'}</td>
+          <td>{drug.quantity || 'N/A'}</td>
+          <td>{drug.mfgDate || 'N/A'}</td>
+          <td>{drug.expiryDate || 'N/A'}</td>
+          <td>{drug.barcode || 'Auto-generate'}</td>
+        </tr>
+      ))}
+      {previewData.length === 0 && (
+        <tr>
+          <td colSpan="6" style={{ textAlign: 'center', color: 'var(--gray)' }}>
+            No drugs to preview. Add drugs manually or upload a CSV file.
+          </td>
+        </tr>
       )}
+    </tbody>
+  </table>
+</div>
+          </>
+        )}
+
+        {/* Inventory Tab */}
+        {activeTab === 'inventory' && (
+  <div className="card">
+    <div className="card-header">
+      <h2 className="card-title">Your Drug Inventory</h2>
+      <div className="card-actions">
+        <button className="btn btn-outline">
+          <FaFilter /> Filters
+        </button>
+        <button className="btn btn-outline">
+          <FaDownload /> Export
+        </button>
+      </div>
+    </div>
+    <div className="search-bar">
+      <input type="text" placeholder="Search drugs..." />
+      <button><FaSearch /></button>
+    </div>
+    <div className="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Drug Name</th>
+            <th>Barcode</th>
+            <th>Batch No.</th>
+            <th>Status</th>
+            <th>Expiry Date</th>
+            <th>Current Holder</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {isLoadingInventory ? (
+            <tr>
+              <td colSpan="7" style={{ textAlign: 'center' }}>
+                Loading inventory...
+              </td>
+            </tr>
+          ) : inventoryDrugs.length > 0 ? (
+            inventoryDrugs.map(drug => (
+              <tr key={drug._id}>
+                <td>{drug.name}</td>
+                <td>{drug.barcode}</td>
+                <td>{drug.batch}</td>
+                <td><StatusBadge status={drug.status} /></td>
+                <td>{new Date(drug.expiryDate).toLocaleDateString()}</td>
+                <td>{drug.currentHolder || 'Your Facility'}</td>
+                <td>
+                  <button className="btn btn-outline" style={{ padding: '0.25rem 0.5rem' }}>
+                    <FaEye />
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="7" style={{ textAlign: 'center' }}>
+                No drugs found in your inventory
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+    <div className="pagination">
+      <button><FaChevronLeft /></button>
+      <button className="active">1</button>
+      <button>2</button>
+      <button>3</button>
+      <button><FaChevronRight /></button>
     </div>
   </div>
-);
+)}
+
+        {/* Create Shipment Tab */}
+        {activeTab === 'shipment' && (
+  <div className="card">
+    <div className="card-header">
+      <h2 className="card-title">Create New Shipment</h2>
+    </div>
+    <form onSubmit={handleShipmentSubmit}>
+      <div className="form-group">
+        <label className="form-label">Select Drugs to Ship</label>
+        <div className="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th width="50px"></th>
+                <th>Drug Name</th>
+                <th>Batch No.</th>
+                <th>Barcode</th>
+                <th>Expiry Date</th>
+                <th>Current Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoadingShipmentData ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center' }}>
+                    Loading drugs...
+                  </td>
+                </tr>
+              ) : shipmentDrugs.length > 0 ? (
+                shipmentDrugs.map(drug => (
+                  <tr key={drug._id}>
+                    <td>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedDrugs.includes(drug._id)}
+                        onChange={(e) => handleDrugSelection(drug._id, e.target.checked)}
+                      />
+                    </td>
+                    <td>{drug.name}</td>
+                    <td>{drug.batch}</td>
+                    <td>{drug.barcode}</td>
+                    <td>{new Date(drug.expiryDate).toLocaleDateString()}</td>
+                    <td>{drug.quantity} units</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center' }}>
+                    No drugs available for shipment
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+        <div className="form-group">
+          <label className="form-label">Select Distributor</label>
+          <select 
+            className="form-control"
+            name="distributor"
+            value={shipmentForm.distributor}
+            onChange={handleShipmentInputChange}
+            required
+          >
+            <option value="">-- Select Distributor --</option>
+            {distributors.map(distributor => (
+              <option key={distributor._id} value={distributor._id}>
+                {distributor.organization || distributor.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Estimated Delivery Date</label>
+          <input 
+            type="date" 
+            className="form-control" 
+            name="deliveryDate"
+            value={shipmentForm.deliveryDate}
+            onChange={handleShipmentInputChange}
+            min={new Date().toISOString().split('T')[0]}
+          />
+        </div>
+      </div>
+      <div className="form-group">
+        <label className="form-label">Shipping Notes</label>
+        <textarea 
+          className="form-control" 
+          rows="3" 
+          placeholder="Any special instructions..."
+          name="notes"
+          value={shipmentForm.notes}
+          onChange={handleShipmentInputChange}
+        ></textarea>
+      </div>
+      <div className="card" style={{ backgroundColor: '#f8f9ff', marginTop: '1.5rem' }}>
+        <div className="card-header">
+          <h3 className="card-title">Shipment Summary</h3>
+        </div>
+        <div style={{ padding: '1rem' }}>
+          <p><strong>Selected Drugs:</strong> {selectedDrugs.length}</p>
+          <p><strong>Total Units:</strong> {
+            shipmentDrugs
+              .filter(drug => selectedDrugs.includes(drug._id))
+              .reduce((sum, drug) => sum + drug.quantity, 0)
+          }</p>
+          <p><strong>Distributor:</strong> {
+            shipmentForm.distributor 
+              ? distributors.find(d => d._id === shipmentForm.distributor)?.organization 
+              : 'Not selected'
+          }</p>
+        </div>
+      </div>
+      <button type="submit" className="btn btn-primary" style={{ marginTop: '1.5rem' }}>
+        <FaPaperPlane /> Create Shipment
+      </button>
+    </form>
+  </div>
+)}
+
+        {/* Shipment History Tab */}
+        {activeTab === 'history' && (
+          <div className="card">
+            <div className="card-header">
+              <h2 className="card-title">Shipment History</h2>
+              <div className="card-actions">
+                <button className="btn btn-outline">
+                  <FaFilter /> Filters
+                </button>
+                <button className="btn btn-outline">
+                  <FaDownload /> Export
+                </button>
+              </div>
+            </div>
+            <div className="search-bar">
+              <input type="text" placeholder="Search shipments..." />
+              <button><FaSearch /></button>
+            </div>
+            <div className="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Shipment ID</th>
+                    <th>Drugs Included</th>
+                    <th>Distributor</th>
+                    <th>Status</th>
+                    <th>Date Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shipmentsData.map(shipment => (
+                    <tr key={shipment.id}>
+                      <td>{shipment.id}</td>
+                      <td>{shipment.drugs}</td>
+                      <td>{shipment.distributor}</td>
+                      <td><StatusBadge status={shipment.status} /></td>
+                      <td>{shipment.date}</td>
+                      <td>
+                        <button className="btn btn-outline" style={{ padding: '0.25rem 0.5rem' }}>
+                          <FaEye />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="pagination">
+              <button><FaChevronLeft /></button>
+              <button className="active">1</button>
+              <button>2</button>
+              <button>3</button>
+              <button><FaChevronRight /></button>
+            </div>
+          </div>
+        )}
+
+        {/* Analytics Tab */}
+  {/* Analytics Tab */}
+{activeTab === 'analytics' && (
+  <>
+    <div className="grid" style={{ gridTemplateColumns: '2fr 1fr' }}>
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title">Drug Volume by Batch</h2>
+          <div className="card-actions">
+            <select className="form-control" style={{ width: 'auto', display: 'inline-block' }}>
+              <option>Last 30 Days</option>
+              <option>Last 90 Days</option>
+              <option>This Year</option>
+            </select>
+          </div>
+        </div>
+        <div className="chart-container">
+          {dashboardStats.drugVolume && dashboardStats.drugVolume.length > 0 ? (
+            <Bar
+              data={dashboardStats.drugVolume}
+              xField="drugName"
+              yField="totalQuantity"
+              seriesField="drugName"
+              height={400}
+              legend={{
+                position: 'top-right',
+              }}
+              xAxis={{
+                label: {
+                  autoRotate: false,
+                },
+              }}
+              yAxis={{
+                label: {
+                  formatter: (v) => `${v} units`,
+                },
+              }}
+            />
+          ) : (
+            <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
+              No drug volume data available
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title">Drug Types Distribution</h2>
+        </div>
+        <div className="chart-container">
+          {dashboardStats.drugVolume && dashboardStats.drugVolume.length > 0 ? (
+            <Pie
+              data={dashboardStats.drugVolume}
+              angleField="totalQuantity"
+              colorField="drugName"
+              radius={0.8}
+              height={400}
+              label={{
+                type: 'outer',
+                content: '{name}: {percentage}',
+              }}
+              legend={{
+                position: 'bottom',
+              }}
+              interactions={[
+                {
+                  type: 'element-active',
+                },
+              ]}
+            />
+          ) : (
+            <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
+              No drug type data available
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+    <div className="card">
+      <div className="card-header">
+        <h2 className="card-title">Shipments Over Time</h2>
+        <div className="card-actions">
+          <select className="form-control" style={{ width: 'auto', display: 'inline-block' }}>
+            <option>Last 30 Days</option>
+            <option>Last 90 Days</option>
+            <option>This Year</option>
+          </select>
+        </div>
+      </div>
+      <div className="chart-container">
+        {dashboardStats.shipmentsOverTime && dashboardStats.shipmentsOverTime.length > 0 ? (
+          <Line
+            data={dashboardStats.shipmentsOverTime}
+            xField="_id"
+            yField="count"
+            height={400}
+            point={{
+              size: 5,
+              shape: 'diamond',
+            }}
+            xAxis={{
+              label: {
+                autoRotate: false,
+              },
+            }}
+            yAxis={{
+              label: {
+                formatter: (v) => `${v} shipments`,
+              },
+            }}
+            tooltip={{
+              formatter: (datum) => {
+                return { name: 'Shipments', value: datum.count };
+              },
+            }}
+          />
+        ) : (
+          <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
+            No shipment data available
+          </p>
+        )}
+      </div>
+    </div>
+  </>
+)}
+
+      </div>
+    </div>
+  );
+};
+
+export default ManufacturerDashboard;

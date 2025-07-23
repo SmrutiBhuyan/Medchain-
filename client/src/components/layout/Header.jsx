@@ -70,7 +70,7 @@ export default function Header() {
   }
 
   return (
-    <header className="header">
+    <header className="header1">
       <div className="header-container">
         <div className="header-content">
           <Link to="/" className="logo-link">

@@ -1,0 +1,96 @@
+.public-drug-dashboard {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+  }
+  
+  .header {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    padding: 2rem 1rem;
+    color: white;
+  }
+  
+  .supply-chain {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    overflow-x: auto;
+  }
+  
+  .chain-step {
+    text-align: center;
+    position: relative;
+    flex: 1;
+    min-width: 150px;
+  }
+  
+  .chain-step .step-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+    font-size: 20px;
+  }
+  
+  .chain-step.verified .step-icon {
+    background-color: #2ecc71;
+    color: white;
+  }
+  
+  .chain-step.missing .step-icon {
+    background-color: #e74c3c;
+    color: white;
+  }
+  
+  .chain-step::after {
+    content: '';
+    position: absolute;
+    top: 25px;
+    left: 75%;
+    width: 50%;
+    height: 2px;
+    background-color: #dee2e6;
+    z-index: -1;
+  }
+  
+  .chain-step:last-child::after {
+    display: none;
+  }
+  
+  .chain-step.verified::after {
+    background-color: #2ecc71;
+  }
+  
+  .ivr-instructions {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 30px;
+  }
+  
+  @media (max-width: 768px) {
+    .supply-chain {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .chain-step {
+      margin-bottom: 30px;
+      width: 100%;
+      text-align: left;
+      padding-left: 30px;
+    }
+    
+    .chain-step::after {
+      display: none;
+    }
+    
+    .chain-step .step-icon {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+  }

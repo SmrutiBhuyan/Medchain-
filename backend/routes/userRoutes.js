@@ -1,6 +1,5 @@
 import express from 'express'
 import User from '../models/User.js';
-
 const router = express.Router();
 
 // Get all pending users
@@ -48,4 +47,21 @@ router.put('/:id/reject', async (req, res) => {
   }
 });
 
+
+
+export const getDistributors = async (req, res) => {
+  try {
+    const distributors = await User.find({ role: 'distributor', status: 'approved' })
+      .select('name organization email phone walletAddress');
+    
+    res.json({
+      success: true,
+      distributors
+    });
+  } catch (err) {
+    console.error('Error fetching distributors:', err);
+    res.status(500).json({ error: 'Failed to fetch distributors' });
+  }
+};
+router.get('/distributors', getDistributors);
 export default router;

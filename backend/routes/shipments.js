@@ -1,25 +1,17 @@
 import express from 'express';
+import { createShipment } from '../controllers/shipmentController.js';
+import { protect, authorize } from '../middleware/authMiddleware.js';
+
 const router = express.Router();
-import Shipment from '../models/Shipment.js';
 
-router.post('/', async(req, res)=>{
-    try{
-        const shipment = new Shipment(req.body);
-        await shipment.save();
-        res.status(201).json(shipment);
-    }
-    catch(error){
-        res.status(400).json({error:error.message});
-    }
-});
+// Protect all shipment routes
+router.use(protect);
 
-router.get("/", async (req, res) => {
-    try {
-        const shipments = await Shipment.find();
-        res.json(shipments);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+// Only manufacturers can create shipments
+router.post(
+  '/create',
+  authorize('manufacturer'),
+  createShipment
+);
 
 export default router;

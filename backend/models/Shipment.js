@@ -1,17 +1,52 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const shipmentSchema = new mongoose.Schema({
-    batchId: { type: mongoose.Schema.Types.ObjectId, required: true },
-    drugId: { type: mongoose.Schema.Types.ObjectId, required: true },
-    quantity: { type: Number, required: true },
-    distributor: { type: String, required: true },
-    distributorAddress: { type: String, required: true },
-    destination: { type: String, required: true },
-    status: { type: String, enum: ['in_transit', 'delivered'], default: 'in_transit' },
-    date: { type: Date, default: Date.now },
-    blockchainTx: { type: String }
-}, { timestamps: true });
+  drugs: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Drug',
+    required: true
+  }],
+  manufacturer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  distributor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  estimatedDelivery: {
+    type: Date
+  },
+  actualDelivery: {
+    type: Date
+  },
+  notes: {
+    type: String
+  },
+  status: {
+    type: String,
+    enum: ['processing', 'in-transit', 'delivered', 'cancelled'],
+    default: 'processing'
+  },
+  trackingNumber: {
+    type: String
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  }
+}, {
+  timestamps: true
+});
 
-const Shipment = mongoose.model("Shipment", shipmentSchema);
+// Add indexes for better query performance
+shipmentSchema.index({ manufacturer: 1, status: 1 });
+shipmentSchema.index({ distributor: 1, status: 1 });
+shipmentSchema.index({ drugs: 1 });
+
+const Shipment = mongoose.model('Shipment', shipmentSchema);
 
 export default Shipment;

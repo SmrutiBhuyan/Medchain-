@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import './App.css'
+// import './App.css'
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Landing from './pages/landing';
 import RoleSelectionPage from './pages/Role-selection'
@@ -10,6 +11,12 @@ import PendingApproval from './pages/PendingApproval';
 import AdminDashboard from './pages/AdminDashboard';
 import Layout from './Layout';
 import ManufacturerDashboard from './pages/ManufacturerDashboard'
+import DistributorDashboard from './pages/DistributorDashboard.jsx'
+import WholesalerDashboard from './pages/WholesalerDashboard.jsx';
+import RetailerDashboard from './pages/RetailerDashboard.jsx';
+import PharmacyDashboard from './pages/PharmacyDashboard.jsx';
+import PublicDrugDashboard from './pages/PublicDrugDashboard.jsx';
+
 function App() {
   return (
     <Router>
@@ -24,6 +31,11 @@ function App() {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           </Route>
           <Route path="/manufacturer/dashboard" element={<ManufacturerDashboard />} />
+          <Route path="/distributor/dashboard" element={<DistributorDashboard/>}/>
+          <Route path="/wholesaler/dashboard" element={<WholesalerDashboard/>}/>
+          <Route path="/retailer/dashboard" element={<RetailerDashboard/>}/>
+          <Route path="/pharmacy/dashboard" element={<PharmacyDashboard/>}/>
+          <Route path="/public/dashboard" element={<PublicDrugDashboard/>}/>
         </Routes>
      
       </AuthProvider>

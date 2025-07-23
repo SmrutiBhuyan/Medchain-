@@ -1,0 +1,117 @@
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
+import User from './models/User.js'; // Adjust path if needed
+
+dotenv.config();
+
+const seedDistributors = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    // Clear old distributor entries
+    await User.deleteMany({ role: 'distributor' });
+
+    const hashedPassword = await bcrypt.hash('dist@123', 10);
+
+    const distributors = [
+      {
+        name: 'Rajesh Pharma Distributors',
+        email: 'rajesh@pharmadist.com',
+        phone: '9876543210',
+        password: hashedPassword,
+        role: 'distributor',
+        walletAddress: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
+        organization: 'Rajesh Pharma Distributors Pvt. Ltd.',
+        location: 'Mumbai, Maharashtra',
+        status: 'approved',
+        documents: [
+          {
+            name: 'Drug License',
+            url: 'https://medchain-docs.com/drug-license-1.pdf'
+          }
+        ],
+      },
+      {
+        name: 'South India Med Supplies',
+        email: 'contact@southmed.com',
+        phone: '8765432109',
+        password: hashedPassword,
+        role: 'distributor',
+        walletAddress: '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B',
+        organization: 'South India Medical Distributors',
+        location: 'Chennai, Tamil Nadu',
+        status: 'approved',
+        documents: [
+          {
+            name: 'GST Certificate',
+            url: 'https://medchain-docs.com/gst-cert-2.pdf'
+          }
+        ],
+      },
+      {
+        name: 'Delhi Pharma Hub',
+        email: 'info@delhipharmahub.com',
+        phone: '7654321098',
+        password: hashedPassword,
+        role: 'distributor',
+        walletAddress: '0x4B0897b0513fdC7C541B6d9D7E929C4e5364D2dB',
+        organization: 'Delhi Pharma Distributors',
+        location: 'New Delhi',
+        status: 'approved',
+        documents: [
+          {
+            name: 'Wholesale License',
+            url: 'https://medchain-docs.com/wholesale-license-3.pdf'
+          }
+        ],
+      },
+      {
+        name: 'Gujarat Med Distributors',
+        email: 'sales@gujaratmed.com',
+        phone: '6543210987',
+        password: hashedPassword,
+        role: 'distributor',
+        walletAddress: '0x1Ff482D42D8727258A1686102Fa4ba925C46Bc42',
+        organization: 'Gujarat Medical Supplies',
+        location: 'Ahmedabad, Gujarat',
+        status: 'pending',
+        documents: [
+          {
+            name: 'FSSAI Certificate',
+            url: 'https://medchain-docs.com/fssai-cert-4.pdf'
+          }
+        ],
+      },
+      {
+        name: 'Bangalore Drug Distributors',
+        email: 'admin@bangaloredrugs.com',
+        phone: '5432109876',
+        password: hashedPassword,
+        role: 'distributor',
+        walletAddress: '0x5AEDA56215b167893e80B4fE645BA6d5Bab767DE',
+        organization: 'Bangalore Pharma Network',
+        location: 'Bengaluru, Karnataka',
+        status: 'approved',
+        documents: [
+          {
+            name: 'Import Export Code',
+            url: 'https://medchain-docs.com/iec-cert-5.pdf'
+          }
+        ],
+      }
+    ];
+
+    await User.insertMany(distributors);
+    console.log('✅ Distributors seeded successfully!');
+    process.exit();
+  } catch (err) {
+    console.error('❌ Distributor seeding failed:', err);
+    process.exit(1);
+  }
+};
+
+seedDistributors();
