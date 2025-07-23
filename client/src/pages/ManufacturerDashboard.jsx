@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaPills, FaTachometerAlt, FaPlusCircle, FaCapsules, FaTruck, FaChartLine, FaBell, FaCog, FaChevronDown, FaUpload, FaDownload, FaFilter, FaSearch, FaEye, FaPaperPlane, FaChevronLeft, FaChevronRight, FaFileCsv, FaWallet } from 'react-icons/fa';
 import { Bar } from '@ant-design/charts';
-import { Html5QrcodeScanner, Html5QrcodeSupportedFormats, Html5QrcodeScanType } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeSupportedFormats, Html5QrcodeScanType } from 'html5-qrcode';
 import { useAuth } from './AuthContext';
 import axios from 'axios';
 import './ManufacturerDashboard.css';
@@ -234,12 +234,14 @@ const handleTimeRangeChange = async (chartType, days) => {
   // Barcode Scanner Component
  const BarcodeScanner = ({ onScan, onClose, onError }) => {
   const scannerRef = useRef(null);
+  const fileInputRef = useRef(null); // Add this line
 
   useEffect(() => {
      const config = {
       fps: 10,
       qrbox: 250,
       formatsToSupport: [
+         Html5QrcodeSupportedFormats.CODE_39,
         Html5QrcodeSupportedFormats.UPC_A,
         Html5QrcodeSupportedFormats.UPC_E,
         Html5QrcodeSupportedFormats.EAN_8,
@@ -250,7 +252,10 @@ const handleTimeRangeChange = async (chartType, days) => {
         Html5QrcodeSupportedFormats.ITF
       ],
       rememberLastUsedCamera: true,
-      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+      supportedScanTypes: [
+        Html5QrcodeScanType.SCAN_TYPE_CAMERA,
+        Html5QrcodeScanType.SCAN_TYPE_FILE // Enable file scanning
+      ]
     };
      const scanner = new Html5QrcodeScanner('barcode-scanner', config, false);
 
@@ -292,9 +297,22 @@ const handleTimeRangeChange = async (chartType, days) => {
   }, [onScan, onClose, onError]);
 
     return (
-    <div className="scanner-container">
+     <div className="scanner-container">
       <div id="barcode-scanner" style={{ width: '100%' }}></div>
       <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '10px' }}>
+        <button 
+          className="btn btn-primary"
+          onClick={() => fileInputRef.current.click()}
+        >
+          <FaUpload /> Scan from Image
+        </button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleBarcodeFileUpload}
+        />
         <button 
           className="btn btn-danger" 
           onClick={() => {
@@ -385,6 +403,27 @@ const handleTimeRangeChange = async (chartType, days) => {
       console.error('Upload error:', error);
       alert(`Upload failed: ${error.response?.data?.error || error.message}`);
     }
+  };
+
+   const handleBarcodeFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const html5QrCode = new Html5Qrcode('barcode-scanner');
+    html5QrCode.scanFile(file, false)
+      .then(decodedText => {
+        if (/^[A-Za-z0-9-]+$/.test(decodedText)) {
+          onScan(decodedText);
+          if (onClose) onClose();
+        } else {
+          alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
+        }
+      })
+      .catch(err => {
+        console.error('File scan error:', err);
+        if (onError) onError(err.message);
+        alert('Failed to scan the file. Please try another image.');
+      });
   };
 
   const handleConfirmUpload = async () => {

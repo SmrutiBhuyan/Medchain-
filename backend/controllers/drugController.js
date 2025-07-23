@@ -1,27 +1,69 @@
 import Drug from '../models/Drug.js';
 import { generateBarcode } from '../utils/barcodeGenerator.js';
 
+// Helper function to validate barcode format
+const isValidBarcode = (barcode) => {
+  return /^[A-Za-z0-9-]+$/.test(barcode);
+};
+
+// Enhanced createDrug controller
 export const createDrug = async (req, res) => {
   try {
     const { name, batch, quantity, mfgDate, expiryDate, barcode, manufacturerId } = req.body;
 
+    // Validate required fields
     if (!name || !batch || !quantity || !mfgDate || !expiryDate || !manufacturerId) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const existingDrug = await Drug.findOne({ name, batch });
-    if (existingDrug) {
-      return res.status(400).json({ error: 'Drug with this name and batch already exists' });
+    // Validate quantity is a positive number
+    if (isNaN(quantity) || parseInt(quantity) <= 0) {
+      return res.status(400).json({ error: 'Quantity must be a positive number' });
     }
 
+    // Validate dates
+    const manufacturingDate = new Date(mfgDate);
+    const expirationDate = new Date(expiryDate);
+    
+    if (manufacturingDate >= expirationDate) {
+      return res.status(400).json({ error: 'Expiry date must be after manufacturing date' });
+    }
+
+    // Check if drug with same name and batch already exists
+    const existingDrug = await Drug.findOne({ name, batch });
+    if (existingDrug) {
+      return res.status(400).json({ 
+        error: 'Drug with this name and batch already exists',
+        existingDrug 
+      });
+    }
+
+    // Validate barcode if provided
+    if (barcode && !isValidBarcode(barcode)) {
+      return res.status(400).json({ error: 'Invalid barcode format. Only letters, numbers and hyphens are allowed.' });
+    }
+
+    // Check if barcode is already in use
+    if (barcode) {
+      const barcodeInUse = await Drug.findOne({ barcode });
+      if (barcodeInUse) {
+        return res.status(400).json({ 
+          error: 'Barcode already in use by another drug',
+          conflictingDrug: barcodeInUse 
+        });
+      }
+    }
+
+    // Generate barcode if not provided
     const finalBarcode = barcode || generateBarcode(name, batch);
 
+    // Create new drug
     const drug = new Drug({
       name,
       batch,
       quantity: parseInt(quantity),
-      mfgDate: new Date(mfgDate),
-      expiryDate: new Date(expiryDate),
+      mfgDate: manufacturingDate,
+      expiryDate: expirationDate,
       barcode: finalBarcode,
       manufacturer: manufacturerId,
       status: 'in-stock'
@@ -31,20 +73,55 @@ export const createDrug = async (req, res) => {
 
     res.json({
       success: true,
-      drug: drug
+      drug: drug,
+      message: 'Drug created successfully'
     });
+
   } catch (err) {
     console.error('Drug creation error:', err);
-    res.status(500).json({ error: 'Failed to create drug' });
+    res.status(500).json({ 
+      error: 'Failed to create drug',
+      details: err.message 
+    });
   }
 };
 
+// New controller for barcode lookup
+export const getDrugByBarcode = async (req, res) => {
+  try {
+    const { barcode } = req.params;
 
+    if (!barcode) {
+      return res.status(400).json({ error: 'Barcode is required' });
+    }
+
+    const drug = await Drug.findOne({ barcode })
+      .populate('manufacturer', 'name organization')
+      .populate('currentHolder', 'name organization');
+
+    if (!drug) {
+      return res.status(404).json({ error: 'Drug not found with this barcode' });
+    }
+
+    res.json({
+      success: true,
+      drug
+    });
+
+  } catch (err) {
+    console.error('Barcode lookup error:', err);
+    res.status(500).json({ 
+      error: 'Failed to lookup drug by barcode',
+      details: err.message 
+    });
+  }
+};
+
+// Existing getDrugsByManufacturer remains the same
 export const getDrugsByManufacturer = async (req, res) => {
   try {
     const { manufacturerId } = req.params;
     
-    // Verify manufacturerId is valid
     if (!manufacturerId) {
       return res.status(400).json({ error: 'Manufacturer ID is required' });
     }

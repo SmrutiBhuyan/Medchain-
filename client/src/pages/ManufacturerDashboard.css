@@ -914,3 +914,211 @@ tr:hover {
   cursor: pointer;
   color: #666;
 }
+/* Add these styles to your ManufacturerDashboard.css file */
+
+/* Scanner Modal Styles */
+.scanner-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.scanner-modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.scanner-modal-header {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #6e8efb, #a777e3);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scanner-modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: transform 0.2s;
+}
+
+.btn-close:hover {
+  transform: scale(1.1);
+}
+
+/* Scanner Container Styles */
+.scanner-container {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+#barcode-scanner {
+  width: 100%;
+  height: 300px;
+  margin: 0 auto;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e0e0e0;
+  position: relative;
+}
+
+#barcode-scanner::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid rgba(110, 142, 251, 0.5);
+  border-radius: 6px;
+  pointer-events: none;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    border-color: rgba(110, 142, 251, 0.5);
+  }
+  50% {
+    border-color: rgba(110, 142, 251, 0.9);
+  }
+  100% {
+    border-color: rgba(110, 142, 251, 0.5);
+  }
+}
+
+.scanner-container button {
+  margin: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.scanner-container button.btn-primary {
+  background: linear-gradient(135deg, #6e8efb, #a777e3);
+  color: white;
+  border: none;
+}
+
+.scanner-container button.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(110, 142, 251, 0.3);
+}
+
+.scanner-container button.btn-danger {
+  background: #ff4757;
+  color: white;
+  border: none;
+}
+
+.scanner-container button.btn-danger:hover {
+  background: #ff6b81;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(255, 71, 87, 0.3);
+}
+
+/* Scanning Status Indicators */
+.scanning-status {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.scanning-status.scanning {
+  background-color: #fff9e6;
+  color: #ffc107;
+}
+
+.scanning-status.success {
+  background-color: #e6f7ee;
+  color: #28a745;
+}
+
+.scanning-status.error {
+  background-color: #ffebee;
+  color: #dc3545;
+}
+
+/* Scanner Instructions */
+.scanner-instructions {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.scanner-instructions h4 {
+  margin-top: 0;
+  color: #6e8efb;
+}
+
+.scanner-instructions ol {
+  padding-left: 1.5rem;
+  margin-bottom: 0;
+}
+
+.scanner-instructions li {
+  margin-bottom: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .scanner-modal-content {
+    width: 95%;
+  }
+  
+  #barcode-scanner {
+    height: 250px;
+  }
+  
+  .scanner-container button {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
+}
