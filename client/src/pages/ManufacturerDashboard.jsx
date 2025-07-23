@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FaPills, FaTachometerAlt, FaPlusCircle, FaCapsules, FaTruck, FaChartLine, FaBell, FaCog, FaChevronDown, FaUpload, FaDownload, FaFilter, FaSearch, FaEye, FaPaperPlane, FaChevronLeft, FaChevronRight, FaFileCsv, FaWallet } from 'react-icons/fa';
-import { Bar, Pie, Line } from '@ant-design/charts';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Bar } from '@ant-design/charts';
+import { Html5QrcodeScanner, Html5QrcodeSupportedFormats, Html5QrcodeScanType } from 'html5-qrcode';
 import { useAuth } from './AuthContext';
 import axios from 'axios';
 import './ManufacturerDashboard.css';
@@ -15,6 +15,8 @@ const ManufacturerDashboard = () => {
   const [showScanner, setShowScanner] = useState(false);
   const [inventoryDrugs, setInventoryDrugs] = useState([]);
   const [isLoadingInventory, setIsLoadingInventory] = useState(false);
+  const [scanningStatus, setScanningStatus] = useState('idle'); // 'idle', 'scanning', 'success', 'error'
+  const [shipmentsData, setShipmentsData] = useState([]);
 
   const [showShipmentsModal, setShowShipmentsModal] = useState(false);
 const [manufacturerShipments, setManufacturerShipments] = useState([]);
@@ -44,6 +46,29 @@ const [dashboardStats, setDashboardStats] = useState({
   topDistributors: []
 });
 const [isLoadingStats, setIsLoadingStats] = useState(false);
+
+
+const handleStartScan = () => {
+  setScanningStatus('scanning');
+  setShowScanner(true);
+};
+
+const handleScanSuccess = (barcode) => {
+  setScanningStatus('success');
+  setDrugForm(prev => ({ ...prev, barcode }));
+  setTimeout(() => {
+    setScanningStatus('idle');
+    setShowScanner(false);
+  }, 1000);
+};
+
+const handleScanError = () => {
+  setScanningStatus('error');
+  setTimeout(() => {
+    setScanningStatus('idle');
+  }, 2000);
+};
+
 
 // Add this function to fetch manufacturer shipments
 const fetchManufacturerShipments = async () => {
@@ -108,18 +133,7 @@ const fetchDashboardStats = async () => {
     setIsLoadingStats(false);
   }
 };
-  const shipmentsData = [
-    { id: 'SH-2023-001', drugs: '3 drugs (250 units)', distributor: 'MediDistributors Inc.', status: 'delivered', date: '2023-05-15' },
-    { id: 'SH-2023-002', drugs: '2 drugs (180 units)', distributor: 'PharmaChain LLC', status: 'in-transit', date: '2023-06-02' },
-    { id: 'SH-2023-003', drugs: '5 drugs (420 units)', distributor: 'HealthPlus Distributors', status: 'processing', date: '2023-06-18' },
-    { id: 'SH-2023-004', drugs: '1 drug (75 units)', distributor: 'Global Pharma Logistics', status: 'cancelled', date: '2023-07-05' },
-  ];
-
-  const nearExpiryData = [
-    { name: 'Amoxicillin 250mg', batch: 'BATCH-2023-003', expiry: '2024-09-04', days: 408, stock: '500 units', status: 'monitor' },
-    { name: 'Loratadine 10mg', batch: 'BATCH-2023-006', expiry: '2024-10-15', days: 449, stock: '300 units', status: 'monitor' },
-    { name: 'Ciprofloxacin 500mg', batch: 'BATCH-2023-007', expiry: '2024-11-20', days: 485, stock: '200 units', status: 'monitor' },
-  ];
+ 
 
   // Form state
   const [drugForm, setDrugForm] = useState({
@@ -218,31 +232,84 @@ const handleTimeRangeChange = async (chartType, days) => {
   });
 
   // Barcode Scanner Component
-  const BarcodeScanner = ({ onScan }) => {
-    const scannerRef = useRef(null);
-  
-    useEffect(() => {
-      const scanner = new Html5QrcodeScanner('barcode-scanner', {
-        fps: 10,
-        qrbox: 250
-      }, false);
-  
-      scanner.render((decodedText) => {
-        onScan(decodedText);
-        scanner.clear();
-      });
-  
-      scannerRef.current = scanner;
-  
-      return () => {
-        if (scannerRef.current) {
-          scannerRef.current.clear();
-        }
-      };
-    }, [onScan]);
-  
-    return <div id="barcode-scanner" style={{ width: '100%' }}></div>;
-  };
+ const BarcodeScanner = ({ onScan, onClose, onError }) => {
+  const scannerRef = useRef(null);
+
+  useEffect(() => {
+     const config = {
+      fps: 10,
+      qrbox: 250,
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_93,
+        Html5QrcodeSupportedFormats.ITF
+      ],
+      rememberLastUsedCamera: true,
+      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+    };
+     const scanner = new Html5QrcodeScanner('barcode-scanner', config, false);
+
+    const successCallback = (decodedText) => {
+     // Validate the barcode format
+      if (/^[A-Za-z0-9-]+$/.test(decodedText)) {
+        scanner.clear().then(() => {
+          onScan(decodedText);
+          if (onClose) onClose();
+        }).catch(err => {
+          console.error('Failed to clear scanner', err);
+          if (onError) onError('Scanner cleanup failed');
+        });
+      } else {
+        if (onError) onError('Invalid format');
+        alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
+      }
+    };
+
+    const errorCallback = (error) => {
+     
+      if (!error.message.includes('No MultiFormat Readers')) {
+        console.warn('QR code scan error', error);
+        if (onError) onError(error.message);
+      }
+    };
+
+    scanner.render(successCallback, errorCallback);
+    scannerRef.current = scanner;
+
+    return () => {
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(error => {
+          console.error('Failed to clear scanner', error);
+          if (onError) onError('Scanner cleanup failed');
+        });
+      }
+    };
+  }, [onScan, onClose, onError]);
+
+    return (
+    <div className="scanner-container">
+      <div id="barcode-scanner" style={{ width: '100%' }}></div>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '10px' }}>
+        <button 
+          className="btn btn-danger" 
+          onClick={() => {
+            if (scannerRef.current) {
+              scannerRef.current.clear().catch(console.error);
+            }
+            if (onClose) onClose();
+          }}
+        >
+          Close Scanner
+        </button>
+      </div>
+    </div>
+  );
+};
 
   const handleScan = (barcode) => {
     setDrugForm(prev => ({ ...prev, barcode }));
@@ -347,32 +414,43 @@ const handleTimeRangeChange = async (chartType, days) => {
     }
   };
 
-  const handleManualSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await axios.post('http://localhost:5000/api/drugs/create', {
-        ...drugForm,
-        manufacturerId: user._id
-      });
+ const handleManualSubmit = async (e) => {
+  e.preventDefault();
   
-      if (response.data.success) {
-        alert(`Drug ${response.data.drug.name} created successfully!`);
-        // Add to preview data
-        setPreviewData(prev => [...prev, drugForm]);
-        setDrugForm({
-          name: '',
-          batch: '',
-          quantity: '',
-          mfgDate: '',
-          expiryDate: '',
-          barcode: ''
-        });
-      }
-    } catch (error) {
-      console.error('Creation error:', error);
+  // Validate barcode format
+  if (drugForm.barcode && !/^[A-Za-z0-9-]+$/.test(drugForm.barcode)) {
+    alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
+    return;
+  }
+
+  try {
+    const response = await axios.post('http://localhost:5000/api/drugs/create', {
+      ...drugForm,
+      manufacturerId: user._id
+    });
+
+    if (response.data.success) {
+      alert(`Drug ${response.data.drug.name} created successfully with barcode: ${response.data.drug.barcode}`);
+      // Add to preview data
+      setPreviewData(prev => [...prev, drugForm]);
+      setDrugForm({
+        name: '',
+        batch: '',
+        quantity: '',
+        mfgDate: '',
+        expiryDate: '',
+        barcode: ''
+      });
+    }
+  } catch (error) {
+    console.error('Creation error:', error);
+    if (error.response?.data?.error?.includes('barcode')) {
+      alert('Barcode must be unique. Please enter a different barcode or leave blank for auto-generation.');
+    } else {
       alert(error.response?.data?.error || 'Failed to create drug');
     }
-  };
+  }
+};
   // Status badge component
   const StatusBadge = ({ status }) => {
     const statusMap = {
@@ -727,122 +805,167 @@ useEffect(() => {
   </div>
 )}
               {activeSubTab === 'manual' && (
-                <div className="tab-subcontent active" id="manual">
-                  <form onSubmit={handleManualSubmit}>
-                    <div className="form-group">
-                      <label className="form-label">Drug Name*</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
-                        placeholder="Enter drug name"
-                        name="name"
-                        value={drugForm.name}
-                        onChange={handleInputChange}
-                        required
-                      />
-                    </div>
-                    <div className="grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
-                      <div className="form-group">
-                        <label className="form-label">Batch Number*</label>
-                        <input 
-                          type="text" 
-                          className="form-control" 
-                          placeholder="Enter batch number"
-                          name="batch"
-                          value={drugForm.batch}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">Quantity*</label>
-                        <input 
-                          type="number" 
-                          className="form-control" 
-                          placeholder="Enter quantity"
-                          name="quantity"
-                          value={drugForm.quantity}
-                          onChange={handleInputChange}
-                          min="1"
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div className="grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
-                      <div className="form-group">
-                        <label className="form-label">Manufacturing Date*</label>
-                        <input 
-                          type="date" 
-                          className="form-control"
-                          name="mfgDate"
-                          value={drugForm.mfgDate}
-                          onChange={handleInputChange}
-                          max={new Date().toISOString().split('T')[0]}
-                          required
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">Expiry Date*</label>
-                        <input 
-                          type="date" 
-                          className="form-control"
-                          name="expiryDate"
-                          value={drugForm.expiryDate}
-                          onChange={handleInputChange}
-                          min={drugForm.mfgDate || new Date().toISOString().split('T')[0]}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Barcode (leave blank for auto-generation)</label>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <input 
-                          type="text" 
-                          className="form-control" 
-                          placeholder="Enter custom barcode"
-                          name="barcode"
-                          value={drugForm.barcode}
-                          onChange={handleInputChange}
-                          pattern="[A-Za-z0-9-]+"
-                          title="Only letters, numbers and hyphens allowed"
-                        />
-                        <button 
-                          type="button" 
-                          className="btn btn-outline"
-                          onClick={() => setShowScanner(!showScanner)}
-                        >
-                          {showScanner ? 'Cancel Scan' : 'Scan Barcode'}
-                        </button>
-                      </div>
-                      {showScanner && <BarcodeScanner onScan={handleScan} />}
-                    </div>
-                    <div className="form-actions">
-                      <button 
-                        type="button" 
-                        className="btn btn-outline"
-                        onClick={() => setDrugForm({
-                          name: '',
-                          batch: '',
-                          quantity: '',
-                          mfgDate: '',
-                          expiryDate: '',
-                          barcode: ''
-                        })}
-                      >
-                        Clear
-                      </button>
-                      <button 
-                        type="submit" 
-                        className="btn btn-primary"
-                        disabled={!drugForm.name || !drugForm.batch || !drugForm.quantity || !drugForm.mfgDate || !drugForm.expiryDate}
-                      >
-                        <FaPlusCircle /> Create Drug
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
+  <div className="tab-subcontent active" id="manual">
+    <form onSubmit={handleManualSubmit}>
+      <div className="form-group">
+        <label className="form-label">Drug Name*</label>
+        <input 
+          type="text" 
+          className="form-control" 
+          placeholder="Enter drug name"
+          name="name"
+          value={drugForm.name}
+          onChange={handleInputChange}
+          required
+        />
+      </div>
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+        <div className="form-group">
+          <label className="form-label">Batch Number*</label>
+          <input 
+            type="text" 
+            className="form-control" 
+            placeholder="Enter batch number"
+            name="batch"
+            value={drugForm.batch}
+            onChange={handleInputChange}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Quantity*</label>
+          <input 
+            type="number" 
+            className="form-control" 
+            placeholder="Enter quantity"
+            name="quantity"
+            value={drugForm.quantity}
+            onChange={handleInputChange}
+            min="1"
+            required
+          />
+        </div>
+      </div>
+      <div className="grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+        <div className="form-group">
+          <label className="form-label">Manufacturing Date*</label>
+          <input 
+            type="date" 
+            className="form-control"
+            name="mfgDate"
+            value={drugForm.mfgDate}
+            onChange={handleInputChange}
+            max={new Date().toISOString().split('T')[0]}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Expiry Date*</label>
+          <input 
+            type="date" 
+            className="form-control"
+            name="expiryDate"
+            value={drugForm.expiryDate}
+            onChange={handleInputChange}
+            min={drugForm.mfgDate || new Date().toISOString().split('T')[0]}
+            required
+          />
+        </div>
+      </div>
+      <div className="form-group">
+        <label className="form-label">Barcode (leave blank for auto-generation)</label>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <input 
+            type="text" 
+            className="form-control" 
+            placeholder="Enter custom barcode"
+            name="barcode"
+            value={drugForm.barcode}
+            onChange={handleInputChange}
+            pattern="[A-Za-z0-9-]+"
+            title="Only letters, numbers and hyphens allowed"
+          />
+         <button 
+  type="button" 
+  className={`btn ${scanningStatus === 'scanning' ? 'btn-warning' : 'btn-outline'}`}
+  onClick={handleStartScan}
+  disabled={scanningStatus !== 'idle'}
+  style={{ whiteSpace: 'nowrap' }}
+>
+  {scanningStatus === 'scanning' ? (
+    <span>Scanning...</span>
+  ) : scanningStatus === 'success' ? (
+    <span>✓ Scanned!</span>
+  ) : scanningStatus === 'error' ? (
+    <span>Scan Failed</span>
+  ) : (
+    <span>Scan Barcode</span>
+  )}
+</button>
+        </div>
+      {showScanner && (
+  <div className="scanner-modal">
+    <div className="scanner-modal-content">
+      <div className="scanner-modal-header">
+        <h3>Scan Barcode</h3>
+        <button 
+          className="btn btn-close" 
+          onClick={() => {
+            setShowScanner(false);
+            setScanningStatus('idle');
+          }}
+        >
+          &times;
+        </button>
+      </div>
+      <BarcodeScanner 
+        onScan={(barcode) => {
+          setDrugForm(prev => ({ ...prev, barcode }));
+          setShowScanner(false);
+          setScanningStatus('success');
+        }}
+        onClose={() => {
+          setShowScanner(false);
+          setScanningStatus('idle');
+        }}
+        onError={(error) => {
+          console.error('Scanner error:', error);
+          setScanningStatus('error');
+        }}
+      />
+    </div>
+  </div>
+)}
+        <small className="form-text">
+          Barcode must be unique. If left blank, a barcode will be automatically generated.
+        </small>
+      </div>
+      <div className="form-actions">
+        <button 
+          type="button" 
+          className="btn btn-outline"
+          onClick={() => setDrugForm({
+            name: '',
+            batch: '',
+            quantity: '',
+            mfgDate: '',
+            expiryDate: '',
+            barcode: ''
+          })}
+        >
+          Clear
+        </button>
+        <button 
+          type="submit" 
+          className="btn btn-primary"
+          disabled={!drugForm.name || !drugForm.batch || !drugForm.quantity || !drugForm.mfgDate || !drugForm.expiryDate}
+        >
+          <FaPlusCircle /> Create Drug
+        </button>
+      </div>
+    </form>
+  </div>
+)}
             </div>
 
             <div className="table-responsive">

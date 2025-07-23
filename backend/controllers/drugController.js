@@ -39,10 +39,16 @@ export const createDrug = async (req, res) => {
   }
 };
 
+
 export const getDrugsByManufacturer = async (req, res) => {
   try {
     const { manufacturerId } = req.params;
     
+    // Verify manufacturerId is valid
+    if (!manufacturerId) {
+      return res.status(400).json({ error: 'Manufacturer ID is required' });
+    }
+
     const drugs = await Drug.find({ manufacturer: manufacturerId })
       .sort({ createdAt: -1 });
     
