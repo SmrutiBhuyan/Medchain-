@@ -4,15 +4,16 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
   Paper, Button, TextField, Select, MenuItem, FormControl, 
   InputLabel, Typography, Box, Modal, Card, CardContent,
-  Chip, Grid, LinearProgress, IconButton
+  Chip, Grid, LinearProgress, IconButton, Avatar, AppBar, Toolbar
 } from '@mui/material';
 import { 
   CheckCircle, Cancel, Search, QrCodeScanner, 
-  Inventory, LocalShipping, Analytics, Receipt 
+  Inventory, LocalShipping, Analytics, Receipt, Logout
 } from '@mui/icons-material';
 import { styled } from '@mui/system';
-import './DistributorDashboard.css'
+import './DistributorDashboard.css';
 import { useTheme } from '@mui/material/styles';
+import { useAuth } from './AuthContext';
 
 // Mock data - replace with API calls in a real application
 const mockShipments = [
@@ -76,6 +77,7 @@ function StatusChip({ label, status, ...props }) {
 }
 
 const DistributorDashboard = () => {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('shipments');
   const [shipments, setShipments] = useState(mockShipments);
   const [inventory, setInventory] = useState(mockInventory);
@@ -89,12 +91,10 @@ const DistributorDashboard = () => {
   const navigate = useNavigate();
 
   const handleReceiveShipment = (shipmentId) => {
-    // In a real app, this would be an API call
     setShipments(shipments.map(shipment => 
       shipment.id === shipmentId ? { ...shipment, status: 'received' } : shipment
     ));
     
-    // Update inventory - in a real app, this would come from shipment details
     const newDrugs = Array(5).fill().map((_, i) => ({
       id: `DRG-${Math.floor(Math.random() * 10000)}`,
       name: ['Paracetamol', 'Ibuprofen', 'Amoxicillin', 'Cetirizine', 'Omeprazole'][Math.floor(Math.random() * 5)],
@@ -110,7 +110,6 @@ const DistributorDashboard = () => {
   };
 
   const handleRejectShipment = (shipmentId) => {
-    // In a real app, this would be an API call
     setShipments(shipments.filter(shipment => shipment.id !== shipmentId));
     setSelectedShipment(null);
   };
@@ -126,7 +125,6 @@ const DistributorDashboard = () => {
   const handleShipToRetailer = () => {
     if (selectedDrugs.length === 0 || !selectedRetailer) return;
     
-    // In a real app, this would be an API call
     setInventory(inventory.filter(drug => !selectedDrugs.includes(drug.id)));
     setSelectedDrugs([]);
     setSelectedRetailer('');
@@ -134,7 +132,6 @@ const DistributorDashboard = () => {
   };
 
   const verifyDrug = () => {
-    // In a real app, this would be an API call
     const foundDrug = inventory.find(drug => drug.barcode === qrInput);
     setVerificationResult(foundDrug || { error: 'Drug not found in system' });
     setOpenModal(true);
@@ -149,145 +146,193 @@ const DistributorDashboard = () => {
   const receivedShipments = shipments.filter(s => s.status === 'received');
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
-        Distributor Dashboard
-      </Typography>
-      
-      {/* Navigation Tabs */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
-        <Button
-          variant={activeTab === 'shipments' ? 'contained' : 'outlined'}
-          startIcon={<Receipt />}
-          onClick={() => setActiveTab('shipments')}
-        >
-          Incoming Shipments
-        </Button>
-        <Button
-          variant={activeTab === 'inventory' ? 'contained' : 'outlined'}
-          startIcon={<Inventory />}
-          onClick={() => setActiveTab('inventory')}
-        >
-          My Inventory
-        </Button>
-        <Button
-          variant={activeTab === 'ship' ? 'contained' : 'outlined'}
-          startIcon={<LocalShipping />}
-          onClick={() => setActiveTab('ship')}
-        >
-          Ship to Retailer
-        </Button>
-        <Button
-          variant={activeTab === 'verify' ? 'contained' : 'outlined'}
-          startIcon={<QrCodeScanner />}
-          onClick={() => setActiveTab('verify')}
-        >
-          Verify Drug
-        </Button>
-        <Button
-          variant={activeTab === 'analytics' ? 'contained' : 'outlined'}
-          startIcon={<Analytics />}
-          onClick={() => setActiveTab('analytics')}
-        >
-          Analytics
-        </Button>
-      </Box>
-
-      {/* Main Content Area */}
-      {activeTab === 'shipments' && (
-        <Box>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
-            Pending Shipments ({pendingShipments.length})
+    <Box sx={{ p: 0 }}>
+      {/* AppBar with user info and logout button */}
+      <AppBar 
+        position="static" 
+        sx={{ 
+          backgroundColor: '#fff', 
+          color: 'text.primary',
+          boxShadow: 'none',
+          borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
+          mb: 3
+        }}
+      >
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
+            Distributor Dashboard
           </Typography>
           
-          {pendingShipments.length > 0 ? (
-            <TableContainer component={Paper} sx={{ mb: 4 }}>
-              <Table>
-                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                  <TableRow>
-                    <TableCell>Shipment ID</TableCell>
-                    <TableCell>Manufacturer</TableCell>
-                    <TableCell>Drug Count</TableCell>
-                    <TableCell>Date Sent</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {pendingShipments.map((shipment) => (
-                    <TableRow key={shipment.id}>
-                      <TableCell>{shipment.id}</TableCell>
-                      <TableCell>{shipment.manufacturer}</TableCell>
-                      <TableCell>{shipment.drugCount}</TableCell>
-                      <TableCell>{shipment.dateSent}</TableCell>
-                      <TableCell>
-                        <StatusChip label={shipment.status} status={shipment.status} size="small" />
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="outlined" 
-                          size="small" 
-                          onClick={() => setSelectedShipment(shipment)}
-                          sx={{ mr: 1 }}
-                        >
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <Box sx={{ p: 3, textAlign: 'center', backgroundColor: '#f9f9f9', borderRadius: 2 }}>
-              <Typography variant="body1" color="textSecondary">
-                No pending shipments at this time
+          {user && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
+                {user.name?.charAt(0).toUpperCase()}
+              </Avatar>
+              <Typography variant="subtitle1">
+                {user.name}
               </Typography>
+              <IconButton 
+                onClick={logout}
+                sx={{ 
+                  color: 'error.main',
+                  '&:hover': {
+                    backgroundColor: 'rgba(244, 67, 54, 0.08)'
+                  }
+                }}
+              >
+                <Logout />
+              </IconButton>
             </Box>
           )}
+        </Toolbar>
+      </AppBar>
 
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
-            Received Shipments ({receivedShipments.length})
-          </Typography>
-          
-          {receivedShipments.length > 0 ? (
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                  <TableRow>
-                    <TableCell>Shipment ID</TableCell>
-                    <TableCell>Manufacturer</TableCell>
-                    <TableCell>Drug Count</TableCell>
-                    <TableCell>Date Sent</TableCell>
-                    <TableCell>Status</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {receivedShipments.map((shipment) => (
-                    <TableRow key={shipment.id}>
-                      <TableCell>{shipment.id}</TableCell>
-                      <TableCell>{shipment.manufacturer}</TableCell>
-                      <TableCell>{shipment.drugCount}</TableCell>
-                      <TableCell>{shipment.dateSent}</TableCell>
-                      <TableCell>
-                        <StatusChip label={shipment.status} status={shipment.status} size="small" />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <Box sx={{ p: 3, textAlign: 'center', backgroundColor: '#f9f9f9', borderRadius: 2 }}>
-              <Typography variant="body1" color="textSecondary">
-                No received shipments to display
-              </Typography>
-            </Box>
-          )}
+      <Box sx={{ px: 3 }}>
+        {/* Navigation Tabs */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2, 
+          mb: 4,
+          '& .MuiButton-root': {
+            borderRadius: '8px',
+            textTransform: 'none',
+            fontWeight: '600',
+            px: 3,
+            py: 1
+          }
+        }}>
+          <Button
+            variant={activeTab === 'shipments' ? 'contained' : 'outlined'}
+            startIcon={<Receipt />}
+            onClick={() => setActiveTab('shipments')}
+          >
+            Incoming Shipments
+          </Button>
+          <Button
+            variant={activeTab === 'inventory' ? 'contained' : 'outlined'}
+            startIcon={<Inventory />}
+            onClick={() => setActiveTab('inventory')}
+          >
+            My Inventory
+          </Button>
+          <Button
+            variant={activeTab === 'ship' ? 'contained' : 'outlined'}
+            startIcon={<LocalShipping />}
+            onClick={() => setActiveTab('ship')}
+          >
+            Ship to Retailer
+          </Button>
+          <Button
+            variant={activeTab === 'verify' ? 'contained' : 'outlined'}
+            startIcon={<QrCodeScanner />}
+            onClick={() => setActiveTab('verify')}
+          >
+            Verify Drug
+          </Button>
+          <Button
+            variant={activeTab === 'analytics' ? 'contained' : 'outlined'}
+            startIcon={<Analytics />}
+            onClick={() => setActiveTab('analytics')}
+          >
+            Analytics
+          </Button>
         </Box>
-      )}
 
-      {activeTab === 'inventory' && (
+        {/* Main Content Area */}
+        {activeTab === 'shipments' && (
+          <Box>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
+              Pending Shipments ({pendingShipments.length})
+            </Typography>
+            
+            {pendingShipments.length > 0 ? (
+              <TableContainer component={Paper} sx={{ mb: 4 }}>
+                <Table>
+                  <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+                    <TableRow>
+                      <TableCell>Shipment ID</TableCell>
+                      <TableCell>Manufacturer</TableCell>
+                      <TableCell>Drug Count</TableCell>
+                      <TableCell>Date Sent</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {pendingShipments.map((shipment) => (
+                      <TableRow key={shipment.id} hover>
+                        <TableCell>{shipment.id}</TableCell>
+                        <TableCell>{shipment.manufacturer}</TableCell>
+                        <TableCell>{shipment.drugCount}</TableCell>
+                        <TableCell>{shipment.dateSent}</TableCell>
+                        <TableCell>
+                          <StatusChip label={shipment.status} status={shipment.status} size="small" />
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="outlined" 
+                            size="small" 
+                            onClick={() => setSelectedShipment(shipment)}
+                            sx={{ mr: 1 }}
+                          >
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Box sx={{ p: 3, textAlign: 'center', backgroundColor: '#f9f9f9', borderRadius: 2 }}>
+                <Typography variant="body1" color="textSecondary">
+                  No pending shipments at this time
+                </Typography>
+              </Box>
+            )}
+
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
+              Received Shipments ({receivedShipments.length})
+            </Typography>
+            
+            {receivedShipments.length > 0 ? (
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+                    <TableRow>
+                      <TableCell>Shipment ID</TableCell>
+                      <TableCell>Manufacturer</TableCell>
+                      <TableCell>Drug Count</TableCell>
+                      <TableCell>Date Sent</TableCell>
+                      <TableCell>Status</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {receivedShipments.map((shipment) => (
+                      <TableRow key={shipment.id} hover>
+                        <TableCell>{shipment.id}</TableCell>
+                        <TableCell>{shipment.manufacturer}</TableCell>
+                        <TableCell>{shipment.drugCount}</TableCell>
+                        <TableCell>{shipment.dateSent}</TableCell>
+                        <TableCell>
+                          <StatusChip label={shipment.status} status={shipment.status} size="small" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Box sx={{ p: 3, textAlign: 'center', backgroundColor: '#f9f9f9', borderRadius: 2 }}>
+                <Typography variant="body1" color="textSecondary">
+                  No received shipments to display
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
+
+             {activeTab === 'inventory' && (
         <Box>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
             <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
@@ -698,6 +743,7 @@ const DistributorDashboard = () => {
           </Box>
         </Box>
       </Modal>
+      </Box>
     </Box>
   );
 };
