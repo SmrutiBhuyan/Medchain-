@@ -16,6 +16,11 @@ const ManufacturerDashboard = () => {
   const [inventoryDrugs, setInventoryDrugs] = useState([]);
   const [isLoadingInventory, setIsLoadingInventory] = useState(false);
 
+  const [showShipmentsModal, setShowShipmentsModal] = useState(false);
+const [manufacturerShipments, setManufacturerShipments] = useState([]);
+const [isLoadingShipments, setIsLoadingShipments] = useState(false);
+
+
   const [previewData, setPreviewData] = useState([]);
   const [shipmentDrugs, setShipmentDrugs] = useState([]);
 const [selectedDrugs, setSelectedDrugs] = useState([]);
@@ -26,21 +31,46 @@ const [shipmentForm, setShipmentForm] = useState({
   deliveryDate: '',
   notes: ''
 });
+// Add default values to dashboardStats state
 const [dashboardStats, setDashboardStats] = useState({
   totalDrugs: 0,
   activeShipments: 0,
   nearExpiry: 0,
+  recalledBatches: 0,
   drugVolume: [],
-  shipmentsOverTime: []
+  shipmentsOverTime: [],
+  statusDistribution: [],
+  upcomingExpirations: [],
+  topDistributors: []
 });
 const [isLoadingStats, setIsLoadingStats] = useState(false);
+
+// Add this function to fetch manufacturer shipments
+const fetchManufacturerShipments = async () => {
+  setIsLoadingShipments(true);
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axios.get('http://localhost:5000/api/shipments/manufacturer', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    if (response.data.success) {
+      setManufacturerShipments(response.data.shipments);
+    }
+  } catch (error) {
+    console.error('Error fetching shipments:', error);
+  } finally {
+    setIsLoadingShipments(false);
+  }
+};
 
  
 const fetchDashboardStats = async () => {
   setIsLoadingStats(true);
   try {
     const token = localStorage.getItem('token');
-    console.log('Token:', token); // Debugging
     
     if (!token) {
       console.error('No authentication token found');
@@ -53,9 +83,20 @@ const fetchDashboardStats = async () => {
         Authorization: `Bearer ${token}`
       }
     });
-    
+    console.log('Dashboard stats response:', response.data);
     if (response.data.success) {
-      setDashboardStats(response.data.stats);
+           setDashboardStats({
+        totalDrugs: response.data.stats.totalDrugs || 0,
+        activeShipments: response.data.stats.activeShipments || 0,
+        nearExpiry: response.data.stats.nearExpiry || 0,
+        recalledBatches: response.data.stats.recalledBatches || 0,
+        drugVolume: response.data.stats.drugVolume || [],
+        shipmentsOverTime: response.data.stats.shipmentsOverTime || [],
+        statusDistribution: response.data.stats.statusDistribution || [],
+        upcomingExpirations: response.data.stats.upcomingExpirations || [],
+        topDistributors: response.data.stats.topDistributors || []
+      });
+
     }
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
@@ -143,6 +184,33 @@ const fetchDashboardStats = async () => {
       reader.readAsText(file);
     });
   };
+
+  // Add to your component's state
+const [timeRanges, setTimeRanges] = useState({
+  drugVolume: '30',
+  drugDistribution: '30',
+  shipments: '30'
+});
+
+// Add this function to your component
+const handleTimeRangeChange = async (chartType, days) => {
+  setTimeRanges(prev => ({ ...prev, [chartType]: days }));
+  
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axios.get(`http://localhost:5000/api/dashboard/stats?days=${days}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    if (response.data.success) {
+      setDashboardStats(response.data.stats);
+    }
+  } catch (error) {
+    console.error('Error fetching filtered stats:', error);
+  }
+};
   // File upload state
   const [fileUploadState, setFileUploadState] = useState({
     isDragging: false,
@@ -537,7 +605,7 @@ useEffect(() => {
 
         {/* Stats Cards - Only shown on dashboard tab */}
        {activeTab === 'dashboard' && (
-  <div className="grid">
+  <div className="grid1">
     <div className="stats-card">
       <div className="icon primary">
         <FaCapsules />
@@ -545,12 +613,19 @@ useEffect(() => {
       <h3>{isLoadingStats ? '...' : dashboardStats.totalDrugs.toLocaleString()}</h3>
       <p>Total Drugs</p>
     </div>
-    <div className="stats-card">
+    <div className="stats-card clickable"
+     onClick={() => {
+    setShowShipmentsModal(true);
+    fetchManufacturerShipments();
+  }}>
       <div className="icon success">
         <FaTruck />
       </div>
       <h3>{isLoadingStats ? '...' : dashboardStats.activeShipments}</h3>
-      <p>Active Shipments</p>
+      <p>Total Shipments</p>
+   
+   
+   
     </div>
     <div className="stats-card">
       <div className="icon warning">
@@ -558,6 +633,7 @@ useEffect(() => {
       </div>
       <h3>{isLoadingStats ? '...' : dashboardStats.nearExpiry}</h3>
       <p>Near Expiry</p>
+    
     </div>
     <div className="stats-card">
       <div className="icon danger">
@@ -1060,23 +1136,61 @@ useEffect(() => {
         )}
 
         {/* Analytics Tab */}
-  {/* Analytics Tab */}
+{/* Analytics Tab */}
 {activeTab === 'analytics' && (
   <>
-    <div className="grid" style={{ gridTemplateColumns: '2fr 1fr' }}>
+    {/* Stats Cards */}
+    <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div className="stats-card">
+        <div className="icon primary">
+          <FaCapsules />
+        </div>
+        <h3>{isLoadingStats ? '...' : dashboardStats.totalDrugs?.toLocaleString() || 0}</h3>
+        <p>Total Drugs</p>
+      </div>
+      <div className="stats-card">
+        <div className="icon success">
+          <FaTruck />
+        </div>
+        <h3>{isLoadingStats ? '...' : dashboardStats.activeShipments || 0}</h3>
+        <p>Active Shipments</p>
+      </div>
+      <div className="stats-card">
+        <div className="icon warning">
+          <FaBell />
+        </div>
+        <h3>{isLoadingStats ? '...' : dashboardStats.nearExpiry || 0}</h3>
+        <p>Near Expiry</p>
+      </div>
+      <div className="stats-card">
+        <div className="icon danger">
+          <FaBell />
+        </div>
+        <h3>{isLoadingStats ? '...' : dashboardStats.recalledBatches || 0}</h3>
+        <p>Recalled Batches</p>
+      </div>
+    </div>
+
+    {/* Main Charts */}
+    <div className="grid" style={{ gridTemplateColumns: '2fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+      {/* Drug Volume Chart */}
       <div className="card">
         <div className="card-header">
           <h2 className="card-title">Drug Volume by Batch</h2>
           <div className="card-actions">
-            <select className="form-control" style={{ width: 'auto', display: 'inline-block' }}>
-              <option>Last 30 Days</option>
-              <option>Last 90 Days</option>
-              <option>This Year</option>
+            <select 
+              className="form-control" 
+              style={{ width: 'auto', display: 'inline-block' }}
+              onChange={(e) => handleTimeRangeChange('drugVolume', e.target.value)}
+            >
+              <option value="30">Last 30 Days</option>
+              <option value="90">Last 90 Days</option>
+              <option value="365">This Year</option>
             </select>
           </div>
         </div>
-        <div className="chart-container">
-          {dashboardStats.drugVolume && dashboardStats.drugVolume.length > 0 ? (
+        <div className="chart-container" style={{ height: '400px' }}>
+          {dashboardStats.drugVolume && dashboardStats.drugVolume?.length > 0 ? (
             <Bar
               data={dashboardStats.drugVolume}
               xField="drugName"
@@ -1096,6 +1210,12 @@ useEffect(() => {
                   formatter: (v) => `${v} units`,
                 },
               }}
+              tooltip={{
+                formatter: (datum) => {
+                  return { name: datum.drugName, value: `${datum.totalQuantity} units` };
+                },
+              }}
+              color={['#1890ff', '#13c2c2', '#52c41a', '#faad14', '#f5222d']}
             />
           ) : (
             <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
@@ -1104,89 +1224,168 @@ useEffect(() => {
           )}
         </div>
       </div>
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">Drug Types Distribution</h2>
-        </div>
-        <div className="chart-container">
-          {dashboardStats.drugVolume && dashboardStats.drugVolume.length > 0 ? (
-            <Pie
-              data={dashboardStats.drugVolume}
-              angleField="totalQuantity"
-              colorField="drugName"
-              radius={0.8}
-              height={400}
-              label={{
-                type: 'outer',
-                content: '{name}: {percentage}',
-              }}
-              legend={{
-                position: 'bottom',
-              }}
-              interactions={[
-                {
-                  type: 'element-active',
-                },
-              ]}
-            />
-          ) : (
-            <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
-              No drug type data available
-            </p>
-          )}
-        </div>
-      </div>
+
+      {/* Drug Distribution Pie Chart */}
     </div>
-    <div className="card">
+
+    {/* Shipments Over Time Line Chart */}
+     <div className="card">
       <div className="card-header">
-        <h2 className="card-title">Shipments Over Time</h2>
+        <h2 className="card-title">Shipments Timeline</h2>
         <div className="card-actions">
-          <select className="form-control" style={{ width: 'auto', display: 'inline-block' }}>
-            <option>Last 30 Days</option>
-            <option>Last 90 Days</option>
-            <option>This Year</option>
+          <select 
+            className="form-control" 
+            style={{ width: 'auto', display: 'inline-block' }}
+            onChange={(e) => handleTimeRangeChange('shipments', e.target.value)}
+          >
+            <option value="30">Last 30 Days</option>
+            <option value="90">Last 90 Days</option>
+            <option value="365">This Year</option>
           </select>
         </div>
       </div>
-      <div className="chart-container">
-        {dashboardStats.shipmentsOverTime && dashboardStats.shipmentsOverTime.length > 0 ? (
-          <Line
-            data={dashboardStats.shipmentsOverTime}
-            xField="_id"
-            yField="count"
-            height={400}
-            point={{
-              size: 5,
-              shape: 'diamond',
-            }}
-            xAxis={{
-              label: {
-                autoRotate: false,
-              },
-            }}
-            yAxis={{
-              label: {
-                formatter: (v) => `${v} shipments`,
-              },
-            }}
-            tooltip={{
-              formatter: (datum) => {
-                return { name: 'Shipments', value: datum.count };
-              },
-            }}
-          />
+      <div className="chart-container" style={{ padding: '1.5rem' }}>
+        {dashboardStats.shipmentsOverTime?.length > 0 ? (
+          <div className="timeline-container">
+            {dashboardStats.shipmentsOverTime.map((item, index) => (
+              <div key={index} className="timeline-item">
+                <div className="timeline-date">{item.date}</div>
+                <div className="timeline-bar">
+                  <div 
+                    className="timeline-progress" 
+                    style={{ width: `${Math.min(100, (item.count / Math.max(...dashboardStats.shipmentsOverTime.map(i => i.count))) * 100)}%` }}
+                  ></div>
+                </div>
+                <div className="timeline-count">{item.count} shipments</div>
+              </div>
+            ))}
+          </div>
         ) : (
           <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
             No shipment data available
           </p>
         )}
       </div>
+      {/* Upcoming Expirations */}
+    <div className="card">
+      <div className="card-header">
+        <h2 className="card-title">Upcoming Expirations</h2>
+      </div>
+      <div className="chart-container" style={{ padding: '1.5rem' }}>
+        {dashboardStats.upcomingExpirations?.length > 0 ? (
+          <div className="expiration-grid">
+            {dashboardStats.upcomingExpirations.map((drug, index) => (
+              <div key={index} className="expiration-card">
+                <div className="expiration-header">
+                  <h4>{drug.name}</h4>
+                  <span className="batch-tag">{drug.batch}</span>
+                </div>
+                <div className="expiration-details">
+                  <div className="expiration-meta">
+                    <span>Expires: {drug.expiryDate}</span>
+                    <span>Quantity: {drug.quantity} units</span>
+                  </div>
+                  <div className="days-remaining">
+                    <div 
+                      className="days-progress" 
+                      style={{ 
+                        width: `${100 - (Math.min(30, drug.daysLeft) / 30) * 100}%`,
+                        backgroundColor: drug.daysLeft <= 7 ? '#f5222d' : drug.daysLeft <= 14 ? '#faad14' : '#52c41a'
+                      }}
+                    ></div>
+                    <span>{drug.daysLeft} days remaining</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
+            No upcoming expirations
+          </p>
+        )}
+      </div>
     </div>
+    </div>
+    
+    
   </>
 )}
 
+
+{/* // Add this modal component near the end of your JSX, before the closing </div>: */}
+{showShipmentsModal && (
+  <div className="modal-overlay">
+    <div className="modal">
+      <div className="modal-header">
+        <h2>Your Shipments</h2>
+        <button 
+          className="btn btn-close" 
+          onClick={() => setShowShipmentsModal(false)}
+        >
+          &times;
+        </button>
+      </div>
+      <div className="modal-body">
+        {isLoadingShipments ? (
+          <p>Loading shipments...</p>
+        ) : manufacturerShipments.length > 0 ? (
+          <div className="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Shipment ID</th>
+                  <th>Drugs Count</th>
+                  <th>Distributor</th>
+                  <th>Status</th>
+                  <th>Created At</th>
+                  <th>Estimated Delivery</th>
+                </tr>
+              </thead>
+              <tbody>
+                {manufacturerShipments.map(shipment => (
+                  <tr key={shipment._id}>
+                    <td>{shipment.trackingNumber || shipment._id}</td>
+                    <td>{shipment.drugs.length} drugs</td>
+                    <td>
+                      {shipment.distributor?.organization || 
+                       shipment.distributor?.name || 
+                       'Unknown'}
+                    </td>
+                    <td><StatusBadge status={shipment.status} /></td>
+                    <td>{new Date(shipment.createdAt).toLocaleDateString()}</td>
+                    <td>
+                      {shipment.estimatedDelivery 
+                        ? new Date(shipment.estimatedDelivery).toLocaleDateString() 
+                        : 'Not specified'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p>No shipments found</p>
+        )}
+      </div>
+      <div className="modal-footer">
+        <button 
+          className="btn btn-primary"
+          onClick={() => setShowShipmentsModal(false)}
+        >
+          Close
+        </button>
       </div>
     </div>
+  </div>
+)}
+
+
+
+      </div>
+      
+    </div>
+    
   );
 };
 
