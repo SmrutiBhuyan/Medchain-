@@ -1,5 +1,7 @@
 import express from 'express';
-import { createShipment } from '../controllers/shipmentController.js';
+import { createShipment,   getDistributorShipments,
+  acceptShipment,
+  rejectShipment, } from '../controllers/shipmentController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 import Shipment from '../models/Shipment.js';
 
@@ -14,7 +16,9 @@ router.post(
   authorize('manufacturer'),
   createShipment
 );
-
+router.get('/distributor', protect, getDistributorShipments);
+router.put('/:id/accept', protect, acceptShipment);
+router.put('/:id/reject', protect, rejectShipment);
 // In your shipment routes file
 router.get('/manufacturer', protect, authorize('manufacturer'), async (req, res) => {
   try {

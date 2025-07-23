@@ -43,7 +43,7 @@ const DrugSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['in-stock', 'shipped', 'delivered', 'recalled', 'expired'],
+    enum: ['in-stock', 'shipped', 'delivered', 'recalled', 'expired','in-stock with distributor'],
     default: 'in-stock'
   },
   currentHolder: {

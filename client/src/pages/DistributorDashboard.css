@@ -268,3 +268,106 @@ body {
   .text-error {
     color: #f44336;
   }
+
+  /* Table styling */
+.MuiTable-root {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.MuiTableHead-root {
+  background-color: #f8fafc !important;
+}
+
+.MuiTableCell-head {
+  font-weight: 600 !important;
+  color: #64748b !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+}
+
+.MuiTableCell-root {
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.MuiTableRow-root:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Card styling */
+.MuiCard-root {
+  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+}
+
+.MuiCard-root:hover {
+  box-shadow: 0 10px 25px 0 rgba(0,0,0,0.1) !important;
+}
+
+/* Button styling */
+.MuiButton-contained {
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
+  font-weight: 600 !important;
+}
+
+.MuiButton-contained:hover {
+  transform: translateY(-2px);
+}
+
+.MuiButton-outlined {
+  font-weight: 600 !important;
+}
+
+/* Status chip styling */
+.MuiChip-root {
+  font-weight: 500 !important;
+  letter-spacing: 0.5px;
+  min-width: 80px;
+  justify-content: center;
+}
+
+/* Modal styling */
+.MuiModal-root .MuiBox-root {
+  outline: none !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* App bar styling */
+.MuiAppBar-root {
+  z-index: 1201 !important;
+}
+
+/* Text field styling */
+.MuiOutlinedInput-root {
+  border-radius: 8px !important;
+}
+
+/* Avatar styling */
+.MuiAvatar-root {
+  background: linear-gradient(45deg, #3f51b5, #2196f3) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* Progress bar styling */
+.MuiLinearProgress-root {
+  border-radius: 4px !important;
+}

@@ -138,3 +138,15 @@ export const getDrugsByManufacturer = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch drugs' });
   }
 };
+
+
+// Get drugs for distributor
+export const getDistributorDrugs = async (req, res) => {
+  try {
+    const drugs = await Drug.find({ currentHolder: req.user._id });
+    res.json(drugs);
+  } catch (error) {
+    console.error('Error fetching drugs:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

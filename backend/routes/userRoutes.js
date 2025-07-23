@@ -1,6 +1,8 @@
 import express from 'express'
 import User from '../models/User.js';
 const router = express.Router();
+import { getRetailers } from '../controllers/userController.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 // Get all pending users
 router.get('/pending', async (req, res) => {
@@ -64,4 +66,6 @@ export const getDistributors = async (req, res) => {
   }
 };
 router.get('/distributors', getDistributors);
+router.get('/retailers', protect, getRetailers);
+
 export default router;
