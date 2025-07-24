@@ -30,16 +30,15 @@ const DrugSchema = new mongoose.Schema({
       message: 'Expiry date must be after manufacturing date'
     }
   },
- batchBarcode: {
-  type: String,
-  required: true,
-  unique: true,
-  trim: true,
-  default: function() {
-    // Generate a default barcode if none provided
-    return generateBarcode(this.name, this.batch);
-  }
-},
+  batchBarcode: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    default: function() {
+      return generateBarcode(this.name, this.batch);
+    }
+  },
   unitBarcodes: [{
     type: String,
     required: true,
@@ -51,14 +50,33 @@ const DrugSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  distributor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  wholesaler: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  retailer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  pharmacy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   status: {
     type: String,
-    enum: ['in-stock', 'shipped', 'delivered', 'recalled', 'expired', 'in-stock with distributor'],
+    enum: ['in-stock', 'shipped', 'delivered', 'recalled', 'expired', 
+           'in-stock with distributor', 'in-stock with wholesaler', 
+           'in-stock with retailer', 'in-stock with pharmacy'],
     default: 'in-stock'
   },
   currentHolder: {
     type: String,
-    default: 'Manufacturer'
+    enum: ['manufacturer', 'distributor', 'wholesaler', 'retailer', 'pharmacy'],
+    default: 'manufacturer'
   },
   createdAt: {
     type: Date,
@@ -70,5 +88,10 @@ const DrugSchema = new mongoose.Schema({
 DrugSchema.index({ name: 1, batch: 1 }, { unique: true });
 DrugSchema.index({ batchBarcode: 1 }, { unique: true });
 DrugSchema.index({ unitBarcodes: 1 });
+DrugSchema.index({ manufacturer: 1 });
+DrugSchema.index({ distributor: 1 });
+DrugSchema.index({ wholesaler: 1 });
+DrugSchema.index({ retailer: 1 });
+DrugSchema.index({ pharmacy: 1 });
 
 export default mongoose.model('Drug', DrugSchema);

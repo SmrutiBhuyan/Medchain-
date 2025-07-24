@@ -1,7 +1,7 @@
 import express from 'express';
 import { createShipment,   getDistributorShipments,
   acceptShipment,
-  rejectShipment, } from '../controllers/shipmentController.js';
+  rejectShipment, transferToWholesaler, transferToRetailer, transferToPharmacy } from '../controllers/shipmentController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 import Shipment from '../models/Shipment.js';
 
@@ -39,5 +39,9 @@ router.get('/manufacturer', protect, authorize('manufacturer'), async (req, res)
     });
   }
 });
+// In your routes file
+router.post('/shipments/transfer/wholesaler', protect, transferToWholesaler);
+router.post('/shipments/transfer/retailer', protect, transferToRetailer);
+router.post('/shipments/transfer/pharmacy', protect, transferToPharmacy);
 
 export default router;

@@ -77,7 +77,6 @@ export const getDistributorShipments = async (req, res) => {
 };
 
 // Accept shipment
-// Accept shipment
 export const acceptShipment = async (req, res) => {
   try {
     console.log("Accept drugs endpoint hit...");
@@ -105,6 +104,7 @@ export const acceptShipment = async (req, res) => {
         $set: { 
           status: 'in-stock with distributor',
           currentHolder: 'distributor',
+          distributor: req.user._id
         } 
       }
     );
@@ -139,4 +139,102 @@ export const rejectShipment = async (req, res) => {
   }
 };
 
+// Add new functions for wholesaler, retailer, and pharmacy
+export const transferToWholesaler = async (req, res) => {
+  try {
+    const { drugIds } = req.body;
+    
+    // Validate drugs belong to distributor
+    const drugCount = await Drug.countDocuments({
+      _id: { $in: drugIds },
+      distributor: req.user._id
+    });
+    
+    if (drugCount !== drugIds.length) {
+      return res.status(400).json({ error: 'Some drugs are invalid or not available' });
+    }
 
+    // Update drugs
+    await Drug.updateMany(
+      { _id: { $in: drugIds } },
+      {
+        $set: {
+          status: 'in-stock with wholesaler',
+          currentHolder: 'wholesaler',
+          wholesaler: req.body.wholesalerId
+        }
+      }
+    );
+
+    res.json({ success: true, message: 'Drugs transferred to wholesaler successfully' });
+  } catch (error) {
+    console.error('Transfer error:', error);
+    res.status(500).json({ error: 'Failed to transfer drugs' });
+  }
+};
+
+export const transferToRetailer = async (req, res) => {
+  try {
+    const { drugIds } = req.body;
+    
+    // Validate drugs belong to wholesaler
+    const drugCount = await Drug.countDocuments({
+      _id: { $in: drugIds },
+      wholesaler: req.user._id
+    });
+    
+    if (drugCount !== drugIds.length) {
+      return res.status(400).json({ error: 'Some drugs are invalid or not available' });
+    }
+
+    // Update drugs
+    await Drug.updateMany(
+      { _id: { $in: drugIds } },
+      {
+        $set: {
+          status: 'in-stock with retailer',
+          currentHolder: 'retailer',
+          retailer: req.body.retailerId
+        }
+      }
+    );
+
+    res.json({ success: true, message: 'Drugs transferred to retailer successfully' });
+  } catch (error) {
+    console.error('Transfer error:', error);
+    res.status(500).json({ error: 'Failed to transfer drugs' });
+  }
+};
+
+export const transferToPharmacy = async (req, res) => {
+  try {
+    const { drugIds } = req.body;
+    
+    // Validate drugs belong to retailer
+    const drugCount = await Drug.countDocuments({
+      _id: { $in: drugIds },
+      retailer: req.user._id
+    });
+    
+    if (drugCount !== drugIds.length) {
+      return res.status(400).json({ error: 'Some drugs are invalid or not available' });
+    }
+
+    // Update drugs
+    await Drug.updateMany(
+      { _id: { $in: drugIds } },
+      {
+        $set: {
+          status: 'in-stock with pharmacy',
+          currentHolder: 'pharmacy',
+          pharmacy: req.body.pharmacyId
+        }
+      }
+    );
+
+    res.json({ success: true, message: 'Drugs transferred to pharmacy successfully' });
+  } catch (error) {
+    console.error('Transfer error:', error);
+    res.status(500).json({ error: 'Failed to transfer drugs' });
+  }
+};
