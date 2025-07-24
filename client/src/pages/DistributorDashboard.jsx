@@ -5,11 +5,12 @@ import {
   Paper, Button, TextField, Select, MenuItem, FormControl, 
   InputLabel, Typography, Box, Modal, Card, CardContent,
   Chip, Grid, LinearProgress, IconButton, Avatar, AppBar, Toolbar,
-  CircularProgress 
+  CircularProgress, Tabs, Tab 
 } from '@mui/material';
 import { 
   CheckCircle, Cancel, Search, QrCodeScanner, 
-  Inventory, LocalShipping, Analytics, Receipt, Logout
+  Inventory, LocalShipping, Analytics, Receipt, Logout,
+  Store, LocalHospital, MedicalServices
 } from '@mui/icons-material';
 import { styled } from '@mui/system';
 import './DistributorDashboard.css';
@@ -21,6 +22,16 @@ const mockRetailers = [
   { id: 'RET-001', name: 'City Pharmacy' },
   { id: 'RET-002', name: 'MediMart' },
   { id: 'RET-003', name: 'HealthFirst' },
+];
+
+const mockWholesalers = [
+  { id: 'WHO-001', name: 'Prime Wholesalers' },
+  { id: 'WHO-002', name: 'MedSupply Co' },
+];
+
+const mockPharmacies = [
+  { id: 'PHA-001', name: 'City Pharmacy' },
+  { id: 'PHA-002', name: '24/7 Meds' },
 ];
 
 const DashboardCard = styled(Card)(({ theme }) => ({
@@ -74,13 +85,16 @@ const DistributorDashboard = () => {
   const [inventory, setInventory] = useState([]);
   const [selectedShipment, setSelectedShipment] = useState(null);
   const [selectedDrugs, setSelectedDrugs] = useState([]);
-  const [selectedRetailer, setSelectedRetailer] = useState('');
+  const [selectedRecipient, setSelectedRecipient] = useState('');
+  const [recipientType, setRecipientType] = useState('retailer');
   const [searchTerm, setSearchTerm] = useState('');
   const [verificationResult, setVerificationResult] = useState(null);
   const [openModal, setOpenModal] = useState(false);
   const [qrInput, setQrInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [retailers, setRetailers] = useState([]);
+  const [wholesalers, setWholesalers] = useState([]);
+  const [pharmacies, setPharmacies] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -98,10 +112,9 @@ const DistributorDashboard = () => {
         setShipments(shipmentsRes.data);
         
         // Fetch inventory for this distributor
-       // Fetch inventory for this distributor
         const inventoryRes = await axios.get('http://localhost:5000/api/drugs/inventory', {
           headers: { Authorization: `Bearer ${token}` },
-           params: { status: 'in-stock with distributor' } 
+          params: { status: 'in-stock with distributor' } 
         });
         console.log(inventoryRes.data);
         
@@ -133,13 +146,25 @@ const DistributorDashboard = () => {
           setInventory(flattenedInventory);
         }
         
-        // Fetch retailers
+        // Fetch recipients
         const retailersRes = await axios.get('http://localhost:5000/api/users/retailers', {
           headers: { Authorization: `Bearer ${token}` }
         });
         console.log("Retailers fetched: ", retailersRes);
-        
         setRetailers(retailersRes.data);
+
+        const wholesalersRes = await axios.get('http://localhost:5000/api/users/wholesalers', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        console.log(wholesalersRes.data);
+        
+        setWholesalers(wholesalersRes.data);
+
+        const pharmaciesRes = await axios.get('http://localhost:5000/api/users/pharmacies', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        console.log(pharmaciesRes.data); 
+        setPharmacies(pharmaciesRes.data);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -164,43 +189,41 @@ const DistributorDashboard = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      
       // Refresh data
       const shipmentsRes = await axios.get('http://localhost:5000/api/shipments/distributor', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setShipments(shipmentsRes.data);
       
-   const inventoryRes = await axios.get('http://localhost:5000/api/drugs/inventory', {
-  headers: { Authorization: `Bearer ${token}` },
-  params: { status: 'in-stock with distributor' } 
-});
-// Check if response has drugs array
-if (!inventoryRes.data?.drugs || !Array.isArray(inventoryRes.data.drugs)) {
-  console.error('Invalid inventory data format:', inventoryRes.data);
-  setInventory([]);
-  return;
-}
+      const inventoryRes = await axios.get('http://localhost:5000/api/drugs/inventory', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { status: 'in-stock with distributor' } 
+      });
+      
+      if (!inventoryRes.data?.drugs || !Array.isArray(inventoryRes.data.drugs)) {
+        console.error('Invalid inventory data format:', inventoryRes.data);
+        setInventory([]);
+        return;
+      }
 
-// Flatten the batch data into individual units
-const flattenedInventory = inventoryRes.data.drugs.flatMap(drug => {
-  if (!drug.unitBarcodes || !Array.isArray(drug.unitBarcodes)) {
-    return [];
-  }
-  return drug.unitBarcodes.map(barcode => ({
-    _id: `${drug._id}-${barcode}`,
-    name: drug.name,
-    batch: drug.batch,
-    barcode: barcode,
-    batchBarcode: drug.batchBarcode,
-    expiryDate: drug.expiryDate,
-    manufacturer: drug.manufacturer,
-    status: drug.status,
-    currentHolder: drug.currentHolder
-  }));
-});
+      const flattenedInventory = inventoryRes.data.drugs.flatMap(drug => {
+        if (!drug.unitBarcodes || !Array.isArray(drug.unitBarcodes)) {
+          return [];
+        }
+        return drug.unitBarcodes.map(barcode => ({
+          _id: `${drug._id}-${barcode}`,
+          name: drug.name,
+          batch: drug.batch,
+          barcode: barcode,
+          batchBarcode: drug.batchBarcode,
+          expiryDate: drug.expiryDate,
+          manufacturer: drug.manufacturer,
+          status: drug.status,
+          currentHolder: drug.currentHolder
+        }));
+      });
 
-setInventory(flattenedInventory);
+      setInventory(flattenedInventory);
       
       setSelectedShipment(null);
     } catch (error) {
@@ -251,32 +274,87 @@ setInventory(flattenedInventory);
     );
   };
 
-  const handleShipToRetailer = () => {
-  if (selectedDrugs.length === 0 || !selectedRetailer) return;
-  
-  setInventory(inventory.filter(drug => !selectedDrugs.includes(drug._id)));
-  setSelectedDrugs([]);
-  setSelectedRetailer('');
-  alert(`Successfully shipped ${selectedDrugs.length} drugs to ${mockRetailers.find(r => r.id === selectedRetailer)?.name}`);
-};
- const verifyDrug = () => {
-  const foundDrug = inventory.find(drug => 
-    drug.barcode === qrInput || 
-    drug.batchBarcode === qrInput
-  );
-  
-  setVerificationResult(foundDrug || { error: 'Drug not found in system' });
-  setOpenModal(true);
-};
+  const handleShipToRecipient = async () => {
+    if (selectedDrugs.length === 0 || !selectedRecipient) return;
+    
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      
+      // Get the drugs to be shipped
+      const drugsToShip = inventory.filter(drug => selectedDrugs.includes(drug._id));
+      
+      // Create shipment
+      const shipmentData = {
+        recipientId: selectedRecipient,
+        recipientType: recipientType,
+        drugs: drugsToShip.map(drug => ({
+          drugId: drug._id,
+          name: drug.name,
+          batch: drug.batch,
+          barcode: drug.barcode,
+          batchBarcode: drug.batchBarcode
+        })),
+        status: 'processing'
+      };
+      
+      await axios.post('http://localhost:5000/api/shipments', shipmentData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Update inventory locally
+      setInventory(inventory.filter(drug => !selectedDrugs.includes(drug._id)));
+      setSelectedDrugs([]);
+      setSelectedRecipient('');
+      
+      alert(`Successfully shipped ${selectedDrugs.length} drugs to ${getRecipientName(selectedRecipient)}`);
+    } catch (error) {
+      console.error('Error creating shipment:', error);
+      alert('Failed to create shipment. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-const filteredInventory = Array.isArray(inventory) ? 
-  inventory.filter(drug => {
-    if (!drug) return false;
-    const nameMatch = drug.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const barcodeMatch = drug.barcode?.includes(searchTerm);
-    const batchBarcodeMatch = drug.batchBarcode?.includes(searchTerm);
-    return nameMatch || barcodeMatch || batchBarcodeMatch;
-  }) : [];
+  const getRecipientName = (recipientId) => {
+    let recipient;
+    switch (recipientType) {
+      case 'retailer':
+        recipient = retailers.find(r => r._id === recipientId) || 
+                   mockRetailers.find(r => r.id === recipientId);
+        break;
+      case 'wholesaler':
+        recipient = wholesalers.find(w => w._id === recipientId) || 
+                   mockWholesalers.find(w => w.id === recipientId);
+        break;
+      case 'pharmacy':
+        recipient = pharmacies.find(p => p._id === recipientId) || 
+                   mockPharmacies.find(p => p.id === recipientId);
+        break;
+      default:
+        return 'Unknown';
+    }
+    return recipient?.name || 'Unknown';
+  };
+
+  const verifyDrug = () => {
+    const foundDrug = inventory.find(drug => 
+      drug.barcode === qrInput || 
+      drug.batchBarcode === qrInput
+    );
+    
+    setVerificationResult(foundDrug || { error: 'Drug not found in system' });
+    setOpenModal(true);
+  };
+
+  const filteredInventory = Array.isArray(inventory) ? 
+    inventory.filter(drug => {
+      if (!drug) return false;
+      const nameMatch = drug.name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const barcodeMatch = drug.barcode?.includes(searchTerm);
+      const batchBarcodeMatch = drug.batchBarcode?.includes(searchTerm);
+      return nameMatch || barcodeMatch || batchBarcodeMatch;
+    }) : [];
 
   const pendingShipments = shipments.filter(s => s.status === 'processing');
   const receivedShipments = shipments.filter(s => s.status === 'delivered');
@@ -370,7 +448,7 @@ const filteredInventory = Array.isArray(inventory) ?
             startIcon={<LocalShipping />}
             onClick={() => setActiveTab('ship')}
           >
-            Ship to Retailer
+            Ship Products
           </Button>
           <Button
             variant={activeTab === 'verify' ? 'contained' : 'outlined'}
@@ -410,7 +488,7 @@ const filteredInventory = Array.isArray(inventory) ?
                   </TableHead>
                   <TableBody>
                     {pendingShipments.map((shipment) => (
-                      <TableRow key={ shipment._id} hover>
+                      <TableRow key={shipment._id} hover>
                         <TableCell>{shipment.trackingNumber}</TableCell>
                         <TableCell>
                           {getManufacturerName(shipment.manufacturer)}
@@ -486,68 +564,98 @@ const filteredInventory = Array.isArray(inventory) ?
           </Box>
         )}
 
-  {activeTab === 'inventory' && (
-  <Box>
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-        Current Inventory ({inventory.length} units)
-      </Typography>
-      <TextField
-        variant="outlined"
-        size="small"
-        placeholder="Search drugs..."
-        InputProps={{
-          startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
-        }}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        sx={{ width: 300 }}
-      />
-    </Box>
-    
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-          <TableRow>
-            <TableCell>Drug Name</TableCell>
-            <TableCell>Unit Barcode</TableCell>
-            <TableCell>Batch Number</TableCell>
-            <TableCell>Manufacturer</TableCell>
-            <TableCell>Expiry Date</TableCell>
-            <TableCell>Status</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {filteredInventory.map((drug) => (
-            <TableRow key={drug._id}>
-              <TableCell>{drug.name}</TableCell>
-              <TableCell>{drug.barcode}</TableCell>
-              <TableCell>{drug.batch}</TableCell>
-              <TableCell>{getManufacturerName(drug.manufacturer)}</TableCell>
-              <TableCell>{new Date(drug.expiryDate).toLocaleDateString()}</TableCell>
-              <TableCell>
-                <StatusChip label={drug.status} status={drug.status} size="small" />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-    
-    {filteredInventory.length === 0 && (
-      <Box sx={{ p: 3, textAlign: 'center', backgroundColor: '#f9f9f9', borderRadius: 2, mt: 2 }}>
-        <Typography variant="body1" color="textSecondary">
-          {inventory.length === 0 ? 'No inventory available' : 'No drugs found matching your search'}
-        </Typography>
-      </Box>
-    )}
-  </Box>
-)}
+        {activeTab === 'inventory' && (
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                Current Inventory ({inventory.length} units)
+              </Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Search drugs..."
+                InputProps={{
+                  startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
+                }}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                sx={{ width: 300 }}
+              />
+            </Box>
+            
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+                  <TableRow>
+                    <TableCell>Drug Name</TableCell>
+                    <TableCell>Unit Barcode</TableCell>
+                    <TableCell>Batch Number</TableCell>
+                    <TableCell>Manufacturer</TableCell>
+                    <TableCell>Expiry Date</TableCell>
+                    <TableCell>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredInventory.map((drug) => (
+                    <TableRow key={drug._id}>
+                      <TableCell>{drug.name}</TableCell>
+                      <TableCell>{drug.barcode}</TableCell>
+                      <TableCell>{drug.batch}</TableCell>
+                      <TableCell>{getManufacturerName(drug.manufacturer)}</TableCell>
+                      <TableCell>{new Date(drug.expiryDate).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <StatusChip label={drug.status} status={drug.status} size="small" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            
+            {filteredInventory.length === 0 && (
+              <Box sx={{ p: 3, textAlign: 'center', backgroundColor: '#f9f9f9', borderRadius: 2, mt: 2 }}>
+                <Typography variant="body1" color="textSecondary">
+                  {inventory.length === 0 ? 'No inventory available' : 'No drugs found matching your search'}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
 
         {activeTab === 'ship' && (
           <Box>
             <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-              Ship Drugs to Retailer
+              Ship Products to Recipients
             </Typography>
+            
+            <Box sx={{ mb: 3 }}>
+              <Tabs 
+                value={recipientType} 
+                onChange={(e, newValue) => {
+                  setRecipientType(newValue);
+                  setSelectedRecipient('');
+                }}
+                sx={{ mb: 2 }}
+              >
+                <Tab 
+                  value="retailer" 
+                  label="Retailers" 
+                  icon={<Store fontSize="small" />} 
+                  iconPosition="start" 
+                />
+                <Tab 
+                  value="wholesaler" 
+                  label="Wholesalers" 
+                  icon={<MedicalServices fontSize="small" />} 
+                  iconPosition="start" 
+                />
+                <Tab 
+                  value="pharmacy" 
+                  label="Pharmacies" 
+                  icon={<LocalHospital fontSize="small" />} 
+                  iconPosition="start" 
+                />
+              </Tabs>
+            </Box>
             
             <Grid container spacing={3}>
               <Grid item xs={12} md={8}>
@@ -616,19 +724,29 @@ const filteredInventory = Array.isArray(inventory) ?
                     </Typography>
                     
                     <FormControl fullWidth sx={{ mb: 3 }}>
-  <InputLabel>Select Retailer</InputLabel>
-  <Select
-    value={selectedRetailer}
-    onChange={(e) => setSelectedRetailer(e.target.value)}
-    label="Select Retailer"
-  >
-    {retailers.map(retailer => (
-      <MenuItem key={retailer._id} value={retailer._id}>
-        {retailer.name} ({retailer.organization})
-      </MenuItem>
-    ))}
-  </Select>
-</FormControl>
+                      <InputLabel>Select {recipientType.charAt(0).toUpperCase() + recipientType.slice(1)}</InputLabel>
+                      <Select
+                        value={selectedRecipient}
+                        onChange={(e) => setSelectedRecipient(e.target.value)}
+                        label={`Select ${recipientType.charAt(0).toUpperCase() + recipientType.slice(1)}`}
+                      >
+                        {recipientType === 'retailer' && retailers.map(retailer => (
+                          <MenuItem key={retailer._id} value={retailer._id}>
+                            {retailer.name} ({retailer.organization})
+                          </MenuItem>
+                        ))}
+                        {recipientType === 'wholesaler' && wholesalers.map(wholesaler => (
+                          <MenuItem key={wholesaler._id} value={wholesaler._id}>
+                            {wholesaler.name} ({wholesaler.organization})
+                          </MenuItem>
+                        ))}
+                        {recipientType === 'pharmacy' && pharmacies.map(pharmacy => (
+                          <MenuItem key={pharmacy._id} value={pharmacy._id}>
+                            {pharmacy.name} ({pharmacy.organization})
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                     
                     <Box sx={{ mb: 3 }}>
                       <Typography variant="body2" color="textSecondary" gutterBottom>
@@ -646,11 +764,11 @@ const filteredInventory = Array.isArray(inventory) ?
                       color="primary"
                       fullWidth
                       size="large"
-                      disabled={selectedDrugs.length === 0 || !selectedRetailer}
-                      onClick={handleShipToRetailer}
+                      disabled={selectedDrugs.length === 0 || !selectedRecipient}
+                      onClick={handleShipToRecipient}
                       startIcon={<LocalShipping />}
                     >
-                      Confirm Shipment
+                      Confirm Shipment to {recipientType.charAt(0).toUpperCase() + recipientType.slice(1)}
                     </Button>
                   </CardContent>
                 </DashboardCard>
@@ -739,7 +857,7 @@ const filteredInventory = Array.isArray(inventory) ?
                   </Typography>
                   <Box sx={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Typography variant="h3" color="secondary.main">
-                      {mockRetailers.length}
+                      {retailers.length}
                     </Typography>
                   </Box>
                 </CardContent>
@@ -750,11 +868,11 @@ const filteredInventory = Array.isArray(inventory) ?
               <DashboardCard>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Average Delivery Time
+                    Wholesalers Served
                   </Typography>
                   <Box sx={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Typography variant="h3" color="info.main">
-                      2.4 days
+                      {wholesalers.length}
                     </Typography>
                   </Box>
                 </CardContent>

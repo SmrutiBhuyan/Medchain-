@@ -1,7 +1,7 @@
 import express from 'express'
 import User from '../models/User.js';
 const router = express.Router();
-import { getRetailers } from '../controllers/userController.js';
+import { getRetailers, getWholesalers, getPharmacies } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 // Get all pending users
@@ -67,5 +67,10 @@ export const getDistributors = async (req, res) => {
 };
 router.get('/distributors', getDistributors);
 router.get('/retailers', protect, getRetailers);
+// Get all wholesalers
+router.get('/wholesalers', protect, getWholesalers);
+
+// Get all pharmacies
+router.get('/pharmacies', protect, getPharmacies);
 
 export default router;
