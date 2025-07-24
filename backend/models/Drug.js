@@ -30,12 +30,16 @@ const DrugSchema = new mongoose.Schema({
       message: 'Expiry date must be after manufacturing date'
     }
   },
-  batchBarcode: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true
-  },
+ batchBarcode: {
+  type: String,
+  required: true,
+  unique: true,
+  trim: true,
+  default: function() {
+    // Generate a default barcode if none provided
+    return generateBarcode(this.name, this.batch);
+  }
+},
   unitBarcodes: [{
     type: String,
     required: true,

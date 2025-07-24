@@ -7,6 +7,7 @@ const isValidBarcode = (barcode) => {
 };
 
 // Enhanced createDrug controller
+// In drugController.js
 export const createDrug = async (req, res) => {
   try {
     const { name, batch, quantity, mfgDate, expiryDate, barcode, manufacturerId, unitBarcodes } = req.body;
@@ -38,14 +39,14 @@ export const createDrug = async (req, res) => {
       });
     }
 
-    // Validate barcode if provided
-    if (barcode && !isValidBarcode(barcode)) {
-      return res.status(400).json({ error: 'Invalid barcode format. Only letters, numbers and hyphens are allowed.' });
-    }
+    // Generate batch barcode if not provided
+   const finalBatchBarcode = barcode && isValidBarcode(barcode) 
+  ? barcode 
+  : generateBarcode(name, batch);
 
-    // Check if barcode is already in use
+    // Check if barcode is already in use (only if provided)
     if (barcode) {
-      const barcodeInUse = await Drug.findOne({ batchBarcode: barcode });
+      const barcodeInUse = await Drug.findOne({ batchBarcode: finalBatchBarcode });
       if (barcodeInUse) {
         return res.status(400).json({ 
           error: 'Barcode already in use by another drug',
@@ -53,9 +54,6 @@ export const createDrug = async (req, res) => {
         });
       }
     }
-
-    // Generate batch barcode if not provided
-    const finalBatchBarcode = barcode || generateBarcode(name, batch);
 
     // Generate unit barcodes if not provided
     let finalUnitBarcodes = [];
@@ -66,7 +64,7 @@ export const createDrug = async (req, res) => {
       
       // Validate all unit barcodes
       for (const ub of unitBarcodes) {
-        if (!isValidBarcode(ub)) {
+        if (ub && !isValidBarcode(ub)) {
           return res.status(400).json({ error: `Invalid unit barcode format: ${ub}` });
         }
       }
@@ -86,7 +84,7 @@ export const createDrug = async (req, res) => {
       quantity: parseInt(quantity),
       mfgDate: manufacturingDate,
       expiryDate: expirationDate,
-      batchBarcode: finalBatchBarcode,
+      batchBarcode: finalBatchBarcode, // This will never be null
       unitBarcodes: finalUnitBarcodes,
       manufacturer: manufacturerId,
       status: 'in-stock'

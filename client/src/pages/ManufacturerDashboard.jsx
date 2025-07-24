@@ -47,29 +47,152 @@ const [dashboardStats, setDashboardStats] = useState({
 });
 const [isLoadingStats, setIsLoadingStats] = useState(false);
 
- const UnitBarcodeInput = ({ quantity, onBarcodesChange }) => {
-  const [barcodes, setBarcodes] = useState(Array(quantity).fill(''));
+const UnitBarcodeInput = ({ quantity, barcodes = [], onBarcodesChange }) => {
+  const [localBarcodes, setLocalBarcodes] = useState(Array(quantity).fill(''));
+  const [scanningIndex, setScanningIndex] = useState(null);
+  const [scanningStatus, setScanningStatus] = useState(Array(quantity).fill('idle')); // 'idle', 'scanning', 'success', 'error'
+  const inputRefs = useRef([]);
+
+  // Initialize localBarcodes with any provided barcodes
+  useEffect(() => {
+    inputRefs.current = inputRefs.current.slice(0, quantity);
+    const initialBarcodes = Array(quantity).fill('');
+    if (barcodes && barcodes.length > 0) {
+      barcodes.forEach((barcode, index) => {
+        if (index < quantity) {
+          initialBarcodes[index] = barcode;
+        }
+      });
+    }
+    setLocalBarcodes(initialBarcodes);
+  }, [quantity, barcodes]);
 
   const handleBarcodeChange = (index, value) => {
-    const newBarcodes = [...barcodes];
+    const newBarcodes = [...localBarcodes];
     newBarcodes[index] = value;
-    setBarcodes(newBarcodes);
+    setLocalBarcodes(newBarcodes);
     onBarcodesChange(newBarcodes);
+    
+    // Auto-focus next input if not last one and value entered
+    if (value && index < quantity - 1) {
+      setTimeout(() => {
+        inputRefs.current[index + 1]?.focus();
+      }, 10);
+    }
+  };
+
+  const handleScanSuccess = (barcode) => {
+    if (scanningIndex !== null) {
+      const newBarcodes = [...localBarcodes];
+      newBarcodes[scanningIndex] = barcode;
+      setLocalBarcodes(newBarcodes);
+      onBarcodesChange(newBarcodes);
+      
+      // Update scanning status
+      const newStatus = [...scanningStatus];
+      newStatus[scanningIndex] = 'success';
+      setScanningStatus(newStatus);
+      
+      // Reset status after delay
+      setTimeout(() => {
+        const resetStatus = [...scanningStatus];
+        resetStatus[scanningIndex] = 'idle';
+        setScanningStatus(resetStatus);
+        setScanningIndex(null);
+      }, 1000);
+    }
+  };
+
+  const handleStartScan = (index) => {
+    const newStatus = [...scanningStatus];
+    newStatus[index] = 'scanning';
+    setScanningStatus(newStatus);
+    setScanningIndex(index);
+  };
+
+  const handleScanError = () => {
+    if (scanningIndex !== null) {
+      const newStatus = [...scanningStatus];
+      newStatus[scanningIndex] = 'error';
+      setScanningStatus(newStatus);
+      
+      setTimeout(() => {
+        const resetStatus = [...scanningStatus];
+        resetStatus[scanningIndex] = 'idle';
+        setScanningStatus(resetStatus);
+        setScanningIndex(null);
+      }, 2000);
+    }
   };
 
   return (
     <div className="unit-barcodes-container">
       <h4>Unit Barcodes</h4>
       <div className="unit-barcodes-grid">
-        {barcodes.map((barcode, index) => (
+        {localBarcodes.map((barcode, index) => (
           <div key={index} className="unit-barcode-input">
             <label>Unit {index + 1}</label>
-            <input
-              type="text"
-              value={barcode}
-              onChange={(e) => handleBarcodeChange(index, e.target.value)}
-              placeholder="Leave blank for auto-generation"
-            />
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <input
+                ref={el => inputRefs.current[index] = el}
+                type="text"
+                value={barcode}
+                onChange={(e) => handleBarcodeChange(index, e.target.value)}
+                placeholder="Leave blank for auto-generation"
+                pattern="[A-Za-z0-9\-]+"
+                title="Only letters, numbers and hyphens allowed"
+                disabled={scanningStatus[index] === 'scanning'}
+              />
+              <button
+                type="button"
+                className={`btn ${scanningStatus[index] === 'scanning' ? 'btn-warning' : 
+                          scanningStatus[index] === 'success' ? 'btn-success' : 
+                          scanningStatus[index] === 'error' ? 'btn-danger' : 'btn-outline'}`}
+                onClick={() => handleStartScan(index)}
+                disabled={scanningStatus[index] !== 'idle'}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                {scanningStatus[index] === 'scanning' ? (
+                  <span>Scanning...</span>
+                ) : scanningStatus[index] === 'success' ? (
+                  <span>✓ Scanned!</span>
+                ) : scanningStatus[index] === 'error' ? (
+                  <span>Scan Failed</span>
+                ) : (
+                  <span>Scan</span>
+                )}
+              </button>
+            </div>
+            {scanningIndex === index && (
+              <div className="scanner-modal">
+                <div className="scanner-modal-content">
+                  <div className="scanner-modal-header">
+                    <h3>Scan Unit {index + 1} Barcode</h3>
+                    <button 
+                      className="btn btn-close" 
+                      onClick={() => {
+                        const newStatus = [...scanningStatus];
+                        newStatus[index] = 'idle';
+                        setScanningStatus(newStatus);
+                        setScanningIndex(null);
+                      }}
+                    >
+                      &times;
+                    </button>
+                  </div>
+                  <BarcodeScanner 
+                    onScan={handleScanSuccess}
+                    onClose={() => {
+                      const newStatus = [...scanningStatus];
+                      newStatus[index] = 'idle';
+                      setScanningStatus(newStatus);
+                      setScanningIndex(null);
+                    }}
+                    onError={handleScanError}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -83,14 +206,28 @@ const handleStartScan = () => {
   setShowScanner(true);
 };
 
-const handleScanSuccess = (barcode) => {
-  setScanningStatus('success');
-  setDrugForm(prev => ({ ...prev, barcode }));
-  setTimeout(() => {
-    setScanningStatus('idle');
-    setShowScanner(false);
-  }, 1000);
-};
+ const handleScanSuccess = (barcode) => {
+    if (scanningIndex !== null) {
+      const newBarcodes = [...localBarcodes];
+      newBarcodes[scanningIndex] = barcode;
+      setLocalBarcodes(newBarcodes);
+      onBarcodesChange(newBarcodes); // Update parent state immediately
+      
+      // Update scanning status
+      const newStatus = [...scanningStatus];
+      newStatus[scanningIndex] = 'success';
+      setScanningStatus(newStatus);
+      
+      // Reset status after delay
+      setTimeout(() => {
+        const resetStatus = [...scanningStatus];
+        resetStatus[scanningIndex] = 'idle';
+        setScanningStatus(resetStatus);
+        setScanningIndex(null);
+      }, 1000);
+    }
+  };
+
 
 const handleScanError = () => {
   setScanningStatus('error');
@@ -265,14 +402,35 @@ const handleTimeRangeChange = async (chartType, days) => {
   // Barcode Scanner Component
  const BarcodeScanner = ({ onScan, onClose, onError }) => {
   const scannerRef = useRef(null);
-  const fileInputRef = useRef(null); // Add this line
+  const fileInputRef = useRef(null);
+
+  const handleBarcodeFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const html5QrCode = new Html5Qrcode('barcode-scanner');
+    html5QrCode.scanFile(file, false)
+      .then(decodedText => {
+        if (/^[A-Za-z0-9-]+$/.test(decodedText)) {
+          onScan(decodedText);
+          if (onClose) onClose();
+        } else {
+          alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
+        }
+      })
+      .catch(err => {
+        console.error('File scan error:', err);
+        if (onError) onError(err.message);
+        alert('Failed to scan the file. Please try another image.');
+      });
+  };
 
   useEffect(() => {
-     const config = {
+    const config = {
       fps: 10,
       qrbox: 250,
       formatsToSupport: [
-         Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_39,
         Html5QrcodeSupportedFormats.UPC_A,
         Html5QrcodeSupportedFormats.UPC_E,
         Html5QrcodeSupportedFormats.EAN_8,
@@ -285,13 +443,14 @@ const handleTimeRangeChange = async (chartType, days) => {
       rememberLastUsedCamera: true,
       supportedScanTypes: [
         Html5QrcodeScanType.SCAN_TYPE_CAMERA,
-        Html5QrcodeScanType.SCAN_TYPE_FILE // Enable file scanning
+        Html5QrcodeScanType.SCAN_TYPE_FILE
       ]
     };
-     const scanner = new Html5QrcodeScanner('barcode-scanner', config, false);
+
+    const scanner = new Html5QrcodeScanner('barcode-scanner', config, false);
+    scannerRef.current = scanner;
 
     const successCallback = (decodedText) => {
-     // Validate the barcode format
       if (/^[A-Za-z0-9-]+$/.test(decodedText)) {
         scanner.clear().then(() => {
           onScan(decodedText);
@@ -307,7 +466,6 @@ const handleTimeRangeChange = async (chartType, days) => {
     };
 
     const errorCallback = (error) => {
-     
       if (!error.message.includes('No MultiFormat Readers')) {
         console.warn('QR code scan error', error);
         if (onError) onError(error.message);
@@ -315,7 +473,6 @@ const handleTimeRangeChange = async (chartType, days) => {
     };
 
     scanner.render(successCallback, errorCallback);
-    scannerRef.current = scanner;
 
     return () => {
       if (scannerRef.current) {
@@ -327,11 +484,8 @@ const handleTimeRangeChange = async (chartType, days) => {
     };
   }, [onScan, onClose, onError]);
 
- 
-
-
-    return (
-     <div className="scanner-container">
+  return (
+    <div className="scanner-container">
       <div id="barcode-scanner" style={{ width: '100%' }}></div>
       <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '10px' }}>
         <button 
@@ -499,8 +653,19 @@ const handleManualSubmit = async (e) => {
 
   try {
     const response = await axios.post('http://localhost:5000/api/drugs/create', {
-      ...drugForm,
+      name: drugForm.name,
+      batch: drugForm.batch,
+      quantity: parseInt(drugForm.quantity),
+      mfgDate: drugForm.mfgDate,
+      expiryDate: drugForm.expiryDate,
+      batchBarcode: drugForm.barcode,
+      unitBarcodes: drugForm.unitBarcodes,
       manufacturerId: user._id
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
     });
 
     if (response.data.success) {
@@ -525,7 +690,6 @@ const handleManualSubmit = async (e) => {
     }
   }
 };
-
 
 
   // Status badge component
@@ -961,15 +1125,15 @@ Example: "ABC-123-456,ABC-123-457,ABC-123-458"CSV template: Drug Name, Batch Num
         <label className="form-label">Barcode (leave blank for auto-generation)</label>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <input 
-            type="text" 
-            className="form-control" 
-            placeholder="Enter custom barcode"
-            name="barcode"
-            value={drugForm.barcode}
-            onChange={handleInputChange}
-            pattern="[A-Za-z0-9-]+"
-            title="Only letters, numbers and hyphens allowed"
-          />
+  type="text" 
+  className="form-control" 
+  placeholder="Enter custom barcode"
+  name="barcode"
+  value={drugForm.barcode}
+  onChange={handleInputChange}
+  pattern="[A-Za-z0-9\-]+"
+  title="Only letters, numbers and hyphens allowed"
+/>
          <button 
   type="button" 
   className={`btn ${scanningStatus === 'scanning' ? 'btn-warning' : 'btn-outline'}`}
@@ -1004,20 +1168,20 @@ Example: "ABC-123-456,ABC-123-457,ABC-123-458"CSV template: Drug Name, Batch Num
         </button>
       </div>
       <BarcodeScanner 
-        onScan={(barcode) => {
-          setDrugForm(prev => ({ ...prev, barcode }));
-          setShowScanner(false);
-          setScanningStatus('success');
-        }}
-        onClose={() => {
-          setShowScanner(false);
-          setScanningStatus('idle');
-        }}
-        onError={(error) => {
-          console.error('Scanner error:', error);
-          setScanningStatus('error');
-        }}
-      />
+  onScan={(barcode) => {
+    setDrugForm(prev => ({ ...prev, barcode }));
+    setShowScanner(false);
+    setScanningStatus('success');
+  }}
+  onClose={() => {
+    setShowScanner(false);
+    setScanningStatus('idle');
+  }}
+  onError={(error) => {
+    console.error('Scanner error:', error);
+    setScanningStatus('error');
+  }}
+/>
     </div>
   </div>
 )}
@@ -1025,12 +1189,13 @@ Example: "ABC-123-456,ABC-123-457,ABC-123-458"CSV template: Drug Name, Batch Num
         <small className="form-text">
           Barcode must be unique. If left blank, a barcode will be automatically generated.
         </small>
-        {drugForm.quantity > 0 && (
+  {parseInt(drugForm.quantity) > 0 && (
   <UnitBarcodeInput 
-    quantity={parseInt(drugForm.quantity)} 
-    onBarcodesChange={(barcodes) => setDrugForm(prev => ({ ...prev, unitBarcodes: barcodes }))}
-  />
-)}
+  quantity={parseInt(drugForm.quantity)} 
+  barcodes={drugForm.unitBarcodes || []}
+  onBarcodesChange={(barcodes) => setDrugForm(prev => ({ ...prev, unitBarcodes: barcodes }))}
+/>
+)}s
       </div>
       <div className="form-actions">
         <button 
