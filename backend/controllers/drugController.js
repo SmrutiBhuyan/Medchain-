@@ -9,7 +9,7 @@ const isValidBarcode = (barcode) => {
 // Enhanced createDrug controller
 export const createDrug = async (req, res) => {
   try {
-    const { name, batch, quantity, mfgDate, expiryDate, barcode, manufacturerId } = req.body;
+    const { name, batch, quantity, mfgDate, expiryDate, barcode, manufacturerId, unitBarcodes } = req.body;
 
     // Validate required fields
     if (!name || !batch || !quantity || !mfgDate || !expiryDate || !manufacturerId) {
@@ -45,7 +45,7 @@ export const createDrug = async (req, res) => {
 
     // Check if barcode is already in use
     if (barcode) {
-      const barcodeInUse = await Drug.findOne({ barcode });
+      const barcodeInUse = await Drug.findOne({ batchBarcode: barcode });
       if (barcodeInUse) {
         return res.status(400).json({ 
           error: 'Barcode already in use by another drug',
@@ -54,8 +54,30 @@ export const createDrug = async (req, res) => {
       }
     }
 
-    // Generate barcode if not provided
-    const finalBarcode = barcode || generateBarcode(name, batch);
+    // Generate batch barcode if not provided
+    const finalBatchBarcode = barcode || generateBarcode(name, batch);
+
+    // Generate unit barcodes if not provided
+    let finalUnitBarcodes = [];
+    if (unitBarcodes && Array.isArray(unitBarcodes)) {
+      if (unitBarcodes.length !== parseInt(quantity)) {
+        return res.status(400).json({ error: 'Number of unit barcodes must match quantity' });
+      }
+      
+      // Validate all unit barcodes
+      for (const ub of unitBarcodes) {
+        if (!isValidBarcode(ub)) {
+          return res.status(400).json({ error: `Invalid unit barcode format: ${ub}` });
+        }
+      }
+      
+      finalUnitBarcodes = unitBarcodes;
+    } else {
+      // Auto-generate unit barcodes
+      for (let i = 1; i <= quantity; i++) {
+        finalUnitBarcodes.push(generateBarcode(name, batch, i));
+      }
+    }
 
     // Create new drug
     const drug = new Drug({
@@ -64,7 +86,8 @@ export const createDrug = async (req, res) => {
       quantity: parseInt(quantity),
       mfgDate: manufacturingDate,
       expiryDate: expirationDate,
-      barcode: finalBarcode,
+      batchBarcode: finalBatchBarcode,
+      unitBarcodes: finalUnitBarcodes,
       manufacturer: manufacturerId,
       status: 'in-stock'
     });

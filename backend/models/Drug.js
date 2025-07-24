@@ -30,12 +30,18 @@ const DrugSchema = new mongoose.Schema({
       message: 'Expiry date must be after manufacturing date'
     }
   },
-  barcode: {
+  batchBarcode: {
     type: String,
     required: true,
     unique: true,
     trim: true
   },
+  unitBarcodes: [{
+    type: String,
+    required: true,
+    unique: true,
+    trim: true
+  }],
   manufacturer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -43,7 +49,7 @@ const DrugSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['in-stock', 'shipped', 'delivered', 'recalled', 'expired','in-stock with distributor'],
+    enum: ['in-stock', 'shipped', 'delivered', 'recalled', 'expired', 'in-stock with distributor'],
     default: 'in-stock'
   },
   currentHolder: {
@@ -56,7 +62,9 @@ const DrugSchema = new mongoose.Schema({
   }
 });
 
+// Indexes
 DrugSchema.index({ name: 1, batch: 1 }, { unique: true });
-DrugSchema.index({ barcode: 1 }, { unique: true });
+DrugSchema.index({ batchBarcode: 1 }, { unique: true });
+DrugSchema.index({ unitBarcodes: 1 });
 
 export default mongoose.model('Drug', DrugSchema);

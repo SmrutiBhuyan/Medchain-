@@ -47,6 +47,36 @@ const [dashboardStats, setDashboardStats] = useState({
 });
 const [isLoadingStats, setIsLoadingStats] = useState(false);
 
+ const UnitBarcodeInput = ({ quantity, onBarcodesChange }) => {
+  const [barcodes, setBarcodes] = useState(Array(quantity).fill(''));
+
+  const handleBarcodeChange = (index, value) => {
+    const newBarcodes = [...barcodes];
+    newBarcodes[index] = value;
+    setBarcodes(newBarcodes);
+    onBarcodesChange(newBarcodes);
+  };
+
+  return (
+    <div className="unit-barcodes-container">
+      <h4>Unit Barcodes</h4>
+      <div className="unit-barcodes-grid">
+        {barcodes.map((barcode, index) => (
+          <div key={index} className="unit-barcode-input">
+            <label>Unit {index + 1}</label>
+            <input
+              type="text"
+              value={barcode}
+              onChange={(e) => handleBarcodeChange(index, e.target.value)}
+              placeholder="Leave blank for auto-generation"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 
 const handleStartScan = () => {
   setScanningStatus('scanning');
@@ -135,15 +165,16 @@ const fetchDashboardStats = async () => {
 };
  
 
-  // Form state
-  const [drugForm, setDrugForm] = useState({
-    name: '',
-    batch: '',
-    quantity: '',
-    mfgDate: '',
-    expiryDate: '',
-    barcode: ''
-  });
+ // In the drugForm state, add unitBarcodes:
+const [drugForm, setDrugForm] = useState({
+  name: '',
+  batch: '',
+  quantity: '',
+  mfgDate: '',
+  expiryDate: '',
+  barcode: '',
+  unitBarcodes: []
+});
 
   const parseCSV = (file) => {
     return new Promise((resolve, reject) => {
@@ -295,6 +326,9 @@ const handleTimeRangeChange = async (chartType, days) => {
       }
     };
   }, [onScan, onClose, onError]);
+
+ 
+
 
     return (
      <div className="scanner-container">
@@ -453,7 +487,8 @@ const handleTimeRangeChange = async (chartType, days) => {
     }
   };
 
- const handleManualSubmit = async (e) => {
+ // Update the manual submission handler:
+const handleManualSubmit = async (e) => {
   e.preventDefault();
   
   // Validate barcode format
@@ -469,8 +504,7 @@ const handleTimeRangeChange = async (chartType, days) => {
     });
 
     if (response.data.success) {
-      alert(`Drug ${response.data.drug.name} created successfully with barcode: ${response.data.drug.barcode}`);
-      // Add to preview data
+      alert(`Drug ${response.data.drug.name} created successfully with ${response.data.drug.quantity} units`);
       setPreviewData(prev => [...prev, drugForm]);
       setDrugForm({
         name: '',
@@ -478,7 +512,8 @@ const handleTimeRangeChange = async (chartType, days) => {
         quantity: '',
         mfgDate: '',
         expiryDate: '',
-        barcode: ''
+        barcode: '',
+        unitBarcodes: []
       });
     }
   } catch (error) {
@@ -490,6 +525,9 @@ const handleTimeRangeChange = async (chartType, days) => {
     }
   }
 };
+
+
+
   // Status badge component
   const StatusBadge = ({ status }) => {
     const statusMap = {
@@ -510,6 +548,8 @@ const handleTimeRangeChange = async (chartType, days) => {
       </span>
     );
   };
+
+  
 
   const fetchManufacturerDrugs = async () => {
   setIsLoadingInventory(true);
@@ -827,7 +867,13 @@ useEffect(() => {
       >
         <FaUpload /> Browse Files
       </button>
-      <small>CSV template: Drug Name, Batch Number, Quantity, Manufacturing Date, Expiry Date</small>
+      <small>CSV template: 
+Drug Name, Batch Number, Quantity, Manufacturing Date, Expiry Date, Batch Barcode, Unit Barcodes
+
+For Unit Barcodes:
+- Leave blank to auto-generate
+- Or provide comma-separated list of barcodes (must match quantity)
+Example: "ABC-123-456,ABC-123-457,ABC-123-458"CSV template: Drug Name, Batch Number, Quantity, Manufacturing Date, Expiry Date</small>
       
       {fileUploadState.file && (
   <div className="file-info">
@@ -975,9 +1021,16 @@ useEffect(() => {
     </div>
   </div>
 )}
+
         <small className="form-text">
           Barcode must be unique. If left blank, a barcode will be automatically generated.
         </small>
+        {drugForm.quantity > 0 && (
+  <UnitBarcodeInput 
+    quantity={parseInt(drugForm.quantity)} 
+    onBarcodesChange={(barcodes) => setDrugForm(prev => ({ ...prev, unitBarcodes: barcodes }))}
+  />
+)}
       </div>
       <div className="form-actions">
         <button 

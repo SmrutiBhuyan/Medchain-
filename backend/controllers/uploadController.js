@@ -5,10 +5,6 @@ import csvParser from 'csv-parser';
 
 export const uploadCSV = async (req, res) => {
   try {
-    console.log('Upload request received');
-    console.log('Files:', req.file);
-    console.log('Body:', req.body);
-
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
@@ -46,17 +42,39 @@ export const uploadCSV = async (req, res) => {
               continue;
             }
 
-            if (!drugData.barcode) {
-              drugData.barcode = generateBarcode(drugData.name, drugData.batch);
+            // Generate batch barcode if not provided
+            const batchBarcode = drugData.batchBarcode || generateBarcode(drugData.name, drugData.batch);
+
+            // Handle unit barcodes
+            let unitBarcodes = [];
+            const quantity = parseInt(drugData.quantity);
+            
+            if (drugData.unitBarcodes) {
+              // If unit barcodes are provided as a comma-separated string
+              unitBarcodes = drugData.unitBarcodes.split(',').map(b => b.trim());
+              
+              if (unitBarcodes.length !== quantity) {
+                errors.push({
+                  row: drugData,
+                  error: 'Number of unit barcodes must match quantity'
+                });
+                continue;
+              }
+            } else {
+              // Auto-generate unit barcodes
+              for (let i = 1; i <= quantity; i++) {
+                unitBarcodes.push(generateBarcode(drugData.name, drugData.batch, i));
+              }
             }
 
             const drug = new Drug({
               name: drugData.name,
               batch: drugData.batch,
-              quantity: parseInt(drugData.quantity),
+              quantity: quantity,
               mfgDate: new Date(drugData.mfgDate),
               expiryDate: new Date(drugData.expiryDate),
-              barcode: drugData.barcode,
+              batchBarcode: batchBarcode,
+              unitBarcodes: unitBarcodes,
               manufacturer: req.body.manufacturerId,
               status: 'in-stock'
             });
