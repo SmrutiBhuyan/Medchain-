@@ -17,13 +17,6 @@ import { useTheme } from '@mui/material/styles';
 import { useAuth } from './AuthContext';
 import axios from 'axios';
 
-const mockInventory = [
-  { id: 'DRG-001', name: 'Paracetamol 500mg', barcode: '8901234567890', batch: 'B20230501', manufacturer: 'PharmaCorp', expiry: '2024-06-30', status: 'in_stock' },
-  { id: 'DRG-002', name: 'Ibuprofen 400mg', barcode: '8901234567891', batch: 'B20230502', manufacturer: 'MediLife', expiry: '2024-07-15', status: 'in_stock' },
-  { id: 'DRG-003', name: 'Amoxicillin 250mg', barcode: '8901234567892', batch: 'B20230503', manufacturer: 'HealthPlus', expiry: '2024-05-30', status: 'in_stock' },
-  { id: 'DRG-004', name: 'Cetirizine 10mg', barcode: '8901234567893', batch: 'B20230504', manufacturer: 'PharmaCorp', expiry: '2024-08-20', status: 'in_stock' },
-];
-
 const mockRetailers = [
   { id: 'RET-001', name: 'City Pharmacy' },
   { id: 'RET-002', name: 'MediMart' },
@@ -105,10 +98,40 @@ const DistributorDashboard = () => {
         setShipments(shipmentsRes.data);
         
         // Fetch inventory for this distributor
-        const inventoryRes = await axios.get('http://localhost:5000/api/drugs/distributor', {
-          headers: { Authorization: `Bearer ${token}` }
+       // Fetch inventory for this distributor
+        const inventoryRes = await axios.get('http://localhost:5000/api/drugs/inventory', {
+          headers: { Authorization: `Bearer ${token}` },
+           params: { status: 'in-stock with distributor' } 
         });
-        setInventory(inventoryRes.data);
+        console.log(inventoryRes.data);
+        
+        // Check if response has drugs array
+        if (!inventoryRes.data?.drugs || !Array.isArray(inventoryRes.data.drugs)) {
+          console.error('Invalid inventory data format:', inventoryRes.data);
+          setInventory([]);
+        } else {
+          // Flatten the batch data into individual units
+          const flattenedInventory = inventoryRes.data.drugs.flatMap(drug => {
+            if (!drug.unitBarcodes || !Array.isArray(drug.unitBarcodes)) {
+              console.warn('Drug missing unitBarcodes:', drug);
+              return [];
+            }
+            return drug.unitBarcodes.map(barcode => ({
+              _id: `${drug._id}-${barcode}`,
+              name: drug.name,
+              batch: drug.batch,
+              barcode: barcode,
+              batchBarcode: drug.batchBarcode,
+              expiryDate: drug.expiryDate,
+              manufacturer: drug.manufacturer,
+              status: drug.status,
+              currentHolder: drug.currentHolder
+            }));
+          });
+
+          console.log('Flattened inventory:', flattenedInventory);
+          setInventory(flattenedInventory);
+        }
         
         // Fetch retailers
         const retailersRes = await axios.get('http://localhost:5000/api/users/retailers', {
@@ -139,12 +162,6 @@ const DistributorDashboard = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      // Update drug statuses
-      // await axios.put(
-      //   `http://localhost:5000/api/drugs/update-from-shipment/${shipmentId}`,
-      //   { status: 'in-stock with distributor', currentHolder: user._id },
-      //   { headers: { Authorization: `Bearer ${token}` } }
-      // );
       
       // Refresh data
       const shipmentsRes = await axios.get('http://localhost:5000/api/shipments/distributor', {
@@ -152,10 +169,36 @@ const DistributorDashboard = () => {
       });
       setShipments(shipmentsRes.data);
       
-      const inventoryRes = await axios.get('http://localhost:5000/api/drugs/distributor', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setInventory(inventoryRes.data);
+   const inventoryRes = await axios.get('http://localhost:5000/api/drugs/inventory', {
+  headers: { Authorization: `Bearer ${token}` },
+  params: { status: 'in-stock with distributor' } 
+});
+// Check if response has drugs array
+if (!inventoryRes.data?.drugs || !Array.isArray(inventoryRes.data.drugs)) {
+  console.error('Invalid inventory data format:', inventoryRes.data);
+  setInventory([]);
+  return;
+}
+
+// Flatten the batch data into individual units
+const flattenedInventory = inventoryRes.data.drugs.flatMap(drug => {
+  if (!drug.unitBarcodes || !Array.isArray(drug.unitBarcodes)) {
+    return [];
+  }
+  return drug.unitBarcodes.map(barcode => ({
+    _id: `${drug._id}-${barcode}`,
+    name: drug.name,
+    batch: drug.batch,
+    barcode: barcode,
+    batchBarcode: drug.batchBarcode,
+    expiryDate: drug.expiryDate,
+    manufacturer: drug.manufacturer,
+    status: drug.status,
+    currentHolder: drug.currentHolder
+  }));
+});
+
+setInventory(flattenedInventory);
       
       setSelectedShipment(null);
     } catch (error) {
@@ -207,24 +250,31 @@ const DistributorDashboard = () => {
   };
 
   const handleShipToRetailer = () => {
-    if (selectedDrugs.length === 0 || !selectedRetailer) return;
-    
-    setInventory(inventory.filter(drug => !selectedDrugs.includes(drug.id)));
-    setSelectedDrugs([]);
-    setSelectedRetailer('');
-    alert(`Successfully shipped ${selectedDrugs.length} drugs to ${mockRetailers.find(r => r.id === selectedRetailer)?.name}`);
-  };
-
-  const verifyDrug = () => {
-    const foundDrug = inventory.find(drug => drug.barcode === qrInput);
-    setVerificationResult(foundDrug || { error: 'Drug not found in system' });
-    setOpenModal(true);
-  };
-
-  const filteredInventory = inventory.filter(drug => 
-    drug.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    drug.barcode.includes(searchTerm)
+  if (selectedDrugs.length === 0 || !selectedRetailer) return;
+  
+  setInventory(inventory.filter(drug => !selectedDrugs.includes(drug._id)));
+  setSelectedDrugs([]);
+  setSelectedRetailer('');
+  alert(`Successfully shipped ${selectedDrugs.length} drugs to ${mockRetailers.find(r => r.id === selectedRetailer)?.name}`);
+};
+ const verifyDrug = () => {
+  const foundDrug = inventory.find(drug => 
+    drug.barcode === qrInput || 
+    drug.batchBarcode === qrInput
   );
+  
+  setVerificationResult(foundDrug || { error: 'Drug not found in system' });
+  setOpenModal(true);
+};
+
+const filteredInventory = Array.isArray(inventory) ? 
+  inventory.filter(drug => {
+    if (!drug) return false;
+    const nameMatch = drug.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const barcodeMatch = drug.barcode?.includes(searchTerm);
+    const batchBarcodeMatch = drug.batchBarcode?.includes(searchTerm);
+    return nameMatch || barcodeMatch || batchBarcodeMatch;
+  }) : [];
 
   const pendingShipments = shipments.filter(s => s.status === 'processing');
   const receivedShipments = shipments.filter(s => s.status === 'delivered');
@@ -434,62 +484,62 @@ const DistributorDashboard = () => {
           </Box>
         )}
 
-        {activeTab === 'inventory' && (
-          <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                Current Inventory ({inventory.length} drugs)
-              </Typography>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Search drugs..."
-                InputProps={{
-                  startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
-                }}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                sx={{ width: 300 }}
-              />
-            </Box>
-            
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                  <TableRow>
-                    <TableCell>Drug Name</TableCell>
-                    <TableCell>Barcode</TableCell>
-                    <TableCell>Batch Number</TableCell>
-                    <TableCell>Manufacturer</TableCell>
-                    <TableCell>Expiry Date</TableCell>
-                    <TableCell>Status</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredInventory.map((drug) => (
-                    <TableRow key={drug.id}>
-                      <TableCell>{drug.name}</TableCell>
-                      <TableCell>{drug.barcode}</TableCell>
-                      <TableCell>{drug.batch}</TableCell>
-                      <TableCell>{getManufacturerName(drug.manufacturer)}</TableCell>
-                      <TableCell>{drug.expiry}</TableCell>
-                      <TableCell>
-                        <StatusChip label={drug.status} status={drug.status} size="small" />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-            
-            {filteredInventory.length === 0 && (
-              <Box sx={{ p: 3, textAlign: 'center', backgroundColor: '#f9f9f9', borderRadius: 2, mt: 2 }}>
-                <Typography variant="body1" color="textSecondary">
-                  No drugs found matching your search
-                </Typography>
-              </Box>
-            )}
-          </Box>
-        )}
+  {activeTab === 'inventory' && (
+  <Box>
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+        Current Inventory ({inventory.length} units)
+      </Typography>
+      <TextField
+        variant="outlined"
+        size="small"
+        placeholder="Search drugs..."
+        InputProps={{
+          startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
+        }}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        sx={{ width: 300 }}
+      />
+    </Box>
+    
+    <TableContainer component={Paper}>
+      <Table>
+        <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+          <TableRow>
+            <TableCell>Drug Name</TableCell>
+            <TableCell>Unit Barcode</TableCell>
+            <TableCell>Batch Number</TableCell>
+            <TableCell>Manufacturer</TableCell>
+            <TableCell>Expiry Date</TableCell>
+            <TableCell>Status</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {filteredInventory.map((drug) => (
+            <TableRow key={drug._id}>
+              <TableCell>{drug.name}</TableCell>
+              <TableCell>{drug.barcode}</TableCell>
+              <TableCell>{drug.batch}</TableCell>
+              <TableCell>{getManufacturerName(drug.manufacturer)}</TableCell>
+              <TableCell>{new Date(drug.expiryDate).toLocaleDateString()}</TableCell>
+              <TableCell>
+                <StatusChip label={drug.status} status={drug.status} size="small" />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+    
+    {filteredInventory.length === 0 && (
+      <Box sx={{ p: 3, textAlign: 'center', backgroundColor: '#f9f9f9', borderRadius: 2, mt: 2 }}>
+        <Typography variant="body1" color="textSecondary">
+          {inventory.length === 0 ? 'No inventory available' : 'No drugs found matching your search'}
+        </Typography>
+      </Box>
+    )}
+  </Box>
+)}
 
         {activeTab === 'ship' && (
           <Box>
@@ -530,22 +580,22 @@ const DistributorDashboard = () => {
                           <TableBody>
                             {filteredInventory.map((drug) => (
                               <TableRow 
-                                key={drug.id} 
+                                key={drug._id} 
                                 hover 
-                                selected={selectedDrugs.includes(drug.id)}
-                                onClick={() => handleSelectDrug(drug.id)}
+                                selected={selectedDrugs.includes(drug._id)}
+                                onClick={() => handleSelectDrug(drug._id)}
                                 sx={{ cursor: 'pointer' }}
                               >
                                 <TableCell padding="checkbox">
-                                  {selectedDrugs.includes(drug.id) ? (
+                                  {selectedDrugs.includes(drug._id) ? (
                                     <CheckCircle color="primary" />
                                   ) : (
                                     <Cancel color="disabled" />
                                   )}
                                 </TableCell>
                                 <TableCell>{drug.name}</TableCell>
-                                <TableCell>{drug.barcode}</TableCell>
-                                <TableCell>{drug.expiry}</TableCell>
+                                <TableCell>{drug.batchBarcode || "No rendering"}</TableCell>
+                                <TableCell>{new Date(drug.expiryDate).toLocaleDateString()}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>

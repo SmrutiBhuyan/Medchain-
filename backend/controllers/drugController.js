@@ -160,14 +160,41 @@ export const getDrugsByManufacturer = async (req, res) => {
   }
 };
 
-
-// Get drugs for distributor
-export const getDistributorDrugs = async (req, res) => {
+// Enhanced getDistributorDrugs controller
+export const getDistributorInventory = async (req, res) => {
   try {
-    const drugs = await Drug.find({ currentHolder: req.user._id });
-    res.json(drugs);
+    console.log("Fetching Inventory...");
+    
+    const { status } = req.query;
+    const distributorId = req.user._id;
+
+    const query = { 
+      distributor: distributorId,
+      currentHolder: 'distributor'
+    };
+
+    if (status) {
+      query.status = status;
+    }
+
+    const drugs = await Drug.find(query)
+      .populate('manufacturer', 'name organization')
+      .select('name batch quantity mfgDate expiryDate batchBarcode unitBarcodes manufacturer status currentHolder')
+      .sort({ createdAt: -1 });
+      console.log("Drugs: ",drugs);
+      
+
+    res.json({
+      success: true,
+      count: drugs.length,
+      drugs
+    });
   } catch (error) {
-    console.error('Error fetching drugs:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error fetching distributor drugs:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error',
+      error: error.message 
+    });
   }
 };
