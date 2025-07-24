@@ -137,6 +137,8 @@ const DistributorDashboard = () => {
         const retailersRes = await axios.get('http://localhost:5000/api/users/retailers', {
           headers: { Authorization: `Bearer ${token}` }
         });
+        console.log("Retailers fetched: ", retailersRes);
+        
         setRetailers(retailersRes.data);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -614,19 +616,19 @@ const filteredInventory = Array.isArray(inventory) ?
                     </Typography>
                     
                     <FormControl fullWidth sx={{ mb: 3 }}>
-                      <InputLabel>Select Retailer</InputLabel>
-                      <Select
-                        value={selectedRetailer}
-                        onChange={(e) => setSelectedRetailer(e.target.value)}
-                        label="Select Retailer"
-                      >
-                        {mockRetailers.map(retailer => (
-                          <MenuItem key={retailer.id} value={retailer.id}>
-                            {retailer.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+  <InputLabel>Select Retailer</InputLabel>
+  <Select
+    value={selectedRetailer}
+    onChange={(e) => setSelectedRetailer(e.target.value)}
+    label="Select Retailer"
+  >
+    {retailers.map(retailer => (
+      <MenuItem key={retailer._id} value={retailer._id}>
+        {retailer.name} ({retailer.organization})
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
                     
                     <Box sx={{ mb: 3 }}>
                       <Typography variant="body2" color="textSecondary" gutterBottom>
