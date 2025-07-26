@@ -1,19 +1,55 @@
 import mongoose from 'mongoose';
 
 const shipmentSchema = new mongoose.Schema({
+  trackingNumber: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true
+  },
   drugs: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Drug',
     required: true
   }],
-  manufacturer: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  distributor: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+  shippedUnits: [{
+    barcode: {
+      type: String,
+      required: true
+    },
+    drugId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Drug',
+      required: true
+    }
+  }],
+  // Flexible supply chain participants
+  participants: [{
+    type: {
+      type: String,
+      enum: ['manufacturer', 'distributor', 'wholesaler', 'retailer', 'pharmacy', 'consumer'],
+      required: true
+    },
+    participantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    expectedArrival: Date,
+    actualArrival: Date,
+    expectedDeparture: Date,
+    actualDeparture: Date,
+    notes: String,
+    status: {
+      type: String,
+      enum: ['pending', 'in-process', 'completed', 'cancelled','in-transit'],
+      default: 'pending'
+    }
+  }],
+  // Current location in the supply chain
+  currentLocation: {
+    type: String,
+    enum: ['manufacturer', 'distributor', 'wholesaler', 'retailer', 'pharmacy', 'consumer', 'in-transit'],
     required: true
   },
   estimatedDelivery: {
@@ -27,11 +63,8 @@ const shipmentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['processing', 'in-transit', 'delivered', 'cancelled'],
+    enum: ['processing', 'in-transit', 'delivered', 'cancelled', 'returned'],
     default: 'processing'
-  },
-  trackingNumber: {
-    type: String
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -42,10 +75,14 @@ const shipmentSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Add indexes for better query performance
-shipmentSchema.index({ manufacturer: 1, status: 1 });
-shipmentSchema.index({ distributor: 1, status: 1 });
+// Indexes for better query performance
+shipmentSchema.index({ trackingNumber: 1 });
+shipmentSchema.index({ status: 1 });
+shipmentSchema.index({ currentLocation: 1 });
+shipmentSchema.index({ 'participants.participantId': 1 });
+shipmentSchema.index({ 'participants.type': 1 });
 shipmentSchema.index({ drugs: 1 });
+shipmentSchema.index({ createdBy: 1 });
 
 const Shipment = mongoose.model('Shipment', shipmentSchema);
 

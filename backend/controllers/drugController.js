@@ -7,10 +7,20 @@ const isValidBarcode = (barcode) => {
 };
 
 // Enhanced createDrug controller
-// In drugController.js
+// Update createDrug controller to handle unitBarcodes properly
+// Update createDrug controller to handle unitBarcodes properly
 export const createDrug = async (req, res) => {
   try {
-    const { name, batch, quantity, mfgDate, expiryDate, barcode, manufacturerId, unitBarcodes } = req.body;
+    const { 
+      name, 
+      batch, 
+      quantity, 
+      mfgDate, 
+      expiryDate, 
+      batchBarcode, 
+      manufacturerId, 
+      unitBarcodes 
+    } = req.body;
 
     // Validate required fields
     if (!name || !batch || !quantity || !mfgDate || !expiryDate || !manufacturerId) {
@@ -40,12 +50,12 @@ export const createDrug = async (req, res) => {
     }
 
     // Generate batch barcode if not provided
-   const finalBatchBarcode = barcode && isValidBarcode(barcode) 
-  ? barcode 
-  : generateBarcode(name, batch);
+    const finalBatchBarcode = batchBarcode && isValidBarcode(batchBarcode) 
+      ? batchBarcode 
+      : generateBarcode(name, batch);
 
     // Check if barcode is already in use (only if provided)
-    if (barcode) {
+    if (batchBarcode) {
       const barcodeInUse = await Drug.findOne({ batchBarcode: finalBatchBarcode });
       if (barcodeInUse) {
         return res.status(400).json({ 
@@ -55,25 +65,35 @@ export const createDrug = async (req, res) => {
       }
     }
 
-    // Generate unit barcodes if not provided
-    let finalUnitBarcodes = [];
-    if (unitBarcodes && Array.isArray(unitBarcodes)) {
-      if (unitBarcodes.length !== parseInt(quantity)) {
+    // Process unit barcodes
+    const processedUnitBarcodes = [];
+    const quantityInt = parseInt(quantity);
+    
+    if (unitBarcodes && Array.isArray(unitBarcodes) && unitBarcodes.length > 0) {
+      // Validate provided unit barcodes
+      if (unitBarcodes.length !== quantityInt) {
         return res.status(400).json({ error: 'Number of unit barcodes must match quantity' });
       }
-      
-      // Validate all unit barcodes
-      for (const ub of unitBarcodes) {
-        if (ub && !isValidBarcode(ub)) {
-          return res.status(400).json({ error: `Invalid unit barcode format: ${ub}` });
+
+      for (const barcode of unitBarcodes) {
+        if (barcode && !isValidBarcode(barcode)) {
+          return res.status(400).json({ error: `Invalid unit barcode format: ${barcode}` });
         }
+
+        processedUnitBarcodes.push({
+          barcode: barcode || generateBarcode(name, batch, Math.random().toString(36).substring(2, 8)),
+          status: 'in-stock',
+          currentHolder: 'manufacturer'
+        });
       }
-      
-      finalUnitBarcodes = unitBarcodes;
     } else {
       // Auto-generate unit barcodes
-      for (let i = 1; i <= quantity; i++) {
-        finalUnitBarcodes.push(generateBarcode(name, batch, i));
+      for (let i = 1; i <= quantityInt; i++) {
+        processedUnitBarcodes.push({
+          barcode: generateBarcode(name, batch, i),
+          status: 'in-stock',
+          currentHolder: 'manufacturer'
+        });
       }
     }
 
@@ -81,13 +101,14 @@ export const createDrug = async (req, res) => {
     const drug = new Drug({
       name,
       batch,
-      quantity: parseInt(quantity),
+      quantity: quantityInt,
       mfgDate: manufacturingDate,
       expiryDate: expirationDate,
-      batchBarcode: finalBatchBarcode, // This will never be null
-      unitBarcodes: finalUnitBarcodes,
+      batchBarcode: finalBatchBarcode,
+      unitBarcodes: processedUnitBarcodes,
       manufacturer: manufacturerId,
-      status: 'in-stock'
+      status: 'in-stock',
+      currentHolder: 'manufacturer'
     });
 
     await drug.save();
@@ -107,6 +128,35 @@ export const createDrug = async (req, res) => {
   }
 };
 
+// In your drugController.js
+export const verifyDrugsForShipment = async (req, res) => {
+  try {
+    const { drugIds } = req.body;
+    const manufacturerId = req.user._id;
+
+    const invalidDrugs = await Drug.find({
+      _id: { $in: drugIds },
+      $or: [
+        { manufacturer: { $ne: manufacturerId } },
+        { status: { $ne: 'in-stock' } },
+        { currentHolder: { $ne: 'manufacturer' } }
+      ]
+    });
+
+    if (invalidDrugs.length > 0) {
+      return res.json({
+        allValid: false,
+        message: `${invalidDrugs.length} drugs cannot be shipped`,
+        invalidDrugs: invalidDrugs.map(d => d._id)
+      });
+    }
+
+    res.json({ allValid: true });
+  } catch (error) {
+    console.error('Verification error:', error);
+    res.status(500).json({ error: 'Verification failed' });
+  }
+};
 // New controller for barcode lookup
 export const getDrugByBarcode = async (req, res) => {
   try {

@@ -3,39 +3,72 @@ import Drug from '../models/Drug.js';
 import User from '../models/User.js';
 
 
+// Update createShipment to handle unit status changes
 export const createShipment = async (req, res) => {
   try {
-    console.log('Create shipment endpoint hit');
-    console.log('Request body:', req.body);
-    console.log('User:', req.user); // Add this to check the authenticated user
-
     // Validate request body
-    if (!req.body || !req.body.drugs || !req.body.distributorId || !req.body.manufacturerId) {
-      return res.status(400).json({ error: 'Missing required fields in request body' });
+       if (!req.body || !req.body.drugs || !req.body.distributorId) {
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        details: {
+          missing: [
+            ...(!req.body.drugs ? ['drugs'] : []),
+            ...(!req.body.distributorId ? ['distributorId'] : [])
+          ]
+        }
+      });
     }
 
-    const { drugs, distributorId, manufacturerId, estimatedDelivery, notes } = req.body;
+    const { drugs, distributorId, estimatedDelivery, notes } = req.body;
+    const manufacturerId = req.user._id;
 
     // Validate drugs exist and belong to manufacturer
     const drugCount = await Drug.countDocuments({
       _id: { $in: drugs },
       manufacturer: manufacturerId,
-      status: 'in-stock'
+      status: 'in-stock',
+      currentHolder: 'manufacturer'
     });
     
     if (drugCount !== drugs.length) {
       return res.status(400).json({ error: 'Some drugs are invalid or not available' });
     }
 
-    // Create shipment with createdBy field
+    // Get drug details for unit barcodes
+    const drugDetails = await Drug.find({ _id: { $in: drugs } });
+
+    // Generate tracking number
+    const trackingNumber = `SH-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    // Create shipment
     const shipment = new Shipment({
+      trackingNumber,
       drugs,
-      distributor: distributorId,
-      manufacturer: manufacturerId,
-      createdBy: req.user._id, // Add this line
+      shippedUnits: drugDetails.flatMap(drug => 
+        drug.unitBarcodes.map(unit => ({
+          barcode: unit.barcode,
+          drugId: drug._id
+        }))
+      ),
+      participants: [
+        {
+          type: 'manufacturer',
+          participantId: manufacturerId,
+          status: 'completed',
+          actualDeparture: new Date()
+        },
+        {
+          type: 'distributor',
+          participantId: distributorId,
+          status: 'pending'
+        }
+      ],
+      currentLocation: 'in-transit',
+      status: 'processing',
       estimatedDelivery: estimatedDelivery ? new Date(estimatedDelivery) : undefined,
       notes,
-      status: 'processing'
+      createdBy: manufacturerId,
+      distributor: distributorId 
     });
 
     await shipment.save();
@@ -43,16 +76,28 @@ export const createShipment = async (req, res) => {
     // Update drug statuses
     await Drug.updateMany(
       { _id: { $in: drugs } },
-      { $set: { status: 'shipped' } }
+      { 
+        $set: { 
+          status: 'in-transit',
+          currentHolder: 'in-transit',
+          distributor: distributorId,
+          'unitBarcodes.$[].status': 'in-transit',
+          'unitBarcodes.$[].currentHolder': 'in-transit'
+        } 
+      }
     );
 
     res.json({
       success: true,
       shipment
     });
+
   } catch (err) {
     console.error('Shipment creation error:', err);
-    res.status(500).json({ error: 'Failed to create shipment' });
+    res.status(500).json({ 
+      error: 'Failed to create shipment',
+      details: err.message 
+    });
   }
 };
 
@@ -140,101 +185,170 @@ export const rejectShipment = async (req, res) => {
 };
 
 // Add new functions for wholesaler, retailer, and pharmacy
-export const transferToWholesaler = async (req, res) => {
+export const createShipmentToWholesaler = async (req, res) => {
   try {
-    const { drugIds } = req.body;
+    console.log("Creating Shipment to wholesaler");
     
+    const { drugIds, wholesalerId } = req.body;
+    const distributorId = req.user._id;
+
+    
+    if (!drugIds || !wholesalerId) {
+      return res.status(400).json({ error: 'Missing required fields: drugIds or wholesalerId' });
+    }
+
+    
+    if (!Array.isArray(drugIds) || drugIds.length === 0) {
+      return res.status(400).json({ error: 'drugIds must be a non-empty array' });
+    }
+
+     // Validate drugs belong to distributor
+    const invalidDrugs = await Drug.find({
+      _id: { $in: drugIds },
+      $or: [
+        { distributor: { $ne: distributorId } },
+        { status: { $ne: 'in-stock with distributor' } }
+      ]
+    });
+    
+      if (invalidDrugs.length > 0) {
+      return res.status(400).json({ 
+        error: 'Some drugs are invalid or not available',
+        invalidDrugs: invalidDrugs.map(d => d._id)
+      });
+    }
+
+    // Create shipment
+    const shipment = new Shipment({
+      drugs: drugIds,
+      distributor: distributorId,
+      wholesaler: wholesalerId,
+      createdBy: req.user._id,
+      status: 'processing',
+    });
+
+    await shipment.save();
+
+    // Update drug statuses
+    await Drug.updateMany(
+      { _id: { $in: drugIds } },
+      { 
+        $set: { 
+          status: 'shipped to wholesaler',
+          wholesaler: wholesalerId,
+          currentHolder: 'wholesaler'
+        } 
+      }
+    );
+
+    res.json({ success: true, shipment });
+  } catch (error) {
+    console.error('Shipment creation error:', error);
+    res.status(500).json({ error: 'Failed to create shipment' });
+  }
+};
+
+export const createShipmentToRetailer = async (req, res) => {
+  try {
+    const { drugIds, retailerId } = req.body;
+    const distributorId = req.user._id;
+
+    // Validate drugs belong to distributor and get their details
+    const drugs = await Drug.find({
+      _id: { $in: drugIds },
+      distributor: distributorId,
+      status: 'in-stock with distributor'
+    });
+
+    if (drugs.length !== drugIds.length) {
+      return res.status(400).json({ 
+        error: 'Some drugs are invalid or not available',
+        invalidDrugs: drugIds.filter(id => 
+          !drugs.some(d => d._id.toString() === id.toString())
+      )});
+    }
+
+    // Create shipment with unit barcodes
+    const shipment = new Shipment({
+      drugs: drugIds,
+      shippedUnits: drugs.flatMap(drug => 
+        drug.unitBarcodes.map(barcode => ({
+          barcode,
+          drugId: drug._id
+        })
+      )),
+      distributor: distributorId,
+      retailer: retailerId,
+      createdBy: req.user._id,
+      status: 'processing',
+    });
+
+    await shipment.save();
+
+    // Update drug statuses - only mark shipped units as shipped
+    for (const drug of drugs) {
+      await Drug.updateOne(
+        { _id: drug._id, 'unitBarcodes.barcode': { $in: drug.unitBarcodes } },
+        { 
+          $set: { 
+            'unitBarcodes.$[].status': 'shipped',
+            'unitBarcodes.$[].currentHolder': 'retailer',
+            status: 'shipped to retailer',
+            retailer: retailerId
+          } 
+        }
+      );
+    }
+
+    res.json({ success: true, shipment });
+  } catch (error) {
+    console.error('Shipment creation error:', error);
+    res.status(500).json({ error: 'Failed to create shipment' });
+  }
+};
+
+export const createShipmentToPharmacy = async (req, res) => {
+  try {
+    const { drugIds, pharmacyId } = req.body;
+    const distributorId = req.user._id;
+
     // Validate drugs belong to distributor
     const drugCount = await Drug.countDocuments({
       _id: { $in: drugIds },
-      distributor: req.user._id
+      distributor: distributorId,
+      status: 'in-stock with distributor'
     });
     
     if (drugCount !== drugIds.length) {
       return res.status(400).json({ error: 'Some drugs are invalid or not available' });
     }
 
-    // Update drugs
-    await Drug.updateMany(
-      { _id: { $in: drugIds } },
-      {
-        $set: {
-          status: 'in-stock with wholesaler',
-          currentHolder: 'wholesaler',
-          wholesaler: req.body.wholesalerId
-        }
-      }
-    );
-
-    res.json({ success: true, message: 'Drugs transferred to wholesaler successfully' });
-  } catch (error) {
-    console.error('Transfer error:', error);
-    res.status(500).json({ error: 'Failed to transfer drugs' });
-  }
-};
-
-export const transferToRetailer = async (req, res) => {
-  try {
-    const { drugIds } = req.body;
-    
-    // Validate drugs belong to wholesaler
-    const drugCount = await Drug.countDocuments({
-      _id: { $in: drugIds },
-      wholesaler: req.user._id
+    // Create shipment
+    const shipment = new Shipment({
+      drugs: drugIds,
+      distributor: distributorId,
+      pharmacy: pharmacyId,
+      createdBy: req.user._id,
+      status: 'processing',
     });
-    
-    if (drugCount !== drugIds.length) {
-      return res.status(400).json({ error: 'Some drugs are invalid or not available' });
-    }
 
-    // Update drugs
+    await shipment.save();
+
+    // Update drug statuses
     await Drug.updateMany(
       { _id: { $in: drugIds } },
-      {
-        $set: {
-          status: 'in-stock with retailer',
-          currentHolder: 'retailer',
-          retailer: req.body.retailerId
-        }
+      { 
+        $set: { 
+          status: 'shipped to pharmacy',
+          pharmacy: pharmacyId,
+          currentHolder: 'pharmacy'
+        } 
       }
     );
 
-    res.json({ success: true, message: 'Drugs transferred to retailer successfully' });
+    res.json({ success: true, shipment });
   } catch (error) {
-    console.error('Transfer error:', error);
-    res.status(500).json({ error: 'Failed to transfer drugs' });
-  }
-};
-
-export const transferToPharmacy = async (req, res) => {
-  try {
-    const { drugIds } = req.body;
-    
-    // Validate drugs belong to retailer
-    const drugCount = await Drug.countDocuments({
-      _id: { $in: drugIds },
-      retailer: req.user._id
-    });
-    
-    if (drugCount !== drugIds.length) {
-      return res.status(400).json({ error: 'Some drugs are invalid or not available' });
-    }
-
-    // Update drugs
-    await Drug.updateMany(
-      { _id: { $in: drugIds } },
-      {
-        $set: {
-          status: 'in-stock with pharmacy',
-          currentHolder: 'pharmacy',
-          pharmacy: req.body.pharmacyId
-        }
-      }
-    );
-
-    res.json({ success: true, message: 'Drugs transferred to pharmacy successfully' });
-  } catch (error) {
-    console.error('Transfer error:', error);
-    res.status(500).json({ error: 'Failed to transfer drugs' });
+    console.error('Shipment creation error:', error);
+    res.status(500).json({ error: 'Failed to create shipment' });
   }
 };

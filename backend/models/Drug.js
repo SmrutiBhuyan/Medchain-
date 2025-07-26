@@ -39,11 +39,18 @@ const DrugSchema = new mongoose.Schema({
       return generateBarcode(this.name, this.batch);
     }
   },
-  unitBarcodes: [{
-    type: String,
-    required: true,
-    unique: true,
-    trim: true
+   unitBarcodes: [{
+    barcode: String,
+    status: {
+      type: String,
+      enum: ['in-stock', 'shipped', 'delivered', 'recalled', 'expired'],
+      default: 'in-stock'
+    },
+    currentHolder: {
+      type: String,
+      enum: ['manufacturer', 'distributor', 'wholesaler', 'retailer', 'pharmacy'],
+      default: 'manufacturer'
+    }
   }],
   manufacturer: {
     type: mongoose.Schema.Types.ObjectId,
@@ -66,11 +73,12 @@ const DrugSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
-  status: {
+   status: {
     type: String,
     enum: ['in-stock', 'shipped', 'delivered', 'recalled', 'expired', 
            'in-stock with distributor', 'in-stock with wholesaler', 
-           'in-stock with retailer', 'in-stock with pharmacy', 'shipped to wholesaler'],
+           'in-stock with retailer', 'in-stock with pharmacy',
+           'shipped to wholesaler', 'shipped to retailer', 'shipped to pharmacy'],
     default: 'in-stock'
   },
   currentHolder: {

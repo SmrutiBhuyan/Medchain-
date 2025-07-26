@@ -2,17 +2,16 @@ import Drug from '../models/Drug.js';
 import Shipment from '../models/Shipment.js';
 import User from '../models/User.js';
 
+// Update the status distribution aggregation
 export const getDashboardStats = async (req, res) => {
   try {
-    // Verify the user is authenticated
     if (!req.user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     
     const manufacturerId = req.user._id;
-    const { days = 30 } = req.query; // Default to 30 days if not specified
+    const { days = 30 } = req.query;
     
-    // Calculate date ranges based on the days parameter
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(days));
     
@@ -20,7 +19,6 @@ export const getDashboardStats = async (req, res) => {
     const expiryThreshold = new Date();
     expiryThreshold.setDate(expiryThreshold.getDate() + 30);
 
-    // Get all stats in parallel for better performance
     const [
       totalDrugs,
       activeShipments,
@@ -32,31 +30,27 @@ export const getDashboardStats = async (req, res) => {
       upcomingExpirations,
       topDistributors
     ] = await Promise.all([
-      // Total drugs count
       Drug.countDocuments({ manufacturer: manufacturerId }),
       
-      // Active shipments (status: processing or in-transit)
       Shipment.countDocuments({
         manufacturer: manufacturerId,
         status: { $in: ['processing', 'in-transit'] }
       }),
       
-      // Near expiry drugs (expiring in next 30 days)
       Drug.countDocuments({
         manufacturer: manufacturerId,
         expiryDate: { 
           $gte: new Date(), 
           $lte: expiryThreshold 
-        }
+        },
+        status: { $nin: ['expired', 'recalled'] }
       }),
       
-      // Recalled batches
       Drug.countDocuments({
         manufacturer: manufacturerId,
         status: 'recalled'
       }),
       
-      // Drug volume by drug name (not batch)
       Drug.aggregate([
         { $match: { 
           manufacturer: manufacturerId,
@@ -76,7 +70,6 @@ export const getDashboardStats = async (req, res) => {
         }}
       ]),
       
-      // Shipments over time
       Shipment.aggregate([
         { 
           $match: { 
@@ -103,7 +96,6 @@ export const getDashboardStats = async (req, res) => {
         }}
       ]),
       
-      // Status distribution
       Drug.aggregate([
         { $match: { manufacturer: manufacturerId } },
         {
@@ -119,12 +111,12 @@ export const getDashboardStats = async (req, res) => {
         }}
       ]),
       
-      // Upcoming expirations (top 10 soonest to expire)
       Drug.aggregate([
         { 
           $match: { 
             manufacturer: manufacturerId,
-            expiryDate: { $gte: new Date() }
+            expiryDate: { $gte: new Date() },
+            status: { $nin: ['expired', 'recalled'] }
           } 
         },
         { $sort: { expiryDate: 1 } },
@@ -137,7 +129,7 @@ export const getDashboardStats = async (req, res) => {
           daysLeft: {
             $divide: [
               { $subtract: ["$expiryDate", new Date()] },
-              1000 * 60 * 60 * 24 // Convert to days
+              1000 * 60 * 60 * 24
             ]
           }
         }},
@@ -150,7 +142,6 @@ export const getDashboardStats = async (req, res) => {
         }}
       ]),
       
-      // Top distributors
       Shipment.aggregate([
         { $match: { manufacturer: manufacturerId } },
         { $group: {

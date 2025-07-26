@@ -18,22 +18,6 @@ import { useTheme } from '@mui/material/styles';
 import { useAuth } from './AuthContext';
 import axios from 'axios';
 
-const mockRetailers = [
-  { id: 'RET-001', name: 'City Pharmacy' },
-  { id: 'RET-002', name: 'MediMart' },
-  { id: 'RET-003', name: 'HealthFirst' },
-];
-
-const mockWholesalers = [
-  { id: 'WHO-001', name: 'Prime Wholesalers' },
-  { id: 'WHO-002', name: 'MedSupply Co' },
-];
-
-const mockPharmacies = [
-  { id: 'PHA-001', name: 'City Pharmacy' },
-  { id: 'PHA-002', name: '24/7 Meds' },
-];
-
 const DashboardCard = styled(Card)(({ theme }) => ({
   borderRadius: '12px',
   boxShadow: '0 4px 20px 0 rgba(0,0,0,0.12)',
@@ -42,6 +26,8 @@ const DashboardCard = styled(Card)(({ theme }) => ({
     transform: 'translateY(-5px)',
   },
 }));
+
+
 
 function StatusChip({ label, status, ...props }) {
   const theme = useTheme();
@@ -274,48 +260,67 @@ const DistributorDashboard = () => {
     );
   };
 
-  const handleShipToRecipient = async () => {
-    if (selectedDrugs.length === 0 || !selectedRecipient) return;
+const handleShipToRecipient = async () => {
+  if (selectedDrugs.length === 0 || !selectedRecipient) return;
+  
+  try {
+    setLoading(true);
+    const token = localStorage.getItem('token');
     
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      
-      // Get the drugs to be shipped
-      const drugsToShip = inventory.filter(drug => selectedDrugs.includes(drug._id));
-      
-      // Create shipment
-      const shipmentData = {
-        recipientId: selectedRecipient,
-        recipientType: recipientType,
-        drugs: drugsToShip.map(drug => ({
-          drugId: drug._id,
-          name: drug.name,
-          batch: drug.batch,
-          barcode: drug.barcode,
-          batchBarcode: drug.batchBarcode
-        })),
-        status: 'processing'
-      };
-      
-      await axios.post('http://localhost:5000/api/shipments', shipmentData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      // Update inventory locally
-      setInventory(inventory.filter(drug => !selectedDrugs.includes(drug._id)));
-      setSelectedDrugs([]);
-      setSelectedRecipient('');
-      
-      alert(`Successfully shipped ${selectedDrugs.length} drugs to ${getRecipientName(selectedRecipient)}`);
-    } catch (error) {
-      console.error('Error creating shipment:', error);
-      alert('Failed to create shipment. Please try again.');
-    } finally {
-      setLoading(false);
+    // Get the actual drug IDs and barcodes
+    const drugData = selectedDrugs.map(id => {
+      const [drugId, barcode] = id.split('-');
+      return { drugId, barcode };
+    });
+    
+    // Group by drug ID
+    const drugIds = [...new Set(drugData.map(d => d.drugId))];
+    
+    let endpoint;
+    let payload = { 
+      drugIds,
+      unitBarcodes: drugData.map(d => d.barcode) 
+    };
+    
+    // Determine endpoint based on recipient type
+    switch (recipientType) {
+      case 'wholesaler':
+        endpoint = '/api/shipments/to-wholesaler';
+        payload.wholesalerId = selectedRecipient;
+        break;
+      case 'retailer':
+        endpoint = '/api/shipments/to-retailer';
+        payload.retailerId = selectedRecipient;
+        break;
+      case 'pharmacy':
+        endpoint = '/api/shipments/to-pharmacy';
+        payload.pharmacyId = selectedRecipient;
+        break;
+      default:
+        throw new Error('Invalid recipient type');
     }
-  };
-
+    
+    // Create the shipment
+    const response = await axios.post(`http://localhost:5000${endpoint}`, payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    // Update inventory locally
+    setInventory(prev => 
+      prev.filter(drug => !selectedDrugs.includes(drug._id))
+    );
+    setSelectedDrugs([]);
+    setSelectedRecipient('');
+    
+    alert(`Successfully shipped ${selectedDrugs.length} units to ${getRecipientName(selectedRecipient)}`);
+  } catch (error) {
+    console.error('Error creating shipment:', error);
+    const errorMsg = error.response?.data?.error || 'Failed to create shipment';
+    alert(`Error: ${errorMsg}`);
+  } finally {
+    setLoading(false);
+  }
+};
   const getRecipientName = (recipientId) => {
     let recipient;
     switch (recipientType) {

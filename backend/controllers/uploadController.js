@@ -51,19 +51,30 @@ export const uploadCSV = async (req, res) => {
             
             if (drugData.unitBarcodes) {
               // If unit barcodes are provided as a comma-separated string
-              unitBarcodes = drugData.unitBarcodes.split(',').map(b => b.trim());
+              const barcodeArray = drugData.unitBarcodes.split(',').map(b => b.trim());
               
-              if (unitBarcodes.length !== quantity) {
+              if (barcodeArray.length !== quantity) {
                 errors.push({
                   row: drugData,
                   error: 'Number of unit barcodes must match quantity'
                 });
                 continue;
               }
+
+              // Create proper unitBarcodes objects
+              unitBarcodes = barcodeArray.map(barcode => ({
+                barcode: barcode,
+                status: 'in-stock',
+                currentHolder: 'manufacturer'
+              }));
             } else {
               // Auto-generate unit barcodes
               for (let i = 1; i <= quantity; i++) {
-                unitBarcodes.push(generateBarcode(drugData.name, drugData.batch, i));
+                unitBarcodes.push({
+                  barcode: generateBarcode(drugData.name, drugData.batch, i),
+                  status: 'in-stock',
+                  currentHolder: 'manufacturer'
+                });
               }
             }
 
@@ -76,7 +87,8 @@ export const uploadCSV = async (req, res) => {
               batchBarcode: batchBarcode,
               unitBarcodes: unitBarcodes,
               manufacturer: req.body.manufacturerId,
-              status: 'in-stock'
+              status: 'in-stock',
+              currentHolder: 'manufacturer'
             });
 
             processedDrugs.push(drug);

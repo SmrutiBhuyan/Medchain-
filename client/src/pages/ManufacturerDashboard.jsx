@@ -300,72 +300,76 @@ const fetchDashboardStats = async () => {
     setIsLoadingStats(false);
   }
 };
- 
 
- // In the drugForm state, add unitBarcodes:
+// Update the drug form state
 const [drugForm, setDrugForm] = useState({
   name: '',
   batch: '',
   quantity: '',
   mfgDate: '',
   expiryDate: '',
-  barcode: '',
+  batchBarcode: '',
   unitBarcodes: []
 });
 
-  const parseCSV = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      reader.onload = (event) => {
-        try {
-          const csvData = event.target.result;
-          const lines = csvData.split('\n').filter(line => line.trim() !== '');
-          
-          if (lines.length < 2) {
-            resolve([]);
-            return;
-          }
-  
-          const headers = lines[0].split(',').map(header => 
-            header.trim().toLowerCase().replace(/\s+/g, '')
-          );
-          
-          const result = [];
-          
-          for (let i = 1; i < lines.length; i++) {
-            const currentLine = lines[i].split(',');
-            const obj = {};
-            
-            for (let j = 0; j < headers.length; j++) {
-              if (currentLine[j]) {
-                obj[headers[j]] = currentLine[j].trim();
-              }
-            }
-            
-            // Ensure we have all required fields
-            if (obj.drugname || obj.name) {
-              result.push({
-                name: obj.drugname || obj.name,
-                batch: obj.batchnumber || obj.batch,
-                quantity: obj.quantity,
-                mfgDate: obj.manufacturingdate || obj.mfgdate || obj.mfgdate,
-                expiryDate: obj.expirydate || obj.expirydate,
-                barcode: obj.barcode || ''
-              });
-            }
-          }
-          
-          resolve(result);
-        } catch (error) {
-          reject(error);
+ const parseCSV = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (event) => {
+      try {
+        const csvData = event.target.result;
+        const lines = csvData.split('\n').filter(line => line.trim() !== '');
+        
+        if (lines.length < 2) {
+          resolve([]);
+          return;
         }
-      };
-      
-      reader.onerror = (error) => reject(error);
-      reader.readAsText(file);
-    });
-  };
+
+        const headers = lines[0].split(',').map(header => 
+          header.trim().toLowerCase().replace(/\s+/g, '')
+        );
+        
+        const result = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          const currentLine = lines[i].split(',');
+          const obj = {};
+          
+          for (let j = 0; j < headers.length; j++) {
+            if (currentLine[j]) {
+              obj[headers[j]] = currentLine[j].trim();
+            }
+          }
+          
+          // Ensure we have all required fields
+          if (obj.drugname || obj.name) {
+            const unitBarcodes = obj.unitbarcodes 
+              ? obj.unitbarcodes.split(',').map(b => b.trim())
+              : [];
+            
+            result.push({
+              name: obj.drugname || obj.name,
+              batch: obj.batchnumber || obj.batch,
+              quantity: obj.quantity,
+              mfgDate: obj.manufacturingdate || obj.mfgdate || obj.mfgdate,
+              expiryDate: obj.expirydate || obj.expiryDate,
+              batchBarcode: obj.batchbarcode || obj.barcode || '',
+              unitBarcodes: unitBarcodes
+            });
+          }
+        }
+        
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      }
+    };
+    
+    reader.onerror = (error) => reject(error);
+    reader.readAsText(file);
+  });
+};
 
   // Add to your component's state
 const [timeRanges, setTimeRanges] = useState({
@@ -373,6 +377,11 @@ const [timeRanges, setTimeRanges] = useState({
   drugDistribution: '30',
   shipments: '30'
 });
+
+ const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setDrugForm(prev => ({ ...prev, [name]: value }));
+  };
 
 // Add this function to your component
 const handleTimeRangeChange = async (chartType, days) => {
@@ -517,10 +526,23 @@ const handleTimeRangeChange = async (chartType, days) => {
   );
 };
 
-  const handleScan = (barcode) => {
-    setDrugForm(prev => ({ ...prev, barcode }));
-    setShowScanner(false);
-  };
+const handleScan = (barcode) => {
+  setDrugForm(prev => ({ ...prev, batchBarcode: barcode }));
+  setShowScanner(false);
+  setScanningStatus('success');
+};
+
+// Update the barcode input field in the form
+<input 
+  type="text" 
+  className="form-control" 
+  placeholder="Enter custom barcode"
+  name="batchBarcode"
+  value={drugForm.batchBarcode}
+  onChange={handleInputChange}
+  pattern="[A-Za-z0-9\-]+"
+  title="Only letters, numbers and hyphens allowed"
+/>
 
   // Function to connect wallet (simulated)
   const connectWallet = async () => {
@@ -542,10 +564,7 @@ const handleTimeRangeChange = async (chartType, days) => {
     setWalletAddress(null);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setDrugForm(prev => ({ ...prev, [name]: value }));
-  };
+ 
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -646,7 +665,7 @@ const handleManualSubmit = async (e) => {
   e.preventDefault();
   
   // Validate barcode format
-  if (drugForm.barcode && !/^[A-Za-z0-9-]+$/.test(drugForm.barcode)) {
+  if (drugForm.batchBarcode && !/^[A-Za-z0-9-]+$/.test(drugForm.batchBarcode)) {
     alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
     return;
   }
@@ -658,8 +677,8 @@ const handleManualSubmit = async (e) => {
       quantity: parseInt(drugForm.quantity),
       mfgDate: drugForm.mfgDate,
       expiryDate: drugForm.expiryDate,
-      batchBarcode: drugForm.barcode,
-      unitBarcodes: drugForm.unitBarcodes,
+      batchBarcode: drugForm.batchBarcode,
+      unitBarcodes: drugForm.unitBarcodes.filter(b => b !== ''), // Filter out empty barcodes
       manufacturerId: user._id
     }, {
       headers: {
@@ -670,14 +689,24 @@ const handleManualSubmit = async (e) => {
 
     if (response.data.success) {
       alert(`Drug ${response.data.drug.name} created successfully with ${response.data.drug.quantity} units`);
-      setPreviewData(prev => [...prev, drugForm]);
+      // Add to preview data
+      setPreviewData(prev => [...prev, {
+        name: drugForm.name,
+        batch: drugForm.batch,
+        quantity: drugForm.quantity,
+        mfgDate: drugForm.mfgDate,
+        expiryDate: drugForm.expiryDate,
+        batchBarcode: drugForm.batchBarcode || 'Auto-generated',
+        unitBarcodes: drugForm.unitBarcodes
+      }]);
+      // Reset form
       setDrugForm({
         name: '',
         batch: '',
         quantity: '',
         mfgDate: '',
         expiryDate: '',
-        barcode: '',
+        batchBarcode: '',
         unitBarcodes: []
       });
     }
@@ -690,8 +719,6 @@ const handleManualSubmit = async (e) => {
     }
   }
 };
-
-
   // Status badge component
   const StatusBadge = ({ status }) => {
     const statusMap = {
@@ -782,32 +809,25 @@ const handleShipmentSubmit = async (e) => {
       return;
     }
 
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    };
-
-    const requestBody = {
-      drugs: selectedDrugs,
-      distributorId: shipmentForm.distributor,
-      manufacturerId: user._id,
-      estimatedDelivery: shipmentForm.deliveryDate,
-      notes: shipmentForm.notes
-    };
-
-    console.log('Sending shipment request:', requestBody); // Add this for debugging
-
+    const token = localStorage.getItem('token');
     const response = await axios.post(
       'http://localhost:5000/api/shipments/create',
-      requestBody,
-      config
+      {
+        drugs: selectedDrugs,
+        distributorId: shipmentForm.distributor,
+        estimatedDelivery: shipmentForm.deliveryDate || undefined,
+        notes: shipmentForm.notes || undefined
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      }
     );
 
     if (response.data.success) {
       alert('Shipment created successfully!');
-      // Reset form
       setSelectedDrugs([]);
       setShipmentForm({
         distributor: '',
@@ -816,10 +836,10 @@ const handleShipmentSubmit = async (e) => {
       });
       // Refresh data
       fetchShipmentData();
+      fetchManufacturerShipments();
     }
   } catch (error) {
     console.error('Shipment creation error:', error);
-    console.error('Error response:', error.response); // Add this for debugging
     alert(error.response?.data?.error || 'Failed to create shipment');
   }
 };
@@ -1225,7 +1245,7 @@ Example: "ABC-123-456,ABC-123-457,ABC-123-458"CSV template: Drug Name, Batch Num
 )}
             </div>
 
-            <div className="table-responsive">
+      <div className="table-responsive">
   <table>
     <thead>
       <tr>
@@ -1234,7 +1254,8 @@ Example: "ABC-123-456,ABC-123-457,ABC-123-458"CSV template: Drug Name, Batch Num
         <th>Quantity</th>
         <th>Mfg. Date</th>
         <th>Exp. Date</th>
-        <th>Barcode</th>
+        <th>Batch Barcode</th>
+        <th>Unit Barcodes</th>
       </tr>
     </thead>
     <tbody>
@@ -1245,12 +1266,17 @@ Example: "ABC-123-456,ABC-123-457,ABC-123-458"CSV template: Drug Name, Batch Num
           <td>{drug.quantity || 'N/A'}</td>
           <td>{drug.mfgDate || 'N/A'}</td>
           <td>{drug.expiryDate || 'N/A'}</td>
-          <td>{drug.barcode || 'Auto-generate'}</td>
+          <td>{drug.batchBarcode || 'Auto-generate'}</td>
+          <td>
+            {drug.unitBarcodes?.length > 0 
+              ? drug.unitBarcodes.join(', ') 
+              : 'Auto-generate'}
+          </td>
         </tr>
       ))}
       {previewData.length === 0 && (
         <tr>
-          <td colSpan="6" style={{ textAlign: 'center', color: 'var(--gray)' }}>
+          <td colSpan="7" style={{ textAlign: 'center', color: 'var(--gray)' }}>
             No drugs to preview. Add drugs manually or upload a CSV file.
           </td>
         </tr>
@@ -1723,24 +1749,23 @@ Example: "ABC-123-456,ABC-123-457,ABC-123-458"CSV template: Drug Name, Batch Num
                 </tr>
               </thead>
               <tbody>
-                {manufacturerShipments.map(shipment => (
-                  <tr key={shipment._id}>
-                    <td>{shipment.trackingNumber || shipment._id}</td>
-                    <td>{shipment.drugs.length} drugs</td>
-                    <td>
-                      {shipment.distributor?.organization || 
-                       shipment.distributor?.name || 
-                       'Unknown'}
-                    </td>
-                    <td><StatusBadge status={shipment.status} /></td>
-                    <td>{new Date(shipment.createdAt).toLocaleDateString()}</td>
-                    <td>
-                      {shipment.estimatedDelivery 
-                        ? new Date(shipment.estimatedDelivery).toLocaleDateString() 
-                        : 'Not specified'}
-                    </td>
-                  </tr>
-                ))}
+               {manufacturerShipments.map(shipment => (
+  <tr key={shipment._id}>
+    <td>{shipment.trackingNumber}</td>
+    <td>{shipment.drugs.length} drugs</td>
+    <td>
+      {shipment.participants.find(p => p.type === 'distributor')?.participantId?.name || 
+       'Unknown distributor'}
+    </td>
+    <td><StatusBadge status={shipment.status} /></td>
+    <td>{new Date(shipment.createdAt).toLocaleDateString()}</td>
+    <td>
+      {shipment.estimatedDelivery 
+        ? new Date(shipment.estimatedDelivery).toLocaleDateString() 
+        : 'Not specified'}
+    </td>
+  </tr>
+))}
               </tbody>
             </table>
           </div>
