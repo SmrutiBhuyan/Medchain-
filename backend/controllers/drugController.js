@@ -211,6 +211,7 @@ export const getDrugsByManufacturer = async (req, res) => {
 };
 
 // Enhanced getDistributorDrugs controller
+// Get distributor's inventory
 export const getDistributorInventory = async (req, res) => {
   try {
     console.log("Fetching Inventory...");
@@ -231,8 +232,6 @@ export const getDistributorInventory = async (req, res) => {
       .populate('manufacturer', 'name organization')
       .select('name batch quantity mfgDate expiryDate batchBarcode unitBarcodes manufacturer status currentHolder')
       .sort({ createdAt: -1 });
-      console.log("Drugs: ",drugs);
-      
 
     res.json({
       success: true,

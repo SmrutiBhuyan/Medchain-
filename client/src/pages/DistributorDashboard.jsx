@@ -52,71 +52,76 @@ const DistributorDashboard = () => {
   const [pharmacies, setPharmacies] = useState([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem('token');
-        
-        const shipmentsRes = await axios.get('http://localhost:5000/api/shipments/distributor', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setShipments(shipmentsRes.data);
-        
-        const inventoryRes = await axios.get('http://localhost:5000/api/drugs/inventory', {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { status: 'in-stock with distributor' } 
-        });
-        
-        if (!inventoryRes.data?.drugs || !Array.isArray(inventoryRes.data.drugs)) {
-          console.error('Invalid inventory data format:', inventoryRes.data);
-          setInventory([]);
-        } else {
-          const flattenedInventory = inventoryRes.data.drugs.flatMap(drug => {
-            if (!drug.unitBarcodes || !Array.isArray(drug.unitBarcodes)) {
-              console.warn('Drug missing unitBarcodes:', drug);
-              return [];
-            }
-            return drug.unitBarcodes.map(barcode => ({
-              _id: `${drug._id}-${barcode}`,
-              name: drug.name,
-              batch: drug.batch,
-              barcode: barcode,
-              batchBarcode: drug.batchBarcode,
-              expiryDate: drug.expiryDate,
-              manufacturer: drug.manufacturer,
-              status: drug.status,
-              currentHolder: drug.currentHolder
-            }));
-          });
-          setInventory(flattenedInventory);
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      
+      // Get shipments
+      const shipmentsRes = await axios.get('http://localhost:5000/api/shipments/distributor', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setShipments(shipmentsRes.data);
+      
+      // Get inventory
+      const inventoryRes = await axios.get('http://localhost:5000/api/drugs/inventory', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { status: 'in-stock with distributor' }
+      });
+      
+      // Flatten the inventory data
+      const flattenedInventory = inventoryRes.data.drugs.flatMap(drug => {
+        if (!drug.unitBarcodes || !Array.isArray(drug.unitBarcodes)) {
+          return [];
         }
-        
-        const retailersRes = await axios.get('http://localhost:5000/api/users/retailers', {
+        return drug.unitBarcodes.map(unit => ({
+          _id: `${drug._id}-${unit.barcode}`,
+          name: drug.name,
+          batch: drug.batch,
+          barcode: unit.barcode,
+          batchBarcode: drug.batchBarcode,
+          expiryDate: drug.expiryDate,
+          manufacturer: drug.manufacturer,
+          status: drug.status,
+          currentHolder: drug.currentHolder,
+          unitStatus: unit.status
+        }));
+      });
+
+      setInventory(flattenedInventory);
+
+       const retailersRes = await axios.get('http://localhost:5000/api/users/retailers', {
           headers: { Authorization: `Bearer ${token}` }
         });
+        console.log("Retailers fetched: ", retailersRes);
         setRetailers(retailersRes.data);
 
         const wholesalersRes = await axios.get('http://localhost:5000/api/users/wholesalers', {
           headers: { Authorization: `Bearer ${token}` }
         });
+        console.log(wholesalersRes.data);
+        
         setWholesalers(wholesalersRes.data);
 
         const pharmaciesRes = await axios.get('http://localhost:5000/api/users/pharmacies', {
           headers: { Authorization: `Bearer ${token}` }
         });
+        console.log(pharmaciesRes.data); 
         setPharmacies(pharmaciesRes.data);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    if (user) {
-      fetchData();
+
+      
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
     }
-  }, [user]);
+  };
+  
+  if (user) {
+    fetchData();
+  }
+}, [user]);
 
   const handleReceiveShipment = async (shipmentId) => {
     try {
@@ -292,13 +297,13 @@ const DistributorDashboard = () => {
   };
 
   const filteredInventory = Array.isArray(inventory) ? 
-    inventory.filter(drug => {
-      if (!drug) return false;
-      const nameMatch = drug.name?.toLowerCase().includes(searchTerm.toLowerCase());
-      const barcodeMatch = drug.barcode?.includes(searchTerm);
-      const batchBarcodeMatch = drug.batchBarcode?.includes(searchTerm);
-      return nameMatch || barcodeMatch || batchBarcodeMatch;
-    }) : [];
+  inventory.filter(drug => {
+    if (!drug) return false;
+    const nameMatch = drug.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const barcodeMatch = String(drug.barcode || '').includes(searchTerm);
+    const batchBarcodeMatch = String(drug.batchBarcode || '').includes(searchTerm);
+    return nameMatch || barcodeMatch || batchBarcodeMatch;
+  }) : [];
 
   const pendingShipments = shipments.filter(s => s.status === 'processing');
   const receivedShipments = shipments.filter(s => s.status === 'delivered');
@@ -382,135 +387,154 @@ const DistributorDashboard = () => {
 
       {/* Main Content */}
       <div className="main-content">
-        {activeTab === 'shipments' && (
-          <div className="tab-content">
-            <h3>Pending Shipments ({pendingShipments.length})</h3>
-            
-            {pendingShipments.length > 0 ? (
-              <div className="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Shipment ID</th>
-                      <th>Manufacturer</th>
-                      <th>Drug Count</th>
-                      <th>Date Sent</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pendingShipments.map((shipment) => (
-                      <tr key={shipment._id}>
-                        <td>{shipment.trackingNumber}</td>
-                        <td>{getManufacturerName(shipment.manufacturer)}</td>
-                        <td>{shipment.drugs?.length || 0}</td>
-                        <td>{new Date(shipment.createdAt).toLocaleDateString()}</td>
-                        <td><StatusChip label={shipment.status} status={shipment.status} /></td>
-                        <td>
-                          <button 
-                            className="view-btn"
-                            onClick={() => setSelectedShipment(shipment)}
-                          >
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="empty-state">
-                No pending shipments at this time
-              </div>
-            )}
+       {activeTab === 'shipments' && (
+  <div className="tab-content">
+    <h3>Pending Shipments ({pendingShipments.length})</h3>
+    
+    {pendingShipments.length > 0 ? (
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Tracking #</th>
+              <th>Manufacturer</th>
+              <th>Drug Count</th>
+              <th>Date Sent</th>
+              <th>Estimated Delivery</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pendingShipments.map((shipment) => (
+              <tr key={shipment._id}>
+                <td>{shipment.trackingNumber}</td>
+                <td>{shipment.manufacturer?.name || 'Unknown'}</td>
+                <td>{shipment.drugs?.length || 0}</td>
+                <td>{new Date(shipment.createdAt).toLocaleDateString()}</td>
+                <td>
+                  {shipment.estimatedDelivery 
+                    ? new Date(shipment.estimatedDelivery).toLocaleDateString() 
+                    : 'Not specified'}
+                </td>
+                <td><StatusChip label={shipment.status} status={shipment.status} /></td>
+                <td>
+                  <button 
+                    className="view-btn"
+                    onClick={() => setSelectedShipment(shipment)}
+                  >
+                    View Details
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div className="empty-state">
+        No pending shipments at this time
+      </div>
+    )}
 
-            <h3>Received Shipments ({receivedShipments.length})</h3>
-            
-            {receivedShipments.length > 0 ? (
-              <div className="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Shipment ID</th>
-                      <th>Manufacturer</th>
-                      <th>Drug Count</th>
-                      <th>Date Received</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {receivedShipments.map((shipment) => (
-                      <tr key={shipment._id}>
-                        <td>{shipment._id}</td>
-                        <td>{getManufacturerName(shipment.manufacturer)}</td>
-                        <td>{shipment.drugs?.length || 0}</td>
-                        <td>{new Date(shipment.actualDelivery || shipment.updatedAt).toLocaleDateString()}</td>
-                        <td><StatusChip label={shipment.status} status={shipment.status} /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="empty-state">
-                No received shipments to display
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'inventory' && (
-          <div className="tab-content">
-            <div className="inventory-header">
-              <h3>Current Inventory ({inventory.length} units)</h3>
-              <div className="search-box">
-                <FaSearch className="search-icon" />
-                <input
-                  type="text"
-                  placeholder="Search drugs..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            {filteredInventory.length > 0 ? (
-              <div className="table-container">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Drug Name</th>
-                      <th>Unit Barcode</th>
-                      <th>Batch Number</th>
-                      <th>Manufacturer</th>
-                      <th>Expiry Date</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredInventory.map((drug) => (
-                      <tr key={drug._id}>
-                        <td>{drug.name}</td>
-                        <td>{drug.barcode}</td>
-                        <td>{drug.batch}</td>
-                        <td>{getManufacturerName(drug.manufacturer)}</td>
-                        <td>{new Date(drug.expiryDate).toLocaleDateString()}</td>
-                        <td><StatusChip label={drug.status} status={drug.status} /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="empty-state">
-                {inventory.length === 0 ? 'No inventory available' : 'No drugs found matching your search'}
-              </div>
-            )}
-          </div>
-        )}
-
+    <h3>Received Shipments ({receivedShipments.length})</h3>
+    
+    {receivedShipments.length > 0 ? (
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Tracking #</th>
+              <th>Manufacturer</th>
+              <th>Drug Count</th>
+              <th>Date Received</th>
+              <th>Status</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {receivedShipments.map((shipment) => (
+              <tr key={shipment._id}>
+                <td>{shipment.trackingNumber}</td>
+                <td>{shipment.manufacturer?.name || 'Unknown'}</td>
+                <td>{shipment.drugs?.length || 0}</td>
+                <td>
+                  {shipment.actualDelivery 
+                    ? new Date(shipment.actualDelivery).toLocaleDateString()
+                    : new Date(shipment.updatedAt).toLocaleDateString()}
+                </td>
+                <td><StatusChip label={shipment.status} status={shipment.status} /></td>
+                <td>
+                  <button 
+                    className="view-btn"
+                    onClick={() => setSelectedShipment(shipment)}
+                  >
+                    View Details
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div className="empty-state">
+        No received shipments to display
+      </div>
+    )}
+  </div>
+)}
+{activeTab === 'inventory' && (
+  <div className="tab-content">
+    <div className="inventory-header">
+      <h3>Current Inventory ({inventory.length} units)</h3>
+      <div className="search-box">
+        <FaSearch className="search-icon" />
+        <input
+          type="text"
+          placeholder="Search drugs..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+    </div>
+    
+    {filteredInventory.length > 0 ? (
+      <div className="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Drug Name</th>
+              <th>Unit Barcode</th>
+              <th>Batch Number</th>
+              <th>Manufacturer</th>
+              <th>Expiry Date</th>
+              <th>Unit Status</th>
+              <th>Overall Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredInventory.map((drug) => (
+              <tr key={drug._id}>
+                <td>{drug.name}</td>
+                <td>{drug.barcode}</td>
+                <td>{drug.batch}</td>
+                <td>{getManufacturerName(drug.manufacturer)}</td>
+                <td>{new Date(drug.expiryDate).toLocaleDateString()}</td>
+                <td><StatusChip label={drug.unitStatus} status={drug.unitStatus} /></td>
+                <td><StatusChip label={drug.status} status={drug.status} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ) : (
+      <div className="empty-state">
+        {inventory.length === 0 ? 'No inventory available' : 'No drugs found matching your search'}
+      </div>
+    )}
+  </div>
+)}
         {activeTab === 'ship' && (
           <div className="tab-content">
             <h3>Ship Products to Recipients</h3>
@@ -550,14 +574,22 @@ const DistributorDashboard = () => {
                 <h4>Select Drugs to Ship</h4>
                 
                 <div className="search-box">
-                  <FaSearch className="search-icon" />
-                  <input
-                    type="text"
-                    placeholder="Search drugs..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
+  <FaSearch className="search-icon" />
+  <input
+    type="text"
+    placeholder="Search by name, barcode, batch, or manufacturer..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+  />
+  {searchTerm && (
+    <button 
+      className="clear-search"
+      onClick={() => setSearchTerm('')}
+    >
+      <FaTimes />
+    </button>
+  )}
+</div>
                 
                 <div className="drug-list-container">
                   <table className="drug-list">
@@ -701,55 +733,91 @@ const DistributorDashboard = () => {
 
         {/* Shipment Details Modal */}
         {selectedShipment && (
-          <div className="modal-overlay">
-            <div className="modal">
-              <h3>Shipment Details: {selectedShipment.trackingNumber}</h3>
-              
-              <div className="modal-content">
-                <p><strong>Manufacturer:</strong> {getManufacturerName(selectedShipment.manufacturer)}</p>
-                <p><strong>Drug Count:</strong> {selectedShipment.drugs?.length || 0}</p>
-                <p><strong>Date Sent:</strong> {new Date(selectedShipment.createdAt).toLocaleDateString()}</p>
-                <p><strong>Status:</strong> 
-                  <StatusChip label={selectedShipment.status} status={selectedShipment.status} />
-                </p>
-                
-                <h4>Drug List</h4>
-                
-                <div className="drug-list-modal">
-                  {selectedShipment.drugs?.map((drug, i) => (
-                    <p key={i}>
-                      - {drug.name} (Batch: {drug.batch}, Status: <StatusChip label={drug.status} status={drug.status} />)
-                    </p>
-                  ))}
-                </div>
-                
-                {(selectedShipment.status === 'processing' || selectedShipment.status === 'in-transit') && (
-                  <div className="modal-actions">
-                    <button 
-                      className="reject-btn"
-                      onClick={() => handleRejectShipment(selectedShipment._id)}
-                    >
-                      Reject Shipment
-                    </button>
-                    <button 
-                      className="accept-btn"
-                      onClick={() => handleReceiveShipment(selectedShipment._id)}
-                    >
-                      Accept Shipment
-                    </button>
-                  </div>
-                )}
-              </div>
-              
-              <button 
-                className="close-modal"
-                onClick={() => setSelectedShipment(null)}
-              >
-                &times;
-              </button>
-            </div>
+  <div className="modal-overlay">
+    <div className="modal">
+      <h3>Shipment Details: {selectedShipment.trackingNumber}</h3>
+      
+      <div className="modal-content">
+        <div className="shipment-info-grid">
+          <div>
+            <p><strong>Manufacturer:</strong> {selectedShipment.manufacturer?.name || 'Unknown'}</p>
+            <p><strong>Date Sent:</strong> {new Date(selectedShipment.createdAt).toLocaleDateString()}</p>
+          </div>
+          <div>
+            <p><strong>Estimated Delivery:</strong> 
+              {selectedShipment.estimatedDelivery 
+                ? new Date(selectedShipment.estimatedDelivery).toLocaleDateString()
+                : 'Not specified'}
+            </p>
+            {selectedShipment.actualDelivery && (
+              <p><strong>Actual Delivery:</strong> {new Date(selectedShipment.actualDelivery).toLocaleDateString()}</p>
+            )}
+          </div>
+        </div>
+        
+        <p><strong>Status:</strong> 
+          <StatusChip label={selectedShipment.status} status={selectedShipment.status} />
+        </p>
+        
+        <h4>Drugs in Shipment ({selectedShipment.drugs?.length || 0})</h4>
+        
+        <div className="drug-list-modal">
+          <table>
+            <thead>
+              <tr>
+                <th>Drug Name</th>
+                <th>Batch</th>
+                <th>Expiry Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedShipment.drugs?.map((drug, i) => (
+                <tr key={i}>
+                  <td>{drug.name}</td>
+                  <td>{drug.batch}</td>
+                  <td>{new Date(drug.expiryDate).toLocaleDateString()}</td>
+                  <td><StatusChip label={drug.status} status={drug.status} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {selectedShipment.notes && (
+          <div className="shipment-notes">
+            <h4>Notes</h4>
+            <p>{selectedShipment.notes}</p>
           </div>
         )}
+        
+        {(selectedShipment.status === 'processing' || selectedShipment.status === 'in-transit') && (
+          <div className="modal-actions">
+            <button 
+              className="reject-btn"
+              onClick={() => handleRejectShipment(selectedShipment._id)}
+            >
+              Reject Shipment
+            </button>
+            <button 
+              className="accept-btn"
+              onClick={() => handleReceiveShipment(selectedShipment._id)}
+            >
+              Accept Shipment
+            </button>
+          </div>
+        )}
+      </div>
+      
+      <button 
+        className="close-modal"
+        onClick={() => setSelectedShipment(null)}
+      >
+        &times;
+      </button>
+    </div>
+  </div>
+)}
 
         {/* Verification Result Modal */}
         {openModal && (
