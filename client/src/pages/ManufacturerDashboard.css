@@ -45,10 +45,10 @@ body {
   line-height: 1.6;
 }
 
-#root {
+/* #root {
   display: flex;
   min-height: 100vh;
-}
+} */
 
 /* Dashboard Layout */
 .dashboard {
