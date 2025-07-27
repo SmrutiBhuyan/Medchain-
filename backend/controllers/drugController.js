@@ -1,6 +1,7 @@
 import Drug from '../models/Drug.js';
 import { generateBarcode } from '../utils/barcodeGenerator.js';
 import { NotFoundError, ValidationError } from '../errrors/index.js';
+import mongoose from 'mongoose';
 
 // Add this helper function at the top of your Drug.js file
 const isValidBarcode = (barcode) => {
@@ -358,5 +359,56 @@ export const verifyDrug = async (req, res) => {
       success: false,
       error: error.message || 'Drug verification failed'
     });
+  }
+};
+
+// Get pharmacy's distributor
+
+export const getPharmacyInventory = async (req, res) => {
+  try {
+    const { pharmacyId } = req.params;
+    
+    // Convert pharmacyId to ObjectId using new keyword
+    const pharmacyObjectId = new mongoose.Types.ObjectId(pharmacyId);
+
+    const drugs = await Drug.find({
+      'unitBarcodes': {
+        $elemMatch: {
+          'pharmacy': pharmacyObjectId,
+          'currentHolder': 'pharmacy',
+          'status': 'in-stock'
+        }
+      }
+    })
+    .populate('manufacturer')
+    .populate('unitBarcodes.pharmacy')
+    .exec();
+
+    // Transform the data to flatten the unitBarcodes
+    const inventory = drugs.flatMap(drug => 
+      drug.unitBarcodes
+        .filter(unit => 
+          unit.pharmacy && 
+          unit.pharmacy._id.toString() === pharmacyId && 
+          unit.currentHolder === 'pharmacy' && 
+          unit.status === 'in-stock'
+        )
+        .map(unit => ({
+          _id: unit._id,
+          drugId: drug._id,
+          name: drug.name,
+          batch: drug.batch,
+          barcode: unit.barcode,
+          expiryDate: drug.expiryDate,
+          manufacturer: drug.manufacturer,
+          status: unit.status,
+          quantity: 1 // Each unit barcode represents 1 item
+        }))
+    );
+
+    res.json(inventory);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 };

@@ -30,14 +30,7 @@ const PharmacyDashboard = () => {
   const [toastVariant, setToastVariant] = useState('success');
   const webcamRef = useRef(null);
 
-   const inventoryData = [
-    { id: 1, name: 'Amoxicillin 500mg', barcode: '3456789012', batch: 'AMX2023-05', expiry: '2024-06-30', quantity: 12, status: 'in_stock', lowStock: true, manufacturer: 'Sun Pharma' },
-    { id: 2, name: 'Lipitor 20mg', barcode: '7890123456', batch: 'LIP2023-03', expiry: '2024-09-15', quantity: 24, status: 'recalled', manufacturer: 'Pfizer' },
-    { id: 3, name: 'Ventolin Inhaler', barcode: '1234567890', batch: 'VEN2023-01', expiry: '2023-12-31', quantity: 8, status: 'in_stock', manufacturer: 'GSK' },
-    { id: 4, name: 'Metformin 850mg', barcode: '5678901234', batch: 'MET2023-02', expiry: '2025-03-31', quantity: 36, status: 'in_stock', manufacturer: 'Cipla' },
-    { id: 5, name: 'Omeprazole 40mg', barcode: '9012345678', batch: 'OME2023-04', expiry: '2024-11-30', quantity: 18, status: 'in_stock', manufacturer: 'Dr. Reddy' },
-    { id: 6, name: 'Atorvastatin 10mg', barcode: '2345678901', batch: 'ATO2023-01', expiry: '2024-08-15', quantity: 0, status: 'sold', manufacturer: 'Lupin' }
-  ];
+  
 
   const recallData = [
     { id: 1, drug: 'Lipitor 20mg', batch: 'LIP2023-03', barcode: '7890123456', issued: '2023-05-15', by: 'FDA', severity: 'high' },
@@ -62,20 +55,21 @@ const PharmacyDashboard = () => {
     }
   }, [activeTab, user]);
 
-  const fetchInventory = async () => {
-    try {
-      const response = await axios.get(`http://localhost:5000/api/inventory/pharmacy/${user._id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      setInventory(response.data);
-    } catch (error) {
-      console.error('Error fetching inventory:', error);
-      showNotification('Failed to load inventory', 'danger');
-    }
-  };
-
+ const fetchInventory = async () => {
+  try {
+    const response = await axios.get(`http://localhost:5000/api/drugs/pharmacy-inventory/${user._id}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    console.log("pharmacy inventory",response.data);
+    
+    setInventory(response.data);
+  } catch (error) {
+    console.error('Error fetching inventory:', error);
+    showNotification('Failed to load inventory', 'danger');
+  }
+};
   const fetchShipments = async () => {
     try {
       setLoadingShipments(true);
@@ -378,7 +372,7 @@ const handleRejectShipment = async (shipmentId) => {
                   <div className="pharma-stat-content">
                     <div>
                       <h6>Total Inventory</h6>
-                      <h3>{inventoryData.length}</h3>
+                      <h3>{inventory.length}</h3>
                       <p>Drug batches</p>
                     </div>
                     <div className="pharma-icon-bg pharma-primary">
@@ -402,7 +396,7 @@ const handleRejectShipment = async (shipmentId) => {
                   <div className="pharma-stat-content">
                     <div>
                       <h6>Expiring Soon</h6>
-                      <h3>{inventoryData.filter(d => new Date(d.expiry) < new Date(Date.now() + 30*24*60*60*1000)).length}</h3>
+                      <h3>{inventory.filter(d => new Date(d.expiry) < new Date(Date.now() + 30*24*60*60*1000)).length}</h3>
                       <p>Within 30 days</p>
                     </div>
                     <div className="pharma-icon-bg pharma-danger">
@@ -419,28 +413,62 @@ const handleRejectShipment = async (shipmentId) => {
                       <h5>Recent Inventory Activity</h5>
                     </div>
                     <div className="pharma-card-body">
-                      <table className="pharma-data-table">
-                        <thead>
-                          <tr>
-                            <th>Drug Name</th>
-                            <th>Batch</th>
-                            <th>Status</th>
-                            <th>Quantity</th>
-                            <th>Expiry</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {inventoryData.slice(0, 5).map(item => (
-                            <tr key={item.id}>
-                              <td>{item.name}</td>
-                              <td>{item.batch}</td>
-                              <td>{getStatusBadge(item.status)}</td>
-                              <td>{item.quantity}</td>
-                              <td>{item.expiry}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                     <table className="pharma-data-table">
+  <thead>
+    <tr>
+      <th>Drug Name</th>
+      <th>Batch</th>
+      <th>Unit Barcode</th>
+      <th>Manufacturer</th>
+      <th>Expiry Date</th>
+      <th>Status</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {inventory.map(item => (
+      <tr key={item._id} className={getDrugStatus(item)}>
+        <td>{item.name}</td>
+        <td>{item.batch}</td>
+        <td>
+          <OverlayTrigger
+            placement="top"
+            overlay={<Tooltip>Click to scan this barcode</Tooltip>}
+          >
+            <span 
+              className="pharma-barcode"
+              onClick={() => handleBarcodeScan(item.barcode)}
+            >
+              {item.barcode}
+            </span>
+          </OverlayTrigger>
+        </td>
+        <td>{item.manufacturer?.name || 'Unknown'}</td>
+        <td>{new Date(item.expiryDate).toLocaleDateString()}</td>
+        <td>{getStatusBadge(item.status)}</td>
+        <td className="pharma-actions">
+          <button 
+            className="pharma-btn-icon"
+            onClick={() => handleBarcodeScan(item.barcode)}
+            title="Scan this item"
+          >
+            <QrCodeScan />
+          </button>
+          <button 
+            className="pharma-btn-icon"
+            onClick={() => {
+              setActiveTab('verify');
+              verifyDrug(item.barcode);
+            }}
+            title="Verify on blockchain"
+          >
+            <ShieldCheck />
+          </button>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
                     </div>
                   </div>
                 </div>

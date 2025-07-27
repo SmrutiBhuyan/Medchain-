@@ -1,5 +1,5 @@
 import express from 'express';
-import { createDrug, getDrugsByManufacturer, getDrugByBarcode} from '../controllers/drugController.js';
+import { createDrug, getDrugsByManufacturer, getDrugByBarcode, getPharmacyInventory} from '../controllers/drugController.js';
 import upload from '../middleware/uploadMiddleware.js';
 import { uploadCSV } from '../controllers/uploadController.js';
 import {  getDistributorInventory, verifyDrugsForShipment, verifyDrug } from '../controllers/drugController.js';
@@ -15,5 +15,6 @@ router.get('/inventory', protect, getDistributorInventory);
 // In your drugs.js routes file
 router.post('/verify-shipment', protect, verifyDrugsForShipment);
 router.get('/verify/:barcode', protect, verifyDrug);
+router.get('/pharmacy-inventory/:pharmacyId', getPharmacyInventory)
 
 export default router;
