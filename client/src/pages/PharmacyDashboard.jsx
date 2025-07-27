@@ -11,6 +11,7 @@ import './PharmacyDashboard.css';
 import axios from 'axios';
 import { Modal, Button, Toast, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import Webcam from 'react-webcam';
+import DrugVerification from './DrugVerification'
 
 const PharmacyDashboard = () => {
   const { user, logout } = useAuth();
@@ -859,93 +860,31 @@ const handleRejectShipment = async (shipmentId) => {
               </div>
             </div>
           )}
-          {activeTab === 'verify' && (
-            <div className="pharma-verify-tab">
-              <div className="pharma-card">
-                <div className="pharma-card-header">
-                  <h5>Drug Verification</h5>
-                  <p>Verify authenticity using blockchain records</p>
-                </div>
-                <div className="pharma-card-body">
-                  <div className="pharma-scan-section">
-                    <UpcScan className="pharma-icon-lg" />
-                    <p>Scan drug barcode to verify authenticity</p>
-                    <div className="pharma-input-group">
-                      <input 
-                        type="text" 
-                        placeholder="Enter barcode manually" 
-                        onChange={(e) => verifyDrug(e.target.value)}
-                      />
-                      <button className="pharma-btn-primary">
-                        <UpcScan className="pharma-icon" /> Scan
-                      </button>
-                    </div>
-                  </div>
-
-                  {verificationResult && (
-                    <div className={`pharma-verification-result ${verificationResult.valid ? 'pharma-valid' : 'pharma-invalid'}`}>
-                      <div className="pharma-verification-header">
-                        {verificationResult.valid ? (
-                          <>
-                            <CheckCircleFill className="pharma-icon pharma-success" />
-                            <h5>Genuine Product Verified</h5>
-                          </>
-                        ) : (
-                          <>
-                            <ExclamationTriangleFill className="pharma-icon pharma-danger" />
-                            <h5>Verification Failed</h5>
-                          </>
-                        )}
-                      </div>
-
-                      {verificationResult.valid && (
-                        <>
-                          <div className="pharma-drug-info">
-                            <h6>{verificationResult.drug.name}</h6>
-                            <p>Batch: {verificationResult.drug.batch}</p>
-                            <p>Manufacturer: {verificationResult.drug.manufacturer}</p>
-                            <p>Expiry: {verificationResult.drug.expiry}</p>
-                          </div>
-
-                          <div className="pharma-blockchain-info">
-                            <h6>Blockchain Verification</h6>
-                            <p>Transaction: {verificationResult.blockchainData.txHash}</p>
-                            <p>Block: {verificationResult.blockchainData.block}</p>
-                            <p>Timestamp: {verificationResult.blockchainData.timestamp}</p>
-                          </div>
-
-                          <div className="pharma-supply-chain">
-                            <h6>Supply Chain History</h6>
-                            <div className="pharma-timeline">
-                              {verificationResult.blockchainData.events.map((event, index) => (
-                                <div key={index} className="pharma-timeline-event">
-                                  <div className="pharma-timeline-dot"></div>
-                                  <div className="pharma-timeline-content">
-                                    <h6>{event.event}</h6>
-                                    <p>{event.date} • {event.location}</p>
-                                    <p>By: {event.by}</p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      {!verificationResult.valid && (
-                        <div className="pharma-invalid-message">
-                          <p>{verificationResult.message}</p>
-                          <button className="pharma-btn-danger">
-                            <ExclamationTriangleFill className="pharma-icon" /> Report Counterfeit
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+         {activeTab === 'verify' && (
+  <DrugVerification 
+    onVerify={async (barcode) => {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/drugs/verify/${barcode}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        return response.data;
+      } catch (error) {
+        console.error('Verification error:', error);
+        return { 
+          error: true,
+          message: error.response?.data?.message || 'Verification failed'
+        };
+      }
+    }}
+    getManufacturerName={(manufacturerId) => {
+      // You might want to implement this function to get manufacturer names
+      // For now returning the ID as a fallback
+      return manufacturerId || 'Unknown Manufacturer';
+    }}
+  />
+)}
 
           {activeTab === 'alerts' && (
             <div className="pharma-alerts-tab">
