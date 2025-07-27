@@ -105,7 +105,6 @@ export const createShipment = async (req, res) => {
 
 //DISTRIBUTOR
 
-
 // Get shipments for distributor
 export const getDistributorShipments = async (req, res) => {
   try {
@@ -836,6 +835,33 @@ export const createShipmentToPharmacy = async (req, res) => {
 
 
 
+// Get shipments for pharmacy
+export const getPharmacyShipments = async (req, res) => {
+  try {
+    const shipments = await Shipment.find({ 
+      'participants.participantId': req.params.pharmacyId,
+      'participants.type': 'pharmacy',
+      status: { $in: ['processing', 'in-transit'] }
+    })
+    .populate({
+      path: 'drugs',
+      select: 'name batch',
+      model: 'Drug'
+    })
+    .populate({
+      path: 'participants.participantId',
+      select: 'name',
+      model: 'User'
+    })
+    .sort({ createdAt: -1 });
+
+    res.json(shipments);
+  } catch (error) {
+    console.error('Error fetching pharmacy shipments:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // Accept shipment for wholesaler
 export const acceptWholesalerShipment = async (req, res) => {
   try {
@@ -927,57 +953,6 @@ export const acceptRetailerShipment = async (req, res) => {
           retailer: req.user._id,
           'unitBarcodes.$[].status': 'in-stock',
           'unitBarcodes.$[].currentHolder': 'retailer'
-        } 
-      }
-    );
-    
-    res.json({ message: 'Shipment accepted successfully', shipment });
-  } catch (error) {
-    console.error('Error accepting shipment:', error);
-    res.status(500).json({ message: 'Server error', details: error.message });
-  }
-};
-
-// Accept shipment for pharmacy
-export const acceptPharmacyShipment = async (req, res) => {
-  try {
-    const shipment = await Shipment.findOne({
-      _id: req.params.id,
-      'participants.participantId': req.user._id,
-      'participants.type': 'pharmacy',
-      status: { $in: ['processing', 'in-transit'] }
-    });
-
-    if (!shipment) {
-      return res.status(404).json({ message: 'Shipment not found or cannot be accepted' });
-    }
-
-    // Update shipment status
-    shipment.status = 'delivered';
-    shipment.actualDelivery = new Date();
-    shipment.currentLocation = 'pharmacy';
-    
-    // Update pharmacy participant status
-    const pharmacyParticipant = shipment.participants.find(
-      p => p.type === 'pharmacy'
-    );
-    if (pharmacyParticipant) {
-      pharmacyParticipant.status = 'completed';
-      pharmacyParticipant.actualArrival = new Date();
-    }
-
-    await shipment.save();
-
-    // Update drug statuses
-    await Drug.updateMany(
-      { _id: { $in: shipment.drugs } },
-      { 
-        $set: { 
-          status: 'in-stock with pharmacy',
-          currentHolder: 'pharmacy',
-          pharmacy: req.user._id,
-          'unitBarcodes.$[].status': 'in-stock',
-          'unitBarcodes.$[].currentHolder': 'pharmacy'
         } 
       }
     );
@@ -1083,7 +1058,95 @@ export const rejectRetailerShipment = async (req, res) => {
   }
 };
 
-// Reject shipment for pharmacy
+import mongoose from 'mongoose';
+const ObjectId = mongoose.Types.ObjectId;
+
+export const acceptPharmacyShipment = async (req, res) => {
+  try {
+    // Find shipment with pharmacy participant matching current user
+    const shipment = await Shipment.findOne({
+      _id: req.params.shipmentId,
+      'participants.type': 'pharmacy',
+      'participants.participantId': new ObjectId(req.user._id),
+      status: { $in: ['processing', 'in-transit'] }
+    }).populate('drugs');
+
+    if (!shipment) {
+      return res.status(404).json({ 
+        message: 'Shipment not found or not acceptable',
+        details: {
+          possibleReasons: [
+            'Shipment does not exist',
+            'User is not the pharmacy participant',
+            'Shipment status is not "processing" or "in-transit"'
+          ]
+        }
+      });
+    }
+
+    // Update shipment
+    shipment.status = 'delivered';
+    shipment.currentLocation = 'pharmacy';
+    shipment.actualDelivery = new Date();
+
+    // Update pharmacy participant
+    const pharmacyParticipant = shipment.participants.find(
+      p => p.type === 'pharmacy' && p.participantId.equals(req.user._id)
+    );
+    if (pharmacyParticipant) {
+      pharmacyParticipant.status = 'completed';
+      pharmacyParticipant.actualArrival = new Date();
+    }
+
+    await shipment.save();
+
+    // Update drugs (your existing logic)
+    for (const drugId of shipment.drugs) {
+      const drug = await Drug.findById(drugId);
+      if (!drug) continue;
+
+      const shippedUnits = shipment.shippedUnits.filter(
+        unit => unit.drugId.toString() === drug._id.toString()
+      );
+
+      for (const unit of shippedUnits) {
+        const unitBarcode = drug.unitBarcodes.find(
+          ub => ub.barcode === unit.barcode
+        );
+        if (unitBarcode) {
+          unitBarcode.status = 'in-stock';
+          unitBarcode.currentHolder = 'pharmacy';
+          unitBarcode.pharmacy = req.user._id;
+          unitBarcode.history.push({
+            holderType: 'pharmacy',
+            holderId: req.user._id,
+            status: 'in-stock',
+            date: new Date()
+          });
+        }
+      }
+
+      drug.status = shippedUnits.length === drug.unitBarcodes.length 
+        ? 'in-stock with pharmacy' 
+        : 'shipped to pharmacy';
+      await drug.save();
+    }
+
+    res.json({ 
+      success: true,
+      message: 'Shipment accepted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error accepting shipment:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error',
+      error: error.message 
+    });
+  }
+};
+
 export const rejectPharmacyShipment = async (req, res) => {
   try {
     const shipment = await Shipment.findOne({
@@ -1091,7 +1154,7 @@ export const rejectPharmacyShipment = async (req, res) => {
       'participants.participantId': req.user._id,
       'participants.type': 'pharmacy',
       status: { $in: ['processing', 'in-transit'] }
-    });
+    }).populate('drugs');
 
     if (!shipment) {
       return res.status(404).json({ message: 'Shipment not found or cannot be rejected' });
@@ -1109,21 +1172,66 @@ export const rejectPharmacyShipment = async (req, res) => {
 
     await shipment.save();
 
-    // Update drug statuses back to distributor
-    await Drug.updateMany(
-      { _id: { $in: shipment.drugs } },
-      { 
-        $set: { 
-          status: 'in-stock with distributor',
-          currentHolder: 'distributor',
-          pharmacy: null,
-          'unitBarcodes.$[].status': 'in-stock',
-          'unitBarcodes.$[].currentHolder': 'distributor'
-        } 
-      }
-    );
+    // Update each drug and its unit barcodes
+    for (const drugId of shipment.drugs) {
+      const drug = await Drug.findById(drugId);
+      
+      if (!drug) continue;
 
-    res.json({ message: 'Shipment rejected successfully', shipment });
+      // Find the shipped units for this drug in the shipment
+      const shippedUnits = shipment.shippedUnits.filter(
+        unit => unit.drugId.toString() === drug._id.toString()
+      );
+
+      // Determine where to return the drugs based on shipment participants
+      let returnToType = 'distributor';
+      let returnToId = shipment.participants.find(p => p.type === 'distributor')?.participantId;
+
+      // Update each unit barcode
+      for (const unit of shippedUnits) {
+        const unitBarcode = drug.unitBarcodes.find(
+          ub => ub.barcode === unit.barcode
+        );
+        
+        if (unitBarcode) {
+          unitBarcode.status = 'in-stock';
+          unitBarcode.currentHolder = returnToType;
+          
+          // Clear downstream participants
+          unitBarcode.distributor = returnToType === 'distributor' ? returnToId : null;
+          unitBarcode.wholesaler = null;
+          unitBarcode.retailer = null;
+          unitBarcode.pharmacy = null;
+          
+          // Add to history
+          unitBarcode.history.push({
+            holderType: returnToType,
+            holderId: returnToId,
+            status: 'in-stock',
+            date: new Date(),
+            notes: 'Returned from rejected shipment'
+          });
+        }
+      }
+
+      // Update drug-level status
+      drug.status = `in-stock with ${returnToType}`;
+      drug.currentHolder = returnToType;
+      
+      // Clear downstream participants
+      drug.distributor = returnToType === 'distributor' ? returnToId : null;
+      drug.wholesaler = null;
+      drug.retailer = null;
+      drug.pharmacy = null;
+
+      await drug.save();
+    }
+
+    res.json({ 
+      message: 'Shipment rejected successfully', 
+      shipment,
+      updatedDrugs: shipment.drugs.length
+    });
   } catch (error) {
     console.error('Error rejecting shipment:', error);
     res.status(500).json({ message: 'Server error', details: error.message });
