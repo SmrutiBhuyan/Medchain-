@@ -666,28 +666,46 @@ const handleScan = (barcode) => {
 const handleManualSubmit = async (e) => {
   e.preventDefault();
   
-  // Validate barcode format
+  // Enhanced barcode validation
   if (drugForm.batchBarcode && !/^[A-Za-z0-9-]+$/.test(drugForm.batchBarcode)) {
     alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
     return;
   }
 
   try {
+    // Prepare unit barcodes array according to schema
+    const unitBarcodesData = drugForm.unitBarcodes
+      .filter(b => b !== '') // Remove empty barcodes
+      .map(barcode => ({
+        barcode: barcode || generateBarcode(drugForm.name, drugForm.batch, Math.random().toString(36).substring(2, 8)),
+        status: 'in-stock',
+        manufacturer: user._id,
+        currentHolder: 'manufacturer'
+      }));
+
+    // If no unit barcodes were provided but quantity > 0, generate them
+    if (unitBarcodesData.length === 0 && parseInt(drugForm.quantity) > 0) {
+      for (let i = 1; i <= parseInt(drugForm.quantity); i++) {
+        unitBarcodesData.push({
+          barcode: generateBarcode(drugForm.name, drugForm.batch, i),
+          status: 'in-stock',
+          manufacturer: user._id,
+          currentHolder: 'manufacturer'
+        });
+      }
+    }
+
     const response = await axios.post('http://localhost:5000/api/drugs/create', {
       name: drugForm.name,
       batch: drugForm.batch,
       quantity: parseInt(drugForm.quantity),
       mfgDate: drugForm.mfgDate,
       expiryDate: drugForm.expiryDate,
-      batchBarcode: drugForm.batchBarcode,
-      unitBarcodes: drugForm.unitBarcodes
-        .filter(b => b !== '')
-        .map(barcode => ({
-          barcode: barcode || undefined, // Let server auto-generate if empty
-          manufacturer: user._id, // Include manufacturer ID
-          currentHolder: 'manufacturer'
-        })),
-      manufacturerId: user._id
+      batchBarcode: drugForm.batchBarcode || generateBarcode(drugForm.name, drugForm.batch),
+      unitBarcodes: unitBarcodesData,
+      manufacturerId: user._id,
+      status: 'in-stock',
+      currentHolder: 'manufacturer'
     }, {
       headers: {
         'Content-Type': 'application/json',
@@ -697,16 +715,6 @@ const handleManualSubmit = async (e) => {
 
     if (response.data.success) {
       alert(`Drug ${response.data.drug.name} created successfully with ${response.data.drug.quantity} units`);
-      // Add to preview data
-      setPreviewData(prev => [...prev, {
-        name: drugForm.name,
-        batch: drugForm.batch,
-        quantity: drugForm.quantity,
-        mfgDate: drugForm.mfgDate,
-        expiryDate: drugForm.expiryDate,
-        batchBarcode: drugForm.batchBarcode || 'Auto-generated',
-        unitBarcodes: drugForm.unitBarcodes
-      }]);
       // Reset form
       setDrugForm({
         name: '',
@@ -717,13 +725,20 @@ const handleManualSubmit = async (e) => {
         batchBarcode: '',
         unitBarcodes: []
       });
+      // Refresh inventory if on that tab
+      if (activeTab === 'inventory') {
+        fetchManufacturerDrugs();
+      }
     }
   } catch (error) {
-    console.error('Creation error:', error);
-    if (error.response?.data?.error?.includes('barcode')) {
-      alert('Barcode must be unique. Please enter a different barcode or leave blank for auto-generation.');
+    console.error('Drug creation error:', error);
+    if (error.response?.data?.error) {
+      alert(`Error: ${error.response.data.error}`);
+      if (error.response.data.existingDrug) {
+        console.log('Conflicting drug:', error.response.data.existingDrug);
+      }
     } else {
-      alert(error.response?.data?.error || 'Failed to create drug');
+      alert('Failed to create drug. Please check the console for details.');
     }
   }
 };
@@ -1156,8 +1171,8 @@ Example: "ABC-123-456,ABC-123-457,ABC-123-458"CSV template: Drug Name, Batch Num
   type="text" 
   className="form-control" 
   placeholder="Enter custom barcode"
-  name="barcode"
-  value={drugForm.barcode}
+  name="batchBarcode"
+  value={drugForm.batchBarcode}
   onChange={handleInputChange}
   pattern="[A-Za-z0-9\-]+"
   title="Only letters, numbers and hyphens allowed"
@@ -1197,7 +1212,7 @@ Example: "ABC-123-456,ABC-123-457,ABC-123-458"CSV template: Drug Name, Batch Num
       </div>
       <BarcodeScanner 
   onScan={(barcode) => {
-    setDrugForm(prev => ({ ...prev, barcode }));
+    setDrugForm(prev => ({ ...prev, batchBarcode:barcode }));
     setShowScanner(false);
     setScanningStatus('success');
   }}

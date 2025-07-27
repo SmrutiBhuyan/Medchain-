@@ -3,13 +3,26 @@ import { generateBarcode } from '../utils/barcodeGenerator.js';
 import { NotFoundError, ValidationError } from '../errrors/index.js';
 
 // Helper function to validate barcode format
+// Helper function to validate barcode format
 const isValidBarcode = (barcode) => {
-  return /^[A-Za-z0-9-]+$/.test(barcode);
+  try {
+    if (barcode === undefined || barcode === null) return false;
+    const strBarcode = String(barcode); // Convert to string if it isn't already
+    return /^[A-Za-z0-9-]+$/.test(strBarcode.trim());
+  } catch (e) {
+    return false;
+  }
 };
 
 // Enhanced createDrug controller
 export const createDrug = async (req, res) => {
   try {
+    console.log('Raw unitBarcodes:', req.body.unitBarcodes);
+    if (req.body.unitBarcodes && Array.isArray(req.body.unitBarcodes)) {
+      console.log('First barcode type:', typeof req.body.unitBarcodes[0]);
+    }
+    console.log("Creating drug with data ", req.body);
+    
     const { 
       name, 
       batch, 
@@ -48,6 +61,24 @@ export const createDrug = async (req, res) => {
       });
     }
 
+    if (batchBarcode) {
+      const barcodeInUse = await Drug.findOne({ 
+        batchBarcode: { $regex: new RegExp(`^${batchBarcode}$`, 'i') }
+      });
+      
+      if (barcodeInUse) {
+        return res.status(400).json({ 
+          error: `Barcode '${batchBarcode}' is already in use`,
+          conflictingDrug: {
+            id: barcodeInUse._id,
+            name: barcodeInUse.name,
+            batch: barcodeInUse.batch,
+            barcode: barcodeInUse.batchBarcode
+          }
+        });
+      }
+    }
+
     // Generate batch barcode if not provided
     const finalBatchBarcode = batchBarcode && isValidBarcode(batchBarcode) 
       ? batchBarcode 
@@ -57,7 +88,7 @@ export const createDrug = async (req, res) => {
     if (batchBarcode) {
       const barcodeInUse = await Drug.findOne({ batchBarcode: finalBatchBarcode });
       if (barcodeInUse) {
-            console.log('Conflicting drug:', barcodeInUse);
+        console.log('Conflicting drug:', barcodeInUse);
         return res.status(400).json({ 
           error: 'Barcode already in use by another drug',
           conflictingDrug: barcodeInUse 
@@ -76,14 +107,21 @@ export const createDrug = async (req, res) => {
       }
 
       for (const barcode of unitBarcodes) {
+        console.log('Validating barcode:', barcode, 'Type:', typeof barcode);
         if (barcode && !isValidBarcode(barcode)) {
+          console.log('Invalid barcode details:', {
+            barcode,
+            stringVersion: String(barcode),
+            isValid: /^[A-Za-z0-9-]+$/.test(String(barcode).trim())
+          });
           return res.status(400).json({ error: `Invalid unit barcode format: ${barcode}` });
         }
 
         processedUnitBarcodes.push({
           barcode: barcode || generateBarcode(name, batch, Math.random().toString(36).substring(2, 8)),
           status: 'in-stock',
-          currentHolder: 'manufacturer'
+          currentHolder: 'manufacturer',
+          manufacturer: manufacturerId
         });
       }
     } else {
@@ -112,6 +150,8 @@ export const createDrug = async (req, res) => {
       currentHolder: 'manufacturer'
     });
 
+    console.log("Saving drug data...");
+    
     await drug.save();
 
     res.json({
@@ -124,11 +164,11 @@ export const createDrug = async (req, res) => {
     console.error('Drug creation error:', err);
     res.status(500).json({ 
       error: 'Failed to create drug',
-      details: err.message 
+      details: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
   }
 };
-
 // In your drugController.js
 export const verifyDrugsForShipment = async (req, res) => {
   try {
@@ -258,6 +298,7 @@ export const getDistributorInventory = async (req, res) => {
           currentHolder: unit.currentHolder
         }));
     });
+
 
     res.json({
       success: true,
