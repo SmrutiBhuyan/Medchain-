@@ -17,6 +17,7 @@ import RetailerDashboard from './pages/RetailerDashboard.jsx';
 import PharmacyDashboard from './pages/PharmacyDashboard.jsx';
 import PublicDrugDashboard from './pages/PublicDrugDashboard.jsx';
 import DrugVerificationGlobal from './pages/DrugVerificationGlobal.jsx';
+import ReportCounterfeit from './pages/Report.jsx';
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
           <Route path="/retailer/dashboard" element={<RetailerDashboard/>}/>
           <Route path="/pharmacy/dashboard" element={<PharmacyDashboard/>}/>
           <Route path="/public/dashboard" element={<PublicDrugDashboard/>}/>
+          <Route path="/report-counterfeit" element={<ReportCounterfeit/>}/>
         </Routes>
      
       </AuthProvider>
