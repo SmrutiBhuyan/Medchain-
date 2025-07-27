@@ -1,0 +1,1020 @@
+/* DrugVerificationGlobal.css */
+
+/* General Styles & Body Background */
+body {
+  font-family: 'Poppins', sans-serif; /* Modern, clean font */
+  background: linear-gradient(135deg, #f0f2f5 0%, #e0e6ed 100%); /* Soft gradient background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  color: #333;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+/* Main Container for the Tab */
+.verify-tab {
+  background: #ffffff;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); /* Soft, noticeable shadow */
+  padding: 40px;
+  width: 100%;
+  max-width: 700px;
+  text-align: center;
+  position: relative;
+  overflow: hidden; /* Changed to hidden to prevent scrollbar flicker when modal is open */
+  animation: fadeIn 0.5s ease-out;
+
+  /* --- NEW STYLES FOR HEIGHT MANAGEMENT --- */
+  max-height: 90vh; /* Limit the maximum height of the main tab */
+  overflow-y: auto; /* Enable vertical scrolling for the tab content if it exceeds max-height */
+  display: flex; /* Use flexbox for better internal layout control */
+  flex-direction: column; /* Stack children vertically */
+  /* --- END NEW STYLES --- */
+}
+
+/* Custom Scrollbar for .verify-tab */
+.verify-tab::-webkit-scrollbar {
+  width: 8px;
+}
+
+.verify-tab::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.verify-tab::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.verify-tab::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+
+/* Fade In Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Card Styling */
+.verify-card {
+  margin-bottom: 30px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid #eee;
+  flex-shrink: 0; /* Prevent this section from shrinking */
+}
+
+.verify-card h3 {
+  font-size: 2.2em;
+  color: #2c3e50;
+  margin-bottom: 25px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+/* Input Group */
+.verify-input {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.verify-input input[type="text"] {
+  flex-grow: 1;
+  padding: 15px 20px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  font-size: 1em;
+  color: #555;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.verify-input input[type="text"]:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+/* Buttons - General Styling */
+.verify-btn {
+  padding: 15px 30px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px; /* For the main verify button */
+}
+
+.verify-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Primary Button (Verify Drug) */
+.verify-btn:not(.verify-scan-btn):not(.verify-btn-primary):not(.verify-btn-danger):not(.verify-report-btn):not(.verify-toggle-details-btn) {
+  background-color: #007bff;
+  color: white;
+  box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+}
+
+.verify-btn:not(.verify-scan-btn):not(.verify-btn-primary):not(.verify-btn-danger):not(.verify-report-btn):not(.verify-toggle-details-btn):hover:not(:disabled) {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4);
+}
+
+/* Scan Button */
+.verify-scan-btn {
+  background-color: #6c757d;
+  color: white;
+  padding: 15px 20px;
+  border-radius: 10px;
+}
+
+.verify-scan-btn:hover:not(:disabled) {
+  background-color: #5a6268;
+  transform: translateY(-2px);
+}
+
+.verify-scan-btn.scanning {
+  background-color: #ffc107;
+  color: #333;
+  cursor: default;
+  animation: pulseScan 1s infinite alternate;
+}
+
+.verify-scan-btn.success {
+  background-color: #28a745;
+  color: white;
+}
+
+.verify-scan-btn.error {
+  background-color: #dc3545;
+  color: white;
+}
+
+@keyframes pulseScan {
+  from {
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+  }
+  to {
+    box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+  }
+}
+
+/* Error Message */
+.verify-error-message {
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  padding: 12px 20px;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  animation: slideInDown 0.4s ease-out;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Scanner Modal Styles --- */
+.verify-scanner-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.verify-scanner-modal-content {
+  background: #fff;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+  animation: zoomIn 0.3s ease-out;
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.verify-scanner-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.verify-scanner-modal-header h3 {
+  margin: 0;
+  font-size: 1.8em;
+  color: #2c3e50;
+}
+
+.verify-btn-close {
+  background: none;
+  border: none;
+  font-size: 2em;
+  color: #666;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.verify-btn-close:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.verify-scanner-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#verify-barcode-scanner {
+  width: 100%;
+  min-height: 250px; /* Ensure visibility */
+  background-color: #f8f8f8;
+  border-radius: 10px;
+  overflow: hidden; /* Important for the scanner to render correctly */
+  margin-bottom: 20px;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.verify-scanner-controls {
+  display: flex;
+  flex-direction: column; /* Stack buttons vertically */
+  gap: 15px;
+  width: 100%;
+}
+
+.verify-btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.verify-btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.verify-btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.verify-btn-danger:hover {
+  background-color: #c82333;
+}
+
+/* --- Verification Result Modal --- */
+.verify-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.verify-verification-modal {
+  background: #fff;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 600px;
+  position: relative;
+  animation: slideInUp 0.4s ease-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+
+  /* --- NEW STYLES FOR HEIGHT MANAGEMENT --- */
+  max-height: 95vh; /* Limit the maximum height of the modal itself */
+  overflow-y: auto; /* Enable scrolling for the entire modal if content overflows */
+  /* --- END NEW STYLES --- */
+}
+
+/* Custom Scrollbar for .verify-verification-modal */
+.verify-verification-modal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.verify-verification-modal::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.verify-verification-modal::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.verify-verification-modal::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.verify-verification-modal h3 {
+  font-size: 2.5em;
+  margin-bottom: 20px;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+.verify-verification-icon {
+  margin-bottom: 25px;
+}
+
+.verify-icon-circle {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 3.5em;
+  color: white;
+  margin: 0 auto 20px; /* Center the circle */
+  animation: popIn 0.4s ease-out;
+}
+
+.verify-icon-circle.verify-success {
+  background-color: #28a745;
+  box-shadow: 0 8px 20px rgba(40, 167, 69, 0.4);
+}
+
+.verify-icon-circle.verify-error {
+  background-color: #dc3545;
+  box-shadow: 0 8px 20px rgba(220, 53, 69, 0.4);
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  80% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.verify-verification-content {
+  width: 100%;
+  margin-bottom: 30px;
+  overflow-y: auto; /* Allow scrolling for details */
+  max-height: 60vh; /* Limit height for content */
+  padding-right: 10px; /* For scrollbar space */
+  flex-grow: 1; /* Allows content area to take available space within flex container */
+}
+
+/* Custom Scrollbar styling for .verify-verification-content */
+.verify-verification-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.verify-verification-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.verify-verification-content::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.verify-verification-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Success/Error Specific Styles */
+.verify-verification-modal.verify-success h3 {
+  color: #28a745;
+}
+
+.verify-verification-modal.verify-error h3 {
+  color: #dc3545;
+}
+
+/* Basic Drug Info in Details */
+.verify-details-container {
+  text-align: left;
+  margin-top: 20px;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+  flex-shrink: 0; /* Prevent this section from shrinking */
+}
+
+.verify-basic-info {
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  padding: 25px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.verify-drug-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.verify-drug-header h2 {
+  font-size: 1.8em;
+  color: #2c3e50;
+  margin: 0;
+  font-weight: 600;
+}
+
+.verify-status-badge {
+  padding: 6px 15px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9em;
+  color: white;
+  text-transform: capitalize; /* Make status look nicer */
+}
+
+.verify-status-badge.in-transit {
+  background-color: #ffc107; /* Warning yellow */
+  color: #333;
+}
+.verify-status-badge.verified {
+  background-color: #28a745; /* Success green */
+}
+.verify-status-badge.recalled {
+  background-color: #dc3545; /* Danger red */
+}
+.verify-status-badge.expired {
+  background-color: #6c757d; /* Grey */
+}
+.verify-status-badge.unknown-status {
+  background-color: #007bff; /* Primary blue */
+}
+
+
+.verify-drug-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px 25px;
+  font-size: 0.95em;
+  color: #555;
+}
+
+.verify-meta-label {
+  font-weight: 600;
+  color: #333;
+  margin-right: 5px;
+}
+
+/* Supply Chain Section */
+.verify-supply-chain-section {
+  margin-bottom: 30px;
+}
+
+.verify-supply-chain-section h3 {
+  font-size: 1.6em;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.verify-missing-links-warning {
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+  padding: 15px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+/* Timeline */
+.verify-timeline {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-left: 20px;
+}
+
+.verify-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #ddd;
+}
+
+.verify-timeline-event {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  position: relative;
+}
+
+.verify-timeline-point {
+  position: absolute;
+  left: -20px; /* Align with the line */
+  top: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+}
+
+.verify-timeline-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #007bff;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2em;
+  box-shadow: 0 4px 10px rgba(0, 123, 255, 0.2);
+  border: 3px solid white; /* To stand out from the line */
+}
+
+.verify-timeline-content {
+  background-color: #f0f8ff; /* Light blue background for events */
+  border-radius: 10px;
+  padding: 20px;
+  margin-left: 30px; /* Space from the line */
+  width: calc(100% - 30px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.verify-timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  border-bottom: 1px dashed #cfe2ff;
+  padding-bottom: 10px;
+}
+
+.verify-timeline-title {
+  font-weight: 700;
+  font-size: 1.1em;
+  color: #0056b3;
+}
+
+.verify-timeline-date {
+  font-size: 0.85em;
+  color: #666;
+}
+
+.verify-timeline-body p {
+  margin: 5px 0;
+  font-size: 0.95em;
+  color: #444;
+}
+
+.verify-timeline-body strong {
+  color: #2c3e50;
+}
+
+.verify-status-chip {
+  background-color: #e9ecef;
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 0.8em;
+  font-weight: 600;
+  color: #495057;
+  text-transform: capitalize;
+}
+
+/* No History fallback */
+.verify-no-history {
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  color: #6c757d;
+  font-style: italic;
+  margin-top: 20px;
+}
+
+.verify-simple-chain {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  margin-top: 20px;
+}
+
+.verify-simple-participant {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  text-align: center;
+}
+
+.verify-simple-icon {
+  width: 50px;
+  height: 50px;
+  background-color: #e7f3ff;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.8em;
+  color: #007bff;
+  margin-bottom: 5px;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+}
+
+.verify-simple-info {
+  font-size: 0.85em;
+  line-height: 1.4;
+}
+
+.verify-simple-info strong {
+  display: block;
+  font-size: 1.1em;
+  color: #333;
+}
+
+.verify-simple-arrow {
+  font-size: 1.5em;
+  color: #ccc;
+  margin: 0 10px;
+}
+
+/* Current Holder Section */
+.verify-current-holder {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px dashed #eee;
+}
+
+.verify-current-holder h3 {
+  font-size: 1.6em;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.verify-holder-card {
+  background-color: #e6f7ff; /* Lighter blue for current holder */
+  border: 1px solid #91d5ff;
+  border-radius: 15px;
+  padding: 25px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 5px 20px rgba(0, 123, 255, 0.1);
+}
+
+.verify-holder-icon {
+  width: 60px;
+  height: 60px;
+  min-width: 60px; /* Prevent shrinking */
+  background-color: #007bff;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2.2em;
+  color: white;
+  box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
+}
+
+.verify-holder-info {
+  text-align: left;
+}
+
+.verify-holder-info h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.4em;
+  color: #0056b3;
+}
+
+.verify-holder-info p {
+  margin: 2px 0;
+  font-size: 0.95em;
+  color: #444;
+}
+
+
+/* Verification Message */
+.verify-verification-message {
+  background-color: #e9f7ef; /* Light green */
+  border: 1px solid #cce5d4;
+  color: #155724;
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 25px;
+  text-align: left;
+}
+
+.verify-verification-message h4 {
+  color: #155724;
+  margin-top: 0;
+  font-size: 1.2em;
+  font-weight: 600;
+}
+
+/* Counterfeit Warning */
+.verify-counterfeit-warning {
+  background-color: #fdedee; /* Light red */
+  border: 1px solid #f1aeb5;
+  color: #721c24;
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 25px;
+  text-align: left;
+}
+
+.verify-counterfeit-warning h4 {
+  color: #721c24;
+  margin-top: 0;
+  font-size: 1.2em;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.verify-counterfeit-warning ul {
+  list-style-type: disc;
+  padding-left: 20px;
+  margin-top: 10px;
+}
+
+.verify-counterfeit-warning li {
+  margin-bottom: 5px;
+  font-size: 0.95em;
+}
+
+.verify-report-btn {
+  background-color: #ff4d4f; /* Red for report */
+  color: white;
+  padding: 12px 25px;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-top: 20px;
+  box-shadow: 0 5px 15px rgba(255, 77, 79, 0.3);
+}
+
+.verify-report-btn:hover {
+  background-color: #cc0000;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 77, 79, 0.4);
+}
+
+.verify-report-confirmation {
+  background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+  color: #1890ff;
+  padding: 15px;
+  border-radius: 10px;
+  margin-top: 20px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.verify-loading-spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-top: 4px solid #1890ff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
+/* Expiry Warning */
+.verify-expiry-warning {
+  background-color: #fff8e1; /* Light orange */
+  border: 1px solid #ffe0b2;
+  color: #e65100;
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 25px;
+  text-align: left;
+}
+
+.verify-expiry-warning h4 {
+  color: #e65100;
+  margin-top: 0;
+  font-size: 1.2em;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+/* Toggle Details Button */
+.verify-toggle-details-btn {
+  background-color: #f0f2f5;
+  color: #333;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  margin-top: 25px;
+  border: 1px solid #ddd;
+}
+
+.verify-toggle-details-btn:hover {
+  background-color: #e0e6ed;
+  color: #007bff;
+}
+
+/* Close Button (Modal) */
+.verify-close-btn {
+  background-color: #6c757d;
+  color: white;
+  padding: 12px 30px;
+  border-radius: 10px;
+  font-weight: 600;
+  margin-top: 30px;
+  box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+}
+
+.verify-close-btn:hover {
+  background-color: #5a6268;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(108, 117, 125, 0.4);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .verify-tab {
+    padding: 30px 20px;
+    margin: 20px;
+  }
+
+  .verify-card h3 {
+    font-size: 1.8em;
+  }
+
+  .verify-input {
+    flex-direction: column;
+  }
+
+  .verify-btn {
+    width: 100%;
+    margin-top: 15px;
+  }
+
+  .verify-scanner-modal-content {
+    padding: 20px;
+    margin: 20px;
+  }
+
+  .verify-verification-modal {
+    padding: 30px 20px;
+    margin: 20px;
+  }
+
+  .verify-verification-modal h3 {
+    font-size: 2em;
+  }
+
+  .verify-icon-circle {
+    width: 70px;
+    height: 70px;
+    font-size: 3em;
+  }
+
+  .verify-drug-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .verify-timeline-content {
+    margin-left: 20px;
+  }
+  
+  .verify-simple-chain {
+    flex-direction: column;
+  }
+
+  .verify-simple-arrow {
+    transform: rotate(90deg);
+    margin: 10px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .verify-card h3 {
+    font-size: 1.5em;
+  }
+
+  .verify-input input[type="text"] {
+    padding: 12px 15px;
+  }
+
+  .verify-btn {
+    padding: 12px 20px;
+    font-size: 1em;
+  }
+
+  .verify-verification-modal h3 {
+    font-size: 1.5em;
+  }
+
+  .verify-icon-circle {
+    width: 60px;
+    height: 60px;
+    font-size: 2.5em;
+  }
+
+  .verify-timeline-content {
+    padding: 15px;
+  }
+
+  .verify-basic-info,
+  .verify-holder-card,
+  .verify-counterfeit-warning,
+  .verify-expiry-warning,
+  .verify-verification-message {
+    padding: 15px;
+  }
+}

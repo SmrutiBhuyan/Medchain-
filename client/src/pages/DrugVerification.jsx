@@ -1,37 +1,63 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaQrcode, FaCheckCircle, FaTimes, FaUpload } from 'react-icons/fa';
+import { FaQrcode, FaCheckCircle, FaTimes, FaUpload, FaExclamationTriangle } from 'react-icons/fa';
 import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeSupportedFormats, Html5QrcodeScanType } from 'html5-qrcode';
+import './DrugVerification.css';
 
 const DrugVerification = ({ onVerify, getManufacturerName }) => {
   const [qrInput, setQrInput] = useState('');
-  const [scanningStatus, setScanningStatus] = useState('idle'); // 'idle', 'scanning', 'success', 'error'
+  const [scanningStatus, setScanningStatus] = useState('idle');
   const [showScanner, setShowScanner] = useState(false);
   const [verificationResult, setVerificationResult] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   const handleStartScan = () => {
     setScanningStatus('scanning');
     setShowScanner(true);
+    setError(null);
   };
 
   const handleScan = (barcode) => {
+    if (!barcode) {
+      handleScanError('Empty barcode scanned');
+      return;
+    }
     setQrInput(barcode);
     setShowScanner(false);
     setScanningStatus('success');
+    setError(null);
   };
 
-  const handleScanError = () => {
+  const handleScanError = (errorMessage = 'Scan failed') => {
     setScanningStatus('error');
+    setError(errorMessage);
     setTimeout(() => {
       setScanningStatus('idle');
     }, 2000);
   };
 
   const verifyDrug = async () => {
+    if (!qrInput.trim()) {
+      setError('Please enter or scan a barcode');
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const result = await onVerify(qrInput);
-      setVerificationResult(result);
+      setError(null);
+      setVerificationResult(null);
+      
+      const result = await onVerify(qrInput.trim());
+      
+      if (result.error) {
+        setError(result.message || 'Verification failed');
+      } else {
+        setVerificationResult(result.data || result);
+      }
+    } catch (err) {
+      console.error('Verification error:', err);
+      setError(err.message || 'Failed to verify drug');
     } finally {
       setIsLoading(false);
     }
@@ -50,15 +76,13 @@ const DrugVerification = ({ onVerify, getManufacturerName }) => {
         .then(decodedText => {
           if (/^[A-Za-z0-9-]+$/.test(decodedText)) {
             onScan(decodedText);
-            if (onClose) onClose();
           } else {
-            alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
+            onError('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
           }
         })
         .catch(err => {
           console.error('File scan error:', err);
-          if (onError) onError(err.message);
-          alert('Failed to scan the file. Please try another image.');
+          onError(err.message || 'Failed to scan the file');
         });
     };
 
@@ -91,21 +115,19 @@ const DrugVerification = ({ onVerify, getManufacturerName }) => {
         if (/^[A-Za-z0-9-]+$/.test(decodedText)) {
           scanner.clear().then(() => {
             onScan(decodedText);
-            if (onClose) onClose();
           }).catch(err => {
             console.error('Failed to clear scanner', err);
-            if (onError) onError('Scanner cleanup failed');
+            onError('Scanner cleanup failed');
           });
         } else {
-          if (onError) onError('Invalid format');
-          alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
+          onError('Invalid barcode format');
         }
       };
 
       const errorCallback = (error) => {
         if (!error.message.includes('No MultiFormat Readers')) {
           console.warn('QR code scan error', error);
-          if (onError) onError(error.message);
+          onError(error.message);
         }
       };
 
@@ -115,16 +137,15 @@ const DrugVerification = ({ onVerify, getManufacturerName }) => {
         if (scannerRef.current) {
           scannerRef.current.clear().catch(error => {
             console.error('Failed to clear scanner', error);
-            if (onError) onError('Scanner cleanup failed');
           });
         }
       };
-    }, [onScan, onClose, onError]);
+    }, [onScan, onError]);
 
     return (
       <div className="scanner-container">
         <div id="barcode-scanner" style={{ width: '100%' }}></div>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '10px' }}>
+        <div className="scanner-controls">
           <button 
             className="btn btn-primary"
             onClick={() => fileInputRef.current.click()}
@@ -144,12 +165,90 @@ const DrugVerification = ({ onVerify, getManufacturerName }) => {
               if (scannerRef.current) {
                 scannerRef.current.clear().catch(console.error);
               }
-              if (onClose) onClose();
+              onClose();
             }}
           >
             Close Scanner
           </button>
         </div>
+      </div>
+    );
+  };
+
+  const renderVerificationDetails = () => {
+    if (!verificationResult) return null;
+
+    return (
+      <div className="verification-details-grid">
+        <div className="detail-item">
+          <span className="detail-label">Drug Name:</span>
+          <span className="detail-value">{verificationResult.name}</span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">Barcode:</span>
+          <span className="detail-value">{verificationResult.barcode || verificationResult.batchBarcode}</span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">Batch Number:</span>
+          <span className="detail-value">{verificationResult.batch}</span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">Manufacturer:</span>
+          <span className="detail-value">
+            {getManufacturerName(verificationResult.manufacturer)}
+          </span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">Manufacturing Date:</span>
+          <span className="detail-value">
+            {new Date(verificationResult.mfgDate).toLocaleDateString()}
+          </span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">Expiry Date:</span>
+          <span className="detail-value">
+            {new Date(verificationResult.expiryDate).toLocaleDateString()}
+          </span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">Current Status:</span>
+          <span className="detail-value">
+            <span className={`status-chip ${verificationResult.status?.replace(/\s+/g, '-')}`}>
+              {verificationResult.status}
+            </span>
+          </span>
+        </div>
+        
+        {showDetails && verificationResult.blockchainData && (
+          <>
+            <div className="detail-item">
+              <span className="detail-label">Blockchain Tx:</span>
+              <span className="detail-value">
+                {verificationResult.blockchainData.txHash}
+              </span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Verification Time:</span>
+              <span className="detail-value">
+                {new Date(verificationResult.blockchainData.timestamp).toLocaleString()}
+              </span>
+            </div>
+            {verificationResult.supplyChain && verificationResult.supplyChain.length > 0 && (
+              <div className="detail-item full-width">
+                <span className="detail-label">Supply Chain:</span>
+                <div className="supply-chain">
+                  {verificationResult.supplyChain.map((event, index) => (
+                    <div key={index} className="supply-chain-event">
+                      <span className="event-type">{event.holderType}</span>
+                      <span className="event-date">{new Date(event.date).toLocaleDateString()}</span>
+                      <span className="event-status">{event.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     );
   };
@@ -164,26 +263,21 @@ const DrugVerification = ({ onVerify, getManufacturerName }) => {
             type="text"
             placeholder="Enter drug barcode or scan QR code"
             value={qrInput}
-            onChange={(e) => setQrInput(e.target.value)}
+            onChange={(e) => {
+              setQrInput(e.target.value);
+              setError(null);
+            }}
+            onKeyPress={(e) => e.key === 'Enter' && verifyDrug()}
           />
           <button 
-            className={`scan-btn ${scanningStatus === 'scanning' ? 'scanning' : 
-                        scanningStatus === 'success' ? 'success' : 
-                        scanningStatus === 'error' ? 'error' : ''}`}
+            className={`scan-btn ${scanningStatus}`}
             onClick={handleStartScan}
             disabled={scanningStatus !== 'idle'}
           >
-            {scanningStatus === 'scanning' ? (
-              <span>Scanning...</span>
-            ) : scanningStatus === 'success' ? (
-              <span>✓ Scanned!</span>
-            ) : scanningStatus === 'error' ? (
-              <span>Scan Failed</span>
-            ) : (
-              <>
-                <FaQrcode /> Scan
-              </>
-            )}
+            {scanningStatus === 'scanning' ? 'Scanning...' :
+             scanningStatus === 'success' ? '✓ Scanned!' :
+             scanningStatus === 'error' ? 'Scan Failed' :
+             <><FaQrcode /> Scan</>}
           </button>
         </div>
         
@@ -194,6 +288,12 @@ const DrugVerification = ({ onVerify, getManufacturerName }) => {
         >
           {isLoading ? 'Verifying...' : 'Verify Drug'}
         </button>
+
+        {error && (
+          <div className="error-message">
+            <FaExclamationTriangle /> {error}
+          </div>
+        )}
       </div>
 
       {showScanner && (
@@ -225,9 +325,9 @@ const DrugVerification = ({ onVerify, getManufacturerName }) => {
 
       {verificationResult && (
         <div className="modal-overlay">
-          <div className={`modal verification-modal ${verificationResult?.error ? 'error' : 'success'}`}>
+          <div className={`modal verification-modal ${verificationResult.error ? 'error' : 'success'}`}>
             <div className="verification-icon">
-              {verificationResult?.error ? (
+              {verificationResult.error ? (
                 <div className="icon-circle error">
                   <FaTimes />
                 </div>
@@ -239,60 +339,32 @@ const DrugVerification = ({ onVerify, getManufacturerName }) => {
             </div>
             
             <h3>
-              {verificationResult?.error ? 
+              {verificationResult.error ? 
                 "Drug Verification Failed" : 
                 "Drug Verified Successfully"}
             </h3>
             
             <div className="verification-content">
-              {verificationResult?.error ? (
+              {verificationResult.error ? (
                 <>
                   <p className="error-message">
-                    This drug could not be verified in our system. It may be counterfeit or not properly registered.
+                    {verificationResult.message || 'This drug could not be verified in our system.'}
                   </p>
                   <div className="recommendation">
                     <h4>Recommendation:</h4>
                     <p>Do not distribute or sell this product. Please contact the manufacturer for further verification.</p>
                   </div>
                 </>
-              ) : verificationResult ? (
+              ) : (
                 <>
-                  <div className="verification-details-grid">
-                    <div className="detail-item">
-                      <span className="detail-label">Drug Name:</span>
-                      <span className="detail-value">{verificationResult.name}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Barcode:</span>
-                      <span className="detail-value">{verificationResult.barcode}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Batch Number:</span>
-                      <span className="detail-value">{verificationResult.batch}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Manufacturer:</span>
-                      <span className="detail-value">{getManufacturerName(verificationResult.manufacturer)}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Expiry Date:</span>
-                      <span className="detail-value">{new Date(verificationResult.expiryDate).toLocaleDateString()}</span>
-                    </div>
-                    <div className="detail-item">
-                      <span className="detail-label">Current Status:</span>
-                      <span className="detail-value">
-                        <span className={`status-chip ${verificationResult.status}`}>
-                          {verificationResult.status}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
+                  {renderVerificationDetails()}
                   
                   <div className="verification-message">
                     <h4>Verification Message:</h4>
                     <p>
-                      This drug has been successfully verified in our blockchain system. 
-                      It has a valid chain of custody from manufacturer to distributor.
+                      {verificationResult.blockchainData ? 
+                        "This drug has been successfully verified in our blockchain system." : 
+                        "This drug has been verified in our system."}
                     </p>
                   </div>
                   
@@ -305,14 +377,22 @@ const DrugVerification = ({ onVerify, getManufacturerName }) => {
                       </p>
                     </div>
                   )}
+
+                  <button
+                    className="toggle-details-btn"
+                    onClick={() => setShowDetails(!showDetails)}
+                  >
+                    {showDetails ? 'Hide Details' : 'Show Full Details'}
+                  </button>
                 </>
-              ) : null}
+              )}
             </div>
             
             <button
               className="close-btn"
               onClick={() => {
                 setVerificationResult(null);
+                setShowDetails(false);
               }}
             >
               Close

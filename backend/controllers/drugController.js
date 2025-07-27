@@ -412,3 +412,129 @@ export const getPharmacyInventory = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+export const verifyDrugGlobal = async (req, res) => {
+  try {
+    const { barcode } = req.params;
+
+    if (!barcode) {
+      throw new ValidationError('Barcode is required');
+    }
+
+    // First try to find by unit barcode
+    let drug = await Drug.findOne({ 
+      'unitBarcodes.barcode': barcode 
+    }).populate([
+      { path: 'manufacturer', select: 'name organization' },
+      { path: 'distributor', select: 'name organization' },
+      { path: 'wholesaler', select: 'name organization' },
+      { path: 'retailer', select: 'name organization' },
+      { path: 'pharmacy', select: 'name organization' },
+      { path: 'unitBarcodes.manufacturer', select: 'name organization' },
+      { path: 'unitBarcodes.distributor', select: 'name organization' },
+      { path: 'unitBarcodes.wholesaler', select: 'name organization' },
+      { path: 'unitBarcodes.retailer', select: 'name organization' },
+      { path: 'unitBarcodes.pharmacy', select: 'name organization' }
+    ]);
+
+    // If not found as unit barcode, try batch barcode
+    if (!drug) {
+      drug = await Drug.findOne({ 
+        batchBarcode: barcode 
+      }).populate([
+        { path: 'manufacturer', select: 'name organization' },
+        { path: 'distributor', select: 'name organization' },
+        { path: 'wholesaler', select: 'name organization' },
+        { path: 'retailer', select: 'name organization' },
+        { path: 'pharmacy', select: 'name organization' }
+      ]);
+    }
+
+    if (!drug) {
+      throw new NotFoundError('Drug not found in system');
+    }
+
+    // Find the specific unit if this was a unit barcode
+    let unit = null;
+    if (drug.unitBarcodes) {
+      unit = drug.unitBarcodes.find(u => u.barcode === barcode);
+    }
+
+    // Extract supply chain history
+    const supplyChain = [];
+    const participants = {
+      manufacturer: drug.manufacturer || (unit?.manufacturer),
+      distributor: drug.distributor || (unit?.distributor),
+      wholesaler: drug.wholesaler || (unit?.wholesaler),
+      retailer: drug.retailer || (unit?.retailer),
+      pharmacy: drug.pharmacy || (unit?.pharmacy)
+    };
+
+    // Create timeline from history if available
+    if (unit?.history) {
+      unit.history.forEach(event => {
+        supplyChain.push({
+          holderType: event.holderType,
+          holderName: participants[event.holderType]?.name || 'Unknown',
+          organization: participants[event.holderType]?.organization || 'Unknown',
+          date: event.date,
+          status: event.status
+        });
+      });
+    } else {
+      // Fallback to current holders if no history exists
+      Object.entries(participants).forEach(([type, participant]) => {
+        if (participant) {
+          supplyChain.push({
+            holderType: type,
+            holderName: participant.name,
+            organization: participant.organization,
+            date: drug.createdAt, // Fallback to creation date
+            status: drug.status
+          });
+        }
+      });
+    }
+
+    const responseData = {
+      _id: drug._id,
+      name: drug.name,
+      batch: drug.batch,
+      barcode: unit ? unit.barcode : drug.batchBarcode,
+      batchBarcode: drug.batchBarcode,
+      mfgDate: drug.mfgDate,
+      expiryDate: drug.expiryDate,
+      daysLeft: getDaysUntilExpiry(drug.expiryDate),
+      status: unit ? unit.status : drug.status,
+      manufacturer: drug.manufacturer || (unit?.manufacturer),
+      distributor: drug.distributor || (unit?.distributor),
+      wholesaler: drug.wholesaler || (unit?.wholesaler),
+      retailer: drug.retailer || (unit?.retailer),
+      pharmacy: drug.pharmacy || (unit?.pharmacy),
+      currentHolder: unit ? unit.currentHolder : drug.currentHolder,
+      isUnit: !!unit,
+      supplyChain,
+      missingLinks: getMissingLinks(participants)
+    };
+
+    console.log(responseData);
+    
+    res.json({
+      success: true,
+      drug: responseData
+    });
+
+  } catch (error) {
+    console.error('Drug verification error:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      error: error.message || 'Drug verification failed'
+    });
+  }
+};
+
+// Helper function to identify missing supply chain links
+function getMissingLinks(participants) {
+  const expectedChain = ['manufacturer', 'distributor', 'wholesaler', 'retailer', 'pharmacy'];
+  return expectedChain.filter(link => !participants[link]);
+}

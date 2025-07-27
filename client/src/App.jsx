@@ -2,7 +2,7 @@ import { useState } from 'react'
 // import './App.css'
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Landing from './pages/landing';
+import Landing from './pages/Landing';
 import RoleSelectionPage from './pages/Role-selection'
 import { AuthProvider } from './pages/AuthContext';
 import Login from './pages/LoginPage';
@@ -16,6 +16,7 @@ import WholesalerDashboard from './pages/WholesalerDashboard.jsx';
 import RetailerDashboard from './pages/RetailerDashboard.jsx';
 import PharmacyDashboard from './pages/PharmacyDashboard.jsx';
 import PublicDrugDashboard from './pages/PublicDrugDashboard.jsx';
+import DrugVerificationGlobal from './pages/DrugVerificationGlobal.jsx';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           <Route path="/retailer/dashboard" element={<RetailerDashboard/>}/>
           <Route path="/pharmacy/dashboard" element={<PharmacyDashboard/>}/>
           <Route path="/public/dashboard" element={<PublicDrugDashboard/>}/>
+          <Route path="/verify-drug" element={<DrugVerificationGlobal/>}/>
         </Routes>
      
       </AuthProvider>

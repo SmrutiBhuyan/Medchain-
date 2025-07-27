@@ -888,22 +888,7 @@ const handleRejectShipment = async (shipmentId) => {
           )}
          {activeTab === 'verify' && (
   <DrugVerification 
-    onVerify={async (barcode) => {
-      try {
-        const response = await axios.get(`http://localhost:5000/api/drugs/verify/${barcode}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        return response.data;
-      } catch (error) {
-        console.error('Verification error:', error);
-        return { 
-          error: true,
-          message: error.response?.data?.message || 'Verification failed'
-        };
-      }
-    }}
+    onVerify
     getManufacturerName={(manufacturerId) => {
       // You might want to implement this function to get manufacturer names
       // For now returning the ID as a fallback
