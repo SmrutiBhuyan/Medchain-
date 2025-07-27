@@ -5,9 +5,11 @@ import {
   Funnel, Trash, Printer, Flag, Download, Filter, UpcScan, CheckCircleFill, 
   ShieldCheck, GraphUp, BoxSeam, Link45deg, Search
 } from 'react-bootstrap-icons';
+import { useAuth } from './AuthContext';
 import './PharmacyDashboard.css';
 
 const PharmacyDashboard = () => {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [verificationResult, setVerificationResult] = useState(null);
 
@@ -113,25 +115,27 @@ const PharmacyDashboard = () => {
 
       <div className="pharma-main-content">
         <div className="pharma-header">
-          <h3>MedChain Pharmacy Portal</h3>
-          <div className="pharma-header-controls">
-            <div className="pharma-search-box">
-              <Search className="pharma-search-icon" />
-              <input type="text" placeholder="Search..." />
-            </div>
-            <div className="pharma-dropdown">
-              <button className="pharma-dropdown-toggle">
-                <PersonCircle className="pharma-icon" /> Pharmacist
-              </button>
-              <div className="pharma-dropdown-menu">
-                <a href="#"><PersonCircle className="pharma-icon" /> Profile</a>
-                <a href="#"><Gear className="pharma-icon" /> Settings</a>
-                <div className="pharma-divider"></div>
-                <a href="#"><BoxArrowRight className="pharma-icon" /> Logout</a>
-              </div>
-            </div>
-          </div>
-        </div>
+  <h3>MedChain Pharmacy Portal</h3>
+  <div className="pharma-header-controls">
+    <div className="pharma-search-box">
+      <Search className="pharma-search-icon" />
+      <input type="text" placeholder="Search..." />
+    </div>
+    <div className="pharma-dropdown">
+      <button className="pharma-dropdown-toggle">
+        <PersonCircle className="pharma-icon" /> {user?.name || 'Pharmacist'}
+      </button>
+      <div className="pharma-dropdown-menu">
+        <a href="#"><PersonCircle className="pharma-icon" /> Profile</a>
+        <a href="#"><Gear className="pharma-icon" /> Settings</a>
+        <div className="pharma-divider"></div>
+        <a href="#" onClick={(e) => { e.preventDefault(); logout(); }}>
+          <BoxArrowRight className="pharma-icon" /> Logout
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
 
         <div className="pharma-tab-content">
           {activeTab === 'dashboard' && (
