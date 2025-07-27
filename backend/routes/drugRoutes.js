@@ -2,7 +2,7 @@ import express from 'express';
 import { createDrug, getDrugsByManufacturer, getDrugByBarcode} from '../controllers/drugController.js';
 import upload from '../middleware/uploadMiddleware.js';
 import { uploadCSV } from '../controllers/uploadController.js';
-import {  getDistributorInventory, verifyDrugsForShipment } from '../controllers/drugController.js';
+import {  getDistributorInventory, verifyDrugsForShipment, verifyDrug } from '../controllers/drugController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -14,5 +14,6 @@ router.get('/barcode/:barcode', getDrugByBarcode);
 router.get('/inventory', protect, getDistributorInventory);
 // In your drugs.js routes file
 router.post('/verify-shipment', protect, verifyDrugsForShipment);
+router.get('/verify/:barcode', protect, verifyDrug);
 
 export default router;

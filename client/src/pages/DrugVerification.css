@@ -1,0 +1,263 @@
+/* Verification Tab Styles */
+.verify-tab {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.verify-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  width: 100%;
+  max-width: 600px;
+  text-align: center;
+}
+
+.verify-input {
+  display: flex;
+  margin: 1.5rem 0;
+}
+
+.verify-input input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px 0 0 8px;
+  font-size: 1rem;
+}
+
+.scan-btn {
+  padding: 0 1.5rem;
+  background: #4a6cf7;
+  color: white;
+  border: none;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.2s;
+}
+
+.scan-btn:hover {
+  background: #3a5ce4;
+}
+
+.scan-btn.scanning {
+  background: #ff9800;
+}
+
+.scan-btn.success {
+  background: #4caf50;
+}
+
+.scan-btn.error {
+  background: #f44336;
+}
+
+.verify-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background: #4a6cf7;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.verify-btn:hover {
+  background: #3a5ce4;
+}
+
+.verify-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Scanner Modal */
+.scanner-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.scanner-modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.scanner-modal-header {
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.scanner-container {
+  padding: 1rem;
+}
+
+/* Verification Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.verification-modal {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  padding: 2rem;
+  text-align: center;
+}
+
+.verification-modal.success {
+  border-top: 4px solid #4caf50;
+}
+
+.verification-modal.error {
+  border-top: 4px solid #f44336;
+}
+
+.verification-icon {
+  margin: 1rem 0;
+}
+
+.icon-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2.5rem;
+}
+
+.icon-circle.success {
+  background: #e8f5e9;
+  color: #4caf50;
+}
+
+.icon-circle.error {
+  background: #ffebee;
+  color: #f44336;
+}
+
+.verification-content {
+  padding: 1rem;
+  text-align: left;
+}
+
+.error-message {
+  color: #f44336;
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+}
+
+.verification-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.detail-item {
+  margin-bottom: 0.5rem;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #555;
+}
+
+.detail-value {
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.status-chip {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.status-chip.in-stock {
+  background: #e8f5e9;
+  color: #4caf50;
+}
+
+.status-chip.shipped {
+  background: #e3f2fd;
+  color: #2196f3;
+}
+
+.status-chip.delivered {
+  background: #e8f5e9;
+  color: #4caf50;
+}
+
+.status-chip.recalled {
+  background: #ffebee;
+  color: #f44336;
+}
+
+.status-chip.expired {
+  background: #fff8e1;
+  color: #ff9800;
+}
+
+.recommendation, 
+.verification-message,
+.expiry-warning {
+  background: #f5f5f5;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.expiry-warning {
+  background: #fff8e1;
+  border-left: 4px solid #ffc107;
+}
+
+.close-btn {
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #4a6cf7;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.close-btn:hover {
+  background: #3a5ce4;
+}

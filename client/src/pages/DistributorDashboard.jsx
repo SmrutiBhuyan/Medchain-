@@ -8,6 +8,7 @@ import {
   FaBoxes, FaTruck, FaChartLine, FaReceipt, FaSignOutAlt,
   FaStore, FaClinicMedical, FaPills, FaSpinner
 } from 'react-icons/fa';
+import DrugVerification from './DrugVerification';
 
 function StatusChip({ label, status }) {
   let className = 'status-chip';
@@ -115,6 +116,37 @@ useEffect(() => {
     fetchData();
   }
 }, [user]);
+
+const verifyDrug = async (barcode) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axios.get(`http://localhost:5000/api/drugs/verify/${barcode}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (response.data.success) {
+      const drug = response.data.drug;
+      const expiryDate = new Date(drug.expiryDate);
+      const today = new Date();
+      const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+      
+      return {
+        ...drug,
+        daysLeft,
+        status: drug.unitStatus || drug.status
+      };
+    } else {
+      return { 
+        error: response.data.error || 'Drug not found in system' 
+      };
+    }
+  } catch (error) {
+    console.error('Verification error:', error);
+    return { 
+      error: error.response?.data?.error || 'Verification failed' 
+    };
+  }
+};
 
   const handleReceiveShipment = async (shipmentId) => {
     try {
@@ -317,15 +349,6 @@ const handleShipToRecipient = async () => {
     return recipient?.name || 'Unknown';
   };
 
-  const verifyDrug = () => {
-    const foundDrug = inventory.find(drug => 
-      drug.barcode === qrInput || 
-      drug.batchBarcode === qrInput
-    );
-    
-    setVerificationResult(foundDrug || { error: 'Drug not found in system' });
-    setOpenModal(true);
-  };
 
   const filteredInventory = Array.isArray(inventory) ? 
   inventory.filter(drug => {
@@ -711,34 +734,10 @@ const handleShipToRecipient = async () => {
         )}
 
         {activeTab === 'verify' && (
-          <div className="verify-tab">
-            <div className="verify-card">
-              <h3>Verify Drug Authenticity</h3>
-              
-              <div className="verify-input">
-                <input
-                  type="text"
-                  placeholder="Enter drug barcode or scan QR code"
-                  value={qrInput}
-                  onChange={(e) => setQrInput(e.target.value)}
-                />
-                <button 
-                  className="scan-btn"
-                  onClick={() => alert('QR scanner would open here')}
-                >
-                  <FaQrcode /> Scan
-                </button>
-              </div>
-              
-              <button
-                className="verify-btn"
-                disabled={!qrInput}
-                onClick={verifyDrug}
-              >
-                Verify Drug
-              </button>
-            </div>
-          </div>
+           <DrugVerification 
+    onVerify={verifyDrug}
+    getManufacturerName={getManufacturerName}
+  />
         )}
 
         {activeTab === 'analytics' && (

@@ -527,6 +527,8 @@ const handleTimeRangeChange = async (chartType, days) => {
 };
 
 const handleScan = (barcode) => {
+   console.log('Scanned barcode:', barcode);
+  console.log('Current form barcode:', drugForm.batchBarcode);
   setDrugForm(prev => ({ ...prev, batchBarcode: barcode }));
   setShowScanner(false);
   setScanningStatus('success');
@@ -678,7 +680,13 @@ const handleManualSubmit = async (e) => {
       mfgDate: drugForm.mfgDate,
       expiryDate: drugForm.expiryDate,
       batchBarcode: drugForm.batchBarcode,
-      unitBarcodes: drugForm.unitBarcodes.filter(b => b !== ''), // Filter out empty barcodes
+      unitBarcodes: drugForm.unitBarcodes
+        .filter(b => b !== '')
+        .map(barcode => ({
+          barcode: barcode || undefined, // Let server auto-generate if empty
+          manufacturer: user._id, // Include manufacturer ID
+          currentHolder: 'manufacturer'
+        })),
       manufacturerId: user._id
     }, {
       headers: {

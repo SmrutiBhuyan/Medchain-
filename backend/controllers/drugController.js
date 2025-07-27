@@ -1,5 +1,6 @@
 import Drug from '../models/Drug.js';
 import { generateBarcode } from '../utils/barcodeGenerator.js';
+import { NotFoundError, ValidationError } from '../errrors/index.js';
 
 // Helper function to validate barcode format
 const isValidBarcode = (barcode) => {
@@ -56,6 +57,7 @@ export const createDrug = async (req, res) => {
     if (batchBarcode) {
       const barcodeInUse = await Drug.findOne({ batchBarcode: finalBatchBarcode });
       if (barcodeInUse) {
+            console.log('Conflicting drug:', barcodeInUse);
         return res.status(400).json({ 
           error: 'Barcode already in use by another drug',
           conflictingDrug: barcodeInUse 
@@ -268,6 +270,77 @@ export const getDistributorInventory = async (req, res) => {
       success: false,
       message: 'Server error',
       error: error.message 
+    });
+  }
+};
+
+// Helper function to calculate days until expiry
+const getDaysUntilExpiry = (expiryDate) => {
+  const today = new Date();
+  const expiry = new Date(expiryDate);
+  const diffTime = expiry - today;
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+};
+
+export const verifyDrug = async (req, res) => {
+  try {
+    const { barcode } = req.params;
+
+    if (!barcode) {
+      throw new ValidationError('Barcode is required');
+    }
+
+    // First try to find by unit barcode
+    let drug = await Drug.findOne({ 
+      'unitBarcodes.barcode': barcode 
+    }).populate('manufacturer distributor wholesaler retailer pharmacy');
+
+    // If not found as unit barcode, try batch barcode
+    if (!drug) {
+      drug = await Drug.findOne({ 
+        batchBarcode: barcode 
+      }).populate('manufacturer distributor wholesaler retailer pharmacy');
+    }
+
+    if (!drug) {
+      throw new NotFoundError('Drug not found in system');
+    }
+
+    // Find the specific unit if this was a unit barcode
+    let unit = null;
+    if (drug.unitBarcodes) {
+      unit = drug.unitBarcodes.find(u => u.barcode === barcode);
+    }
+
+    const responseData = {
+      _id: drug._id,
+      name: drug.name,
+      batch: drug.batch,
+      barcode: unit ? unit.barcode : drug.batchBarcode,
+      batchBarcode: drug.batchBarcode,
+      mfgDate: drug.mfgDate,
+      expiryDate: drug.expiryDate,
+      daysLeft: getDaysUntilExpiry(drug.expiryDate),
+      status: unit ? unit.status : drug.status,
+      manufacturer: drug.manufacturer,
+      distributor: drug.distributor,
+      wholesaler: drug.wholesaler,
+      retailer: drug.retailer,
+      pharmacy: drug.pharmacy,
+      currentHolder: unit ? unit.currentHolder : drug.currentHolder,
+      isUnit: !!unit
+    };
+
+    res.json({
+      success: true,
+      drug: responseData
+    });
+
+  } catch (error) {
+    console.error('Drug verification error:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      error: error.message || 'Drug verification failed'
     });
   }
 };
