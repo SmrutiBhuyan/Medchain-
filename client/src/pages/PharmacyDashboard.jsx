@@ -6,6 +6,32 @@ import {
   ShieldCheck, GraphUp, BoxSeam, Link45deg, Search, CheckCircle, XCircle,
   Camera, Mic, QrCodeScan
 } from 'react-bootstrap-icons';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Legend,
+  ArcElement,
+  PointElement,
+  LineElement,
+  Filler
+} from 'chart.js';
+import { Bar, Pie, Line, Doughnut } from 'react-chartjs-2';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Legend,
+  ArcElement,
+  PointElement,
+  LineElement,
+  Filler
+);
 import { useAuth } from './AuthContext';
 import './PharmacyDashboard.css';
 import axios from 'axios';
@@ -1040,6 +1066,351 @@ const handleRejectShipment = async (shipmentId) => {
               </div>
             </div>
           )}
+
+          {activeTab === 'analytics' && (
+  <div className="pharma-analytics-tab">
+    <div className="pharma-analytics-row">
+      {/* Status Distribution Pie Chart */}
+      <div className="pharma-card pharma-chart-card">
+        <div className="pharma-card-header">
+          <h5>Drug Status Distribution</h5>
+        </div>
+        <div className="pharma-card-body">
+          <Doughnut 
+            data={{
+              labels: ['In Stock', 'Sold Out', 'Recalled', 'Expired'],
+              datasets: [{
+                data: [
+                  inventory.filter(d => getDrugStatus(d) === 'in_stock').length,
+                  inventory.filter(d => getDrugStatus(d) === 'sold').length,
+                  inventory.filter(d => getDrugStatus(d) === 'recalled').length,
+                  inventory.filter(d => getDrugStatus(d) === 'expired').length
+                ],
+                backgroundColor: [
+                  '#4e73df',  // Blue for in stock
+                  '#1cc88a',  // Green for sold
+                  '#e74a3b',  // Red for recalled
+                  '#f6c23e'   // Yellow for expired
+                ],
+                borderColor: '#fff',
+                borderWidth: 2,
+                hoverOffset: 10
+              }]
+            }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'right',
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function(context) {
+                      const label = context.label || '';
+                      const value = context.raw || 0;
+                      const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                      const percentage = Math.round((value / total) * 100);
+                      return `${label}: ${value} (${percentage}%)`;
+                    }
+                  }
+                }
+              },
+              cutout: '70%'
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Expiry Timeline Chart */}
+      <div className="pharma-card pharma-chart-card">
+        <div className="pharma-card-header">
+          <h5>Drugs Expiring in Next 6 Months</h5>
+        </div>
+        <div className="pharma-card-body">
+          <Bar
+            data={{
+              labels: Array.from({ length: 6 }, (_, i) => {
+                const date = new Date();
+                date.setMonth(date.getMonth() + i);
+                return date.toLocaleString('default', { month: 'short' });
+              }),
+              datasets: [{
+                label: 'Drugs Expiring',
+                data: Array.from({ length: 6 }, (_, i) => {
+                  const date = new Date();
+                  const startMonth = new Date(date.getFullYear(), date.getMonth() + i, 1);
+                  const endMonth = new Date(date.getFullYear(), date.getMonth() + i + 1, 0);
+                  return inventory.filter(d => {
+                    const expiryDate = new Date(d.expiryDate);
+                    return expiryDate >= startMonth && expiryDate <= endMonth;
+                  }).length;
+                }),
+                backgroundColor: [
+                  '#36b9cc',
+                  '#1cc88a',
+                  '#6f42c1',
+                  '#e83e8c',
+                  '#fd7e14',
+                  '#20c997'
+                ],
+                borderRadius: 4,
+              }]
+            }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: {
+                    display: false
+                  },
+                  title: {
+                    display: true,
+                    text: 'Number of Drugs',
+                    color: '#6c757d'
+                  }
+                },
+                x: {
+                  grid: {
+                    display: false
+                  },
+                  title: {
+                    display: true,
+                    text: 'Month',
+                    color: '#6c757d'
+                  }
+                }
+              }
+            }}
+          />
+        </div>
+      </div>
+    </div>
+
+    <div className="pharma-analytics-row">
+      {/* Manufacturer Distribution */}
+      <div className="pharma-card pharma-chart-card">
+        <div className="pharma-card-header">
+          <h5>Top Manufacturers</h5>
+        </div>
+        <div className="pharma-card-body">
+          <Bar
+            data={{
+              labels: [...new Set(inventory.map(d => d.manufacturer?.name || 'Unknown'))]
+                .slice(0, 5),
+              datasets: [{
+                label: 'Drug Count',
+                data: [...new Set(inventory.map(d => d.manufacturer?.name || 'Unknown'))]
+                  .map(manufacturer => 
+                    inventory.filter(d => (d.manufacturer?.name || 'Unknown') === manufacturer).length
+                  )
+                  .slice(0, 5),
+                backgroundColor: [
+                  '#4e73df',
+                  '#1cc88a',
+                  '#36b9cc',
+                  '#f6c23e',
+                  '#e74a3b'
+                ],
+                borderColor: '#fff',
+                borderWidth: 1
+              }]
+            }}
+            options={{
+              indexAxis: 'y',
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
+              scales: {
+                x: {
+                  beginAtZero: true,
+                  grid: {
+                    display: false
+                  },
+                  title: {
+                    display: true,
+                    text: 'Number of Drugs',
+                    color: '#6c757d'
+                  }
+                },
+                y: {
+                  grid: {
+                    display: false
+                  },
+                  title: {
+                    display: true,
+                    text: 'Manufacturer',
+                    color: '#6c757d'
+                  }
+                }
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Stock Status Over Time */}
+      <div className="pharma-card pharma-chart-card">
+        <div className="pharma-card-header">
+          <h5>Stock Levels Trend</h5>
+        </div>
+        <div className="pharma-card-body">
+          <Line
+            data={{
+              labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+              datasets: [
+                {
+                  label: 'In Stock',
+                  data: Array(12).fill(0).map((_, i) => 
+                    Math.floor(Math.random() * 100) + 50 // Replace with actual data
+                  ),
+                  borderColor: '#4e73df',
+                  backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                  tension: 0.4,
+                  fill: true
+                },
+                {
+                  label: 'Low Stock',
+                  data: Array(12).fill(0).map((_, i) => 
+                    Math.floor(Math.random() * 20) + 5 // Replace with actual data
+                  ),
+                  borderColor: '#f6c23e',
+                  backgroundColor: 'rgba(246, 194, 62, 0.1)',
+                  tension: 0.4,
+                  fill: true
+                },
+                {
+                  label: 'Expired',
+                  data: Array(12).fill(0).map((_, i) => 
+                    Math.floor(Math.random() * 15) // Replace with actual data
+                  ),
+                  borderColor: '#e74a3b',
+                  backgroundColor: 'rgba(231, 74, 59, 0.1)',
+                  tension: 0.4,
+                  fill: true
+                }
+              ]
+            }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'top',
+                }
+              },
+              interaction: {
+                intersect: false,
+                mode: 'index',
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: {
+                    display: false
+                  },
+                  title: {
+                    display: true,
+                    text: 'Number of Drugs',
+                    color: '#6c757d'
+                  }
+                },
+                x: {
+                  grid: {
+                    display: false
+                  },
+                  title: {
+                    display: true,
+                    text: 'Month',
+                    color: '#6c757d'
+                  }
+                }
+              }
+            }}
+          />
+        </div>
+      </div>
+    </div>
+
+    {/* Key Metrics Cards */}
+    <div className="pharma-analytics-row">
+      <div className="pharma-card pharma-stats-card">
+        <div className="pharma-card-header">
+          <h5>Inventory Health Metrics</h5>
+        </div>
+        <div className="pharma-card-body">
+          <div className="pharma-stats-grid">
+            <div className="pharma-stat-item">
+              <div className="pharma-stat-value">{inventory.length}</div>
+              <div className="pharma-stat-label">Total Drugs</div>
+              <div className="pharma-stat-icon">
+                <Capsule className="pharma-icon pharma-primary" />
+              </div>
+            </div>
+            <div className="pharma-stat-item">
+              <div className="pharma-stat-value">
+                {inventory.filter(d => getDrugStatus(d) === 'in_stock').length}
+              </div>
+              <div className="pharma-stat-label">In Stock</div>
+              <div className="pharma-stat-icon">
+                <CheckCircleFill className="pharma-icon pharma-success" />
+              </div>
+            </div>
+            <div className="pharma-stat-item">
+              <div className="pharma-stat-value">
+                {inventory.filter(d => getDrugStatus(d) === 'expired').length}
+              </div>
+              <div className="pharma-stat-label">Expired</div>
+              <div className="pharma-stat-icon">
+                <ExclamationTriangleFill className="pharma-icon pharma-warning" />
+              </div>
+            </div>
+            <div className="pharma-stat-item">
+              <div className="pharma-stat-value">
+                {inventory.filter(d => getDrugStatus(d) === 'recalled').length}
+              </div>
+              <div className="pharma-stat-label">Recalled</div>
+              <div className="pharma-stat-icon">
+                <ExclamationTriangleFill className="pharma-icon pharma-danger" />
+              </div>
+            </div>
+            <div className="pharma-stat-item">
+              <div className="pharma-stat-value">
+                {inventory.filter(d => d.quantity <= 2).length}
+              </div>
+              <div className="pharma-stat-label">Low Stock</div>
+              <div className="pharma-stat-icon">
+                <ClockFill className="pharma-icon pharma-info" />
+              </div>
+            </div>
+            <div className="pharma-stat-item">
+              <div className="pharma-stat-value">
+                {inventory.length > 0 
+                  ? Math.round(inventory.reduce((sum, d) => sum + d.quantity, 0) / inventory.length * 10) / 10
+                  : 0}
+              </div>
+              <div className="pharma-stat-label">Avg. Quantity</div>
+              <div className="pharma-stat-icon">
+                <Clipboard2Pulse className="pharma-icon pharma-secondary" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
         </div>
       </div>
     </div>
