@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
+import Chart from 'chart.js/auto';
 import axios from 'axios';
 import './DistributorDashboard.css';
 import { 
@@ -740,29 +742,311 @@ const handleShipToRecipient = async () => {
   />
         )}
 
-        {activeTab === 'analytics' && (
-          <div className="analytics-grid">
-            <div className="analytics-card">
-              <h4>Drugs Received This Month</h4>
-              <div className="analytics-value">245</div>
-            </div>
-            
-            <div className="analytics-card">
-              <h4>Near-Expiry Drugs</h4>
-              <div className="analytics-value warning">18</div>
-            </div>
-            
-            <div className="analytics-card">
-              <h4>Retailers Served</h4>
-              <div className="analytics-value secondary">{retailers.length}</div>
-            </div>
-            
-            <div className="analytics-card">
-              <h4>Wholesalers Served</h4>
-              <div className="analytics-value info">{wholesalers.length}</div>
-            </div>
-          </div>
-        )}
+    
+{activeTab === 'analytics' && (
+  <div className="analytics-content">
+    <div className="analytics-grid">
+      {/* Summary Cards */}
+      <div className="analytics-card">
+        <h4>Total Inventory</h4>
+        <div className="analytics-value primary">{inventory.length}</div>
+        <small>units in stock</small>
+      </div>
+      
+      <div className="analytics-card">
+        <h4>Near-Expiry Drugs</h4>
+        <div className="analytics-value warning">
+          {inventory.filter(d => {
+            const expiry = new Date(d.expiryDate);
+            const today = new Date();
+            const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+            return daysLeft <= 30;
+          }).length}
+        </div>
+        <small>expiring in 30 days</small>
+      </div>
+      
+      <div className="analytics-card">
+        <h4>Active Partners</h4>
+        <div className="analytics-value info">
+          {[...retailers, ...wholesalers, ...pharmacies].length}
+        </div>
+        <small>business connections</small>
+      </div>
+      
+      <div className="analytics-card">
+        <h4>Monthly Shipments</h4>
+        <div className="analytics-value secondary">
+          {shipments.filter(s => {
+            const shipDate = new Date(s.createdAt);
+            const now = new Date();
+            return shipDate.getMonth() === now.getMonth() && 
+                   shipDate.getFullYear() === now.getFullYear();
+          }).length}
+        </div>
+        <small>this month</small>
+      </div>
+    </div>
+
+    {/* Main Charts Section */}
+    <div className="charts-container">
+      {/* Inventory by Status */}
+      <div className="chart-card">
+        <h4>Inventory Status Distribution</h4>
+        <div className="chart-wrapper">
+          <Doughnut 
+            data={{
+              labels: ['In Stock', 'Shipped', 'Delivered', 'Recalled', 'Expired'],
+              datasets: [{
+                data: [
+                  inventory.filter(d => d.status.includes('in-stock')).length,
+                  inventory.filter(d => d.status.includes('shipped')).length,
+                  inventory.filter(d => d.status === 'delivered').length,
+                  inventory.filter(d => d.status === 'recalled').length,
+                  inventory.filter(d => d.status === 'expired').length
+                ],
+                backgroundColor: [
+                  '#4BC0C0',
+                  '#FFCE56',
+                  '#36A2EB',
+                  '#FF6384',
+                  '#9966FF'
+                ],
+                borderWidth: 1
+              }]
+            }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'right'
+                }
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Monthly Shipment Trends */}
+      <div className="chart-card">
+        <h4>Monthly Shipment Trends</h4>
+        <div className="chart-wrapper">
+          <Line 
+            data={{
+              labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+              datasets: [
+                {
+                  label: 'Received Shipments',
+                  data: Array(12).fill(0).map((_, i) => 
+                    shipments.filter(s => 
+                      new Date(s.createdAt).getMonth() === i && 
+                      ['delivered', 'received'].includes(s.status)
+                    ).length
+                  ),
+                  borderColor: '#36A2EB',
+                  backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                  tension: 0.3,
+                  fill: true
+                },
+                {
+                  label: 'Sent Shipments',
+                  data: Array(12).fill(0).map((_, i) => 
+                    shipments.filter(s => 
+                      new Date(s.createdAt).getMonth() === i && 
+                      s.createdBy === user._id
+                    ).length
+                  ),
+                  borderColor: '#4BC0C0',
+                  backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                  tension: 0.3,
+                  fill: true
+                }
+              ]
+            }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Number of Shipments'
+                  }
+                }
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Inventory by Manufacturer */}
+<div className="chart-card">
+  <h4>Inventory by Manufacturer</h4>
+  <div className="chart-wrapper">
+    <Bar 
+      data={{
+        labels: Array.from(new Set(inventory.map(d => 
+          typeof d.manufacturer === 'object' ? d.manufacturer.name : 'Unknown'
+        ))).slice(0, 5),
+        datasets: [{
+          label: 'Units in Stock',
+          data: Array.from(new Set(inventory.map(d => 
+            typeof d.manufacturer === 'object' ? d.manufacturer.name : 'Unknown'
+          ))).map(manu => 
+            inventory.filter(d => 
+              (typeof d.manufacturer === 'object' ? d.manufacturer.name : 'Unknown') === manu
+            ).length
+          ).slice(0, 5),
+          backgroundColor: '#FF9F40',
+          borderColor: '#FF6384',
+          borderWidth: 1
+        }]
+      }}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Number of Units'
+            }
+          }
+        }
+      }}
+    />
+  </div>
+</div>
+
+      {/* Partner Distribution */}
+      <div className="chart-card">
+        <h4>Partner Distribution</h4>
+        <div className="chart-wrapper">
+          <Pie 
+            data={{
+              labels: ['Retailers', 'Wholesalers', 'Pharmacies'],
+              datasets: [{
+                data: [retailers.length, wholesalers.length, pharmacies.length],
+                backgroundColor: [
+                  '#FF6384',
+                  '#36A2EB',
+                  '#FFCE56'
+                ],
+                borderWidth: 1
+              }]
+            }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'right'
+                }
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Expiry Timeline */}
+      <div className="chart-card wide">
+        <h4>Drug Expiry Timeline</h4>
+        <div className="chart-wrapper">
+          <Bar 
+            data={{
+              labels: ['<30 days', '30-60 days', '60-90 days', '90-180 days', '>180 days'],
+              datasets: [{
+                label: 'Units Expiring',
+                data: [
+                  inventory.filter(d => {
+                    const days = Math.ceil((new Date(d.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+                    return days <= 30;
+                  }).length,
+                  inventory.filter(d => {
+                    const days = Math.ceil((new Date(d.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+                    return days > 30 && days <= 60;
+                  }).length,
+                  inventory.filter(d => {
+                    const days = Math.ceil((new Date(d.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+                    return days > 60 && days <= 90;
+                  }).length,
+                  inventory.filter(d => {
+                    const days = Math.ceil((new Date(d.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+                    return days > 90 && days <= 180;
+                  }).length,
+                  inventory.filter(d => {
+                    const days = Math.ceil((new Date(d.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+                    return days > 180;
+                  }).length
+                ],
+                backgroundColor: [
+                  '#FF6384',
+                  '#FF9F40',
+                  '#FFCE56',
+                  '#4BC0C0',
+                  '#36A2EB'
+                ],
+                borderWidth: 1
+              }]
+            }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Number of Units'
+                  }
+                }
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Shipment Status */}
+      <div className="chart-card">
+        <h4>Shipment Status</h4>
+        <div className="chart-wrapper">
+          <Doughnut 
+            data={{
+              labels: ['Processing', 'In Transit', 'Delivered', 'Cancelled'],
+              datasets: [{
+                data: [
+                  shipments.filter(s => s.status === 'processing').length,
+                  shipments.filter(s => s.status === 'in-transit').length,
+                  shipments.filter(s => s.status === 'delivered').length,
+                  shipments.filter(s => s.status === 'cancelled').length
+                ],
+                backgroundColor: [
+                  '#FFCE56',
+                  '#36A2EB',
+                  '#4BC0C0',
+                  '#FF6384'
+                ],
+                borderWidth: 1
+              }]
+            }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'right'
+                }
+              }
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
         {/* Shipment Details Modal */}
         {selectedShipment && (
