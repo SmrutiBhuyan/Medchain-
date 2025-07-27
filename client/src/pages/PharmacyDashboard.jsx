@@ -1,199 +1,205 @@
 import React, { useState } from 'react';
 import { 
-  Speedometer2, Truck, Clipboard2Pulse, CashStack, Diagram3, ExclamationTriangle, Receipt,
-  Search, PersonCircle, Gear, BoxArrowRight, Capsule, ExclamationTriangleFill, ClockFill,
-  Funnel, Trash, Printer, Flag, Download, Filter, UpcScan, CashCoin, Diagram3 as TraceIcon,
-  ExclamationTriangle as RecallIcon
+  Speedometer2, Truck, Clipboard2Pulse, Diagram3, ExclamationTriangle,
+  PersonCircle, Gear, BoxArrowRight, Capsule, ExclamationTriangleFill, ClockFill,
+  Funnel, Trash, Printer, Flag, Download, Filter, UpcScan, CheckCircleFill, 
+  ShieldCheck, GraphUp, BoxSeam, Link45deg, Search
 } from 'react-bootstrap-icons';
-import './PharmacyDashboard.css'
+import './PharmacyDashboard.css';
 
 const PharmacyDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [currentSale, setCurrentSale] = useState([
-    { id: 1, name: 'Amoxicillin 500mg', price: 24.99, quantity: 1 }
-  ]);
+  const [verificationResult, setVerificationResult] = useState(null);
 
   const inventoryData = [
-    { id: 1, name: 'Amoxicillin 500mg', barcode: '3456789012', batch: 'AMX2023-05', expiry: '2024-06-30', quantity: 12, status: 'in_stock', lowStock: true },
-    { id: 2, name: 'Lipitor 20mg', barcode: '7890123456', batch: 'LIP2023-03', expiry: '2024-09-15', quantity: 24, status: 'recalled' },
-    { id: 3, name: 'Ventolin Inhaler', barcode: '1234567890', batch: 'VEN2023-01', expiry: '2023-12-31', quantity: 8, status: 'in_stock' },
-    { id: 4, name: 'Metformin 850mg', barcode: '5678901234', batch: 'MET2023-02', expiry: '2025-03-31', quantity: 36, status: 'in_stock' },
-    { id: 5, name: 'Omeprazole 40mg', barcode: '9012345678', batch: 'OME2023-04', expiry: '2024-11-30', quantity: 18, status: 'in_stock' },
-    { id: 6, name: 'Atorvastatin 10mg', barcode: '2345678901', batch: 'ATO2023-01', expiry: '2024-08-15', quantity: 0, status: 'sold' }
-  ];
-
-  const salesData = [
-    { id: 'SL-2023-0456', date: '2023-05-20 14:30', name: 'Amoxicillin 500mg', barcode: '3456789012', batch: 'AMX2023-05', patient: 'John Smith', amount: 24.99 },
-    { id: 'SL-2023-0455', date: '2023-05-20 13:15', name: 'Lipitor 20mg', barcode: '7890123456', batch: 'LIP2023-02', patient: 'Sarah Johnson', amount: 45.50 },
-    { id: 'SL-2023-0454', date: '2023-05-19 11:45', name: 'Ventolin Inhaler', barcode: '1234567890', batch: 'VEN2022-12', patient: 'Michael Brown', amount: 32.75 },
-    { id: 'SL-2023-0453', date: '2023-05-18 16:20', name: 'Metformin 850mg', barcode: '5678901234', batch: 'MET2023-01', patient: 'Emily Davis', amount: 12.99 },
-    { id: 'SL-2023-0452', date: '2023-05-18 10:05', name: 'Omeprazole 40mg', barcode: '9012345678', batch: 'OME2023-02', patient: 'Robert Wilson', amount: 28.25 }
+    { id: 1, name: 'Amoxicillin 500mg', barcode: '3456789012', batch: 'AMX2023-05', expiry: '2024-06-30', quantity: 12, status: 'in_stock', lowStock: true, manufacturer: 'Sun Pharma' },
+    { id: 2, name: 'Lipitor 20mg', barcode: '7890123456', batch: 'LIP2023-03', expiry: '2024-09-15', quantity: 24, status: 'recalled', manufacturer: 'Pfizer' },
+    { id: 3, name: 'Ventolin Inhaler', barcode: '1234567890', batch: 'VEN2023-01', expiry: '2023-12-31', quantity: 8, status: 'in_stock', manufacturer: 'GSK' },
+    { id: 4, name: 'Metformin 850mg', barcode: '5678901234', batch: 'MET2023-02', expiry: '2025-03-31', quantity: 36, status: 'in_stock', manufacturer: 'Cipla' },
+    { id: 5, name: 'Omeprazole 40mg', barcode: '9012345678', batch: 'OME2023-04', expiry: '2024-11-30', quantity: 18, status: 'in_stock', manufacturer: 'Dr. Reddy' },
+    { id: 6, name: 'Atorvastatin 10mg', barcode: '2345678901', batch: 'ATO2023-01', expiry: '2024-08-15', quantity: 0, status: 'sold', manufacturer: 'Lupin' }
   ];
 
   const recallData = [
-    { id: 1, drug: 'Lipitor 20mg', batch: 'LIP2023-03', barcode: '7890123456', issued: '2023-05-15', by: 'FDA' },
-    { id: 2, drug: 'Ventolin Inhaler', batch: 'VEN2023-01', barcode: '1234567890', issued: '2023-04-28', by: 'Manufacturer' },
-    { id: 3, drug: 'Omeprazole 40mg', batch: 'OME2023-01', barcode: '9012345678', issued: '2023-05-01', by: 'FDA' }
+    { id: 1, drug: 'Lipitor 20mg', batch: 'LIP2023-03', barcode: '7890123456', issued: '2023-05-15', by: 'FDA', severity: 'high' },
+    { id: 2, drug: 'Ventolin Inhaler', batch: 'VEN2023-01', barcode: '1234567890', issued: '2023-04-28', by: 'Manufacturer', severity: 'medium' }
   ];
 
-  const calculateSaleTotal = () => {
-    const subtotal = currentSale.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = subtotal * 0.07;
-    return {
-      subtotal: subtotal.toFixed(2),
-      tax: tax.toFixed(2),
-      total: (subtotal + tax).toFixed(2)
-    };
+  const supplyChainData = [
+    { id: 1, batch: 'AMX2023-05', events: [
+      { date: '2023-01-15', location: 'Mumbai', event: 'Manufactured', by: 'Sun Pharma' },
+      { date: '2023-01-20', location: 'Pune', event: 'Quality Check', by: 'QC Team' },
+      { date: '2023-01-25', location: 'Delhi', event: 'Distributed', by: 'MedDistributors' },
+      { date: '2023-02-10', location: 'Your Pharmacy', event: 'Received', by: 'You' }
+    ]}
+  ];
+
+  const verifyDrug = (barcode) => {
+    // Simulate blockchain verification
+    const drug = inventoryData.find(item => item.barcode === barcode);
+    if (drug) {
+      setVerificationResult({
+        valid: true,
+        drug,
+        blockchainData: {
+          txHash: '0x89a2...f1c3',
+          block: 184532,
+          timestamp: '2023-05-10 14:30:22',
+          events: supplyChainData.find(sc => sc.batch === drug.batch)?.events || []
+        }
+      });
+    } else {
+      setVerificationResult({
+        valid: false,
+        message: 'Drug not found in blockchain registry - possible counterfeit'
+      });
+    }
   };
 
   const getStatusBadge = (status) => {
     switch(status) {
-      case 'in_stock': return <span className="badge success">In Stock</span>;
-      case 'sold': return <span className="badge secondary">Sold Out</span>;
-      case 'recalled': return <span className="badge danger">Recalled</span>;
-      default: return <span className="badge light">Unknown</span>;
+      case 'in_stock': return <span className="pharma-badge pharma-success">In Stock</span>;
+      case 'sold': return <span className="pharma-badge pharma-secondary">Sold Out</span>;
+      case 'recalled': return <span className="pharma-badge pharma-danger">Recalled</span>;
+      default: return <span className="pharma-badge pharma-light">Unknown</span>;
     }
   };
 
   return (
-    <div className="pharmacy-dashboard">
-      <div className="sidebar">
-        <div className="sidebar-content">
-          <h4 className="sidebar-title"><Capsule className="icon" /> PharmaTrack</h4>
-          <div className="tabs-container">
+    <div className="pharma-dashboard">
+      <div className="pharma-sidebar">
+        <div className="pharma-sidebar-content">
+          <h4 className="pharma-sidebar-title"><Capsule className="pharma-icon" />MedChain</h4>
+          <div className="pharma-tabs-container">
             <div 
-              className={`tab-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+              className={`pharma-tab-item ${activeTab === 'dashboard' ? 'pharma-active' : ''}`}
               onClick={() => setActiveTab('dashboard')}
             >
-              <Speedometer2 className="icon" /> Dashboard
+              <Speedometer2 className="pharma-icon" /> Dashboard
             </div>
             <div 
-              className={`tab-item ${activeTab === 'shipments' ? 'active' : ''}`}
+              className={`pharma-tab-item ${activeTab === 'shipments' ? 'pharma-active' : ''}`}
               onClick={() => setActiveTab('shipments')}
             >
-              <Truck className="icon" /> Receive Shipments
+              <Truck className="pharma-icon" /> Receive Shipments
             </div>
             <div 
-              className={`tab-item ${activeTab === 'inventory' ? 'active' : ''}`}
+              className={`pharma-tab-item ${activeTab === 'inventory' ? 'pharma-active' : ''}`}
               onClick={() => setActiveTab('inventory')}
             >
-              <Clipboard2Pulse className="icon" /> My Inventory
+              <Clipboard2Pulse className="pharma-icon" /> Inventory
             </div>
             <div 
-              className={`tab-item ${activeTab === 'sell' ? 'active' : ''}`}
-              onClick={() => setActiveTab('sell')}
+              className={`pharma-tab-item ${activeTab === 'verify' ? 'pharma-active' : ''}`}
+              onClick={() => setActiveTab('verify')}
             >
-              <CashStack className="icon" /> Sell Drug
+              <ShieldCheck className="pharma-icon" /> Verify Drug
             </div>
             <div 
-              className={`tab-item ${activeTab === 'trace' ? 'active' : ''}`}
-              onClick={() => setActiveTab('trace')}
-            >
-              <Diagram3 className="icon" /> Trace Drug
-            </div>
-            <div 
-              className={`tab-item ${activeTab === 'alerts' ? 'active' : ''}`}
+              className={`pharma-tab-item ${activeTab === 'alerts' ? 'pharma-active' : ''}`}
               onClick={() => setActiveTab('alerts')}
             >
-              <ExclamationTriangle className="icon" /> Alerts
+              <ExclamationTriangle className="pharma-icon" /> Alerts
             </div>
             <div 
-              className={`tab-item ${activeTab === 'sales' ? 'active' : ''}`}
-              onClick={() => setActiveTab('sales')}
+              className={`pharma-tab-item ${activeTab === 'analytics' ? 'pharma-active' : ''}`}
+              onClick={() => setActiveTab('analytics')}
             >
-              <Receipt className="icon" /> Sales Log
+              <GraphUp className="pharma-icon" /> Analytics
             </div>
           </div>
         </div>
       </div>
 
-      <div className="main-content">
-        <div className="header">
-          <h3>Pharmacy Dashboard</h3>
-          <div className="header-controls">
-            <div className="search-box">
-              <Search className="search-icon" />
+      <div className="pharma-main-content">
+        <div className="pharma-header">
+          <h3>MedChain Pharmacy Portal</h3>
+          <div className="pharma-header-controls">
+            <div className="pharma-search-box">
+              <Search className="pharma-search-icon" />
               <input type="text" placeholder="Search..." />
             </div>
-            <div className="dropdown">
-              <button className="dropdown-toggle">
-                <PersonCircle className="icon" /> Pharmacist
+            <div className="pharma-dropdown">
+              <button className="pharma-dropdown-toggle">
+                <PersonCircle className="pharma-icon" /> Pharmacist
               </button>
-              <div className="dropdown-menu">
-                <a href="#"><PersonCircle className="icon" /> Profile</a>
-                <a href="#"><Gear className="icon" /> Settings</a>
-                <div className="divider"></div>
-                <a href="#"><BoxArrowRight className="icon" /> Logout</a>
+              <div className="pharma-dropdown-menu">
+                <a href="#"><PersonCircle className="pharma-icon" /> Profile</a>
+                <a href="#"><Gear className="pharma-icon" /> Settings</a>
+                <div className="pharma-divider"></div>
+                <a href="#"><BoxArrowRight className="pharma-icon" /> Logout</a>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="tab-content">
+        <div className="pharma-tab-content">
           {activeTab === 'dashboard' && (
-            <div className="dashboard-tab">
-              <div className="stats-row">
-                <div className="stat-card">
-                  <div className="stat-content">
+            <div className="pharma-dashboard-tab">
+              <div className="pharma-stats-row">
+                <div className="pharma-stat-card">
+                  <div className="pharma-stat-content">
                     <div>
                       <h6>Total Inventory</h6>
-                      <h3>1,248</h3>
+                      <h3>{inventoryData.length}</h3>
+                      <p>Drug batches</p>
                     </div>
-                    <div className="icon-bg primary">
-                      <Capsule className="icon primary" />
+                    <div className="pharma-icon-bg pharma-primary">
+                      <BoxSeam className="pharma-icon pharma-primary" />
                     </div>
                   </div>
                 </div>
-                <div className="stat-card">
-                  <div className="stat-content">
+                <div className="pharma-stat-card">
+                  <div className="pharma-stat-content">
                     <div>
                       <h6>Active Alerts</h6>
-                      <h3>12</h3>
+                      <h3>{recallData.length}</h3>
+                      <p>Recalls & warnings</p>
                     </div>
-                    <div className="icon-bg warning">
-                      <ExclamationTriangleFill className="icon warning" />
+                    <div className="pharma-icon-bg pharma-warning">
+                      <ExclamationTriangleFill className="pharma-icon pharma-warning" />
                     </div>
                   </div>
                 </div>
-                <div className="stat-card">
-                  <div className="stat-content">
+                <div className="pharma-stat-card">
+                  <div className="pharma-stat-content">
                     <div>
-                      <h6>Today's Sales</h6>
-                      <h3>$3,245</h3>
+                      <h6>Expiring Soon</h6>
+                      <h3>{inventoryData.filter(d => new Date(d.expiry) < new Date(Date.now() + 30*24*60*60*1000)).length}</h3>
+                      <p>Within 30 days</p>
                     </div>
-                    <div className="icon-bg success">
-                      <CashCoin className="icon success" />
+                    <div className="pharma-icon-bg pharma-danger">
+                      <ClockFill className="pharma-icon pharma-danger" />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="content-row">
-                <div className="main-panel">
-                  <div className="card">
-                    <div className="card-header">
-                      <h5>Recent Sales</h5>
-                      <button className="btn-outline">View All</button>
+              <div className="pharma-content-row">
+                <div className="pharma-main-panel">
+                  <div className="pharma-card">
+                    <div className="pharma-card-header">
+                      <h5>Recent Inventory Activity</h5>
                     </div>
-                    <div className="card-body">
-                      <table className="data-table">
+                    <div className="pharma-card-body">
+                      <table className="pharma-data-table">
                         <thead>
                           <tr>
                             <th>Drug Name</th>
-                            <th>Barcode</th>
-                            <th>Patient</th>
-                            <th>Date</th>
-                            <th>Amount</th>
+                            <th>Batch</th>
+                            <th>Status</th>
+                            <th>Quantity</th>
+                            <th>Expiry</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {salesData.slice(0, 5).map(sale => (
-                            <tr key={sale.id}>
-                              <td>{sale.name}</td>
-                              <td>{sale.barcode}</td>
-                              <td>{sale.patient}</td>
-                              <td>{sale.date}</td>
-                              <td>${sale.amount}</td>
+                          {inventoryData.slice(0, 5).map(item => (
+                            <tr key={item.id}>
+                              <td>{item.name}</td>
+                              <td>{item.batch}</td>
+                              <td>{getStatusBadge(item.status)}</td>
+                              <td>{item.quantity}</td>
+                              <td>{item.expiry}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -201,30 +207,24 @@ const PharmacyDashboard = () => {
                     </div>
                   </div>
                 </div>
-                <div className="side-panel">
-                  <div className="card">
-                    <div className="card-header">
+                <div className="pharma-side-panel">
+                  <div className="pharma-card">
+                    <div className="pharma-card-header">
                       <h5>Critical Alerts</h5>
                     </div>
-                    <div className="card-body alerts">
-                      <div className="alert-card recall">
-                        <div className="alert-content">
-                          <ExclamationTriangleFill className="icon danger" />
-                          <div>
-                            <h6>Drug Recall</h6>
-                            <p>Batch #RX2023-05 of Lipitor 20mg has been recalled</p>
+                    <div className="pharma-card-body pharma-alerts">
+                      {recallData.map(alert => (
+                        <div key={alert.id} className={`pharma-alert-card pharma-${alert.severity}`}>
+                          <div className="pharma-alert-content">
+                            <ExclamationTriangleFill className="pharma-icon" />
+                            <div>
+                              <h6>Drug Recall: {alert.drug}</h6>
+                              <p>Batch {alert.batch} | Issued by {alert.by}</p>
+                              <small>{alert.issued}</small>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="alert-card expiry">
-                        <div className="alert-content">
-                          <ClockFill className="icon warning" />
-                          <div>
-                            <h6>Expiring Soon</h6>
-                            <p>5 batches expiring in next 30 days</p>
-                          </div>
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -233,27 +233,27 @@ const PharmacyDashboard = () => {
           )}
 
           {activeTab === 'inventory' && (
-            <div className="inventory-tab">
-              <div className="card">
-                <div className="card-header">
+            <div className="pharma-inventory-tab">
+              <div className="pharma-card">
+                <div className="pharma-card-header">
                   <h5>Drug Inventory</h5>
-                  <div className="controls">
-                    <div className="search-box">
-                      <Search className="search-icon" />
+                  <div className="pharma-controls">
+                    <div className="pharma-search-box">
+                      <Search className="pharma-search-icon" />
                       <input type="text" placeholder="Search inventory..." />
                     </div>
-                    <button className="btn-outline">
-                      <Funnel className="icon" /> Filters
+                    <button className="pharma-btn-outline">
+                      <Funnel className="pharma-icon" /> Filters
                     </button>
                   </div>
                 </div>
-                <div className="card-body">
-                  <table className="data-table">
+                <div className="pharma-card-body">
+                  <table className="pharma-data-table">
                     <thead>
                       <tr>
                         <th>Drug Name</th>
-                        <th>Barcode</th>
                         <th>Batch</th>
+                        <th>Manufacturer</th>
                         <th>Expiry Date</th>
                         <th>Quantity</th>
                         <th>Status</th>
@@ -265,143 +265,161 @@ const PharmacyDashboard = () => {
                         <tr key={item.id}>
                           <td>
                             {item.name} 
-                            {item.lowStock && <span className="badge warning">Low stock</span>}
-                            {item.status === 'recalled' && <span className="badge danger">Recalled</span>}
+                            {item.lowStock && <span className="pharma-badge pharma-warning">Low stock</span>}
                           </td>
-                          <td>{item.barcode}</td>
                           <td>{item.batch}</td>
+                          <td>{item.manufacturer}</td>
                           <td>{item.expiry}</td>
                           <td>{item.quantity}</td>
                           <td>{getStatusBadge(item.status)}</td>
-                          <td className="actions">
-                            <button className="btn-icon" disabled={item.status !== 'in_stock'}>
-                              <CashCoin />
+                          <td className="pharma-actions">
+                            <button className="pharma-btn-icon">
+                              <ShieldCheck title="Verify" />
                             </button>
-                            <button className="btn-icon">
-                              <TraceIcon />
-                            </button>
-                            <button className="btn-icon">
-                              <RecallIcon />
+                            <button className="pharma-btn-icon">
+                              <Link45deg title="Trace" />
                             </button>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  <div className="pagination">
-                    <button disabled>Previous</button>
-                    <button className="active">1</button>
-                    <button>2</button>
-                    <button>3</button>
-                    <button>Next</button>
-                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {activeTab === 'sell' && (
-            <div className="sell-tab">
-              <div className="sell-columns">
-                <div className="sell-form">
-                  <div className="card">
-                    <div className="card-header">
-                      <h5>Sell Drug</h5>
+          {activeTab === 'verify' && (
+            <div className="pharma-verify-tab">
+              <div className="pharma-card">
+                <div className="pharma-card-header">
+                  <h5>Drug Verification</h5>
+                  <p>Verify authenticity using blockchain records</p>
+                </div>
+                <div className="pharma-card-body">
+                  <div className="pharma-scan-section">
+                    <UpcScan className="pharma-icon-lg" />
+                    <p>Scan drug barcode to verify authenticity</p>
+                    <div className="pharma-input-group">
+                      <input 
+                        type="text" 
+                        placeholder="Enter barcode manually" 
+                        onChange={(e) => verifyDrug(e.target.value)}
+                      />
+                      <button className="pharma-btn-primary">
+                        <UpcScan className="pharma-icon" /> Scan
+                      </button>
                     </div>
-                    <div className="card-body">
-                      <form>
-                        <div className="form-group">
-                          <label>Scan Barcode</label>
-                          <div className="input-group">
-                            <input type="text" placeholder="Scan or enter barcode" />
-                            <button className="btn-primary"><UpcScan className="icon" /> Scan</button>
-                          </div>
-                        </div>
+                  </div>
 
-                        <div className="form-group">
-                          <label>Drug Information</label>
-                          <div className="drug-card">
-                            <div className="drug-info">
-                              <div>
-                                <h6>Amoxicillin 500mg</h6>
-                                <p>Barcode: 3456789012</p>
-                                <p>Batch: AMX2023-05</p>
-                                <p>Expiry: 2024-06-30</p>
-                              </div>
-                              <div className="drug-status">
-                                <span className="badge success">In Stock</span>
-                                <p>$24.99</p>
-                              </div>
+                  {verificationResult && (
+                    <div className={`pharma-verification-result ${verificationResult.valid ? 'pharma-valid' : 'pharma-invalid'}`}>
+                      <div className="pharma-verification-header">
+                        {verificationResult.valid ? (
+                          <>
+                            <CheckCircleFill className="pharma-icon pharma-success" />
+                            <h5>Genuine Product Verified</h5>
+                          </>
+                        ) : (
+                          <>
+                            <ExclamationTriangleFill className="pharma-icon pharma-danger" />
+                            <h5>Verification Failed</h5>
+                          </>
+                        )}
+                      </div>
+
+                      {verificationResult.valid && (
+                        <>
+                          <div className="pharma-drug-info">
+                            <h6>{verificationResult.drug.name}</h6>
+                            <p>Batch: {verificationResult.drug.batch}</p>
+                            <p>Manufacturer: {verificationResult.drug.manufacturer}</p>
+                            <p>Expiry: {verificationResult.drug.expiry}</p>
+                          </div>
+
+                          <div className="pharma-blockchain-info">
+                            <h6>Blockchain Verification</h6>
+                            <p>Transaction: {verificationResult.blockchainData.txHash}</p>
+                            <p>Block: {verificationResult.blockchainData.block}</p>
+                            <p>Timestamp: {verificationResult.blockchainData.timestamp}</p>
+                          </div>
+
+                          <div className="pharma-supply-chain">
+                            <h6>Supply Chain History</h6>
+                            <div className="pharma-timeline">
+                              {verificationResult.blockchainData.events.map((event, index) => (
+                                <div key={index} className="pharma-timeline-event">
+                                  <div className="pharma-timeline-dot"></div>
+                                  <div className="pharma-timeline-content">
+                                    <h6>{event.event}</h6>
+                                    <p>{event.date} • {event.location}</p>
+                                    <p>By: {event.by}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {!verificationResult.valid && (
+                        <div className="pharma-invalid-message">
+                          <p>{verificationResult.message}</p>
+                          <button className="pharma-btn-danger">
+                            <ExclamationTriangleFill className="pharma-icon" /> Report Counterfeit
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'alerts' && (
+            <div className="pharma-alerts-tab">
+              <div className="pharma-card">
+                <div className="pharma-card-header">
+                  <h5>Active Alerts</h5>
+                  <div className="pharma-filter-controls">
+                    <button className="pharma-btn-outline active">All</button>
+                    <button className="pharma-btn-outline">Recalls</button>
+                    <button className="pharma-btn-outline">Expiry</button>
+                    <button className="pharma-btn-outline">Stock</button>
+                  </div>
+                </div>
+                <div className="pharma-card-body">
+                  {recallData.length > 0 ? (
+                    <div className="pharma-alerts-list">
+                      {recallData.map(alert => (
+                        <div key={alert.id} className="pharma-alert-item">
+                          <div className="pharma-alert-icon">
+                            <ExclamationTriangleFill className={`pharma-icon pharma-${alert.severity}`} />
+                          </div>
+                          <div className="pharma-alert-details">
+                            <h6>Recall Notice: {alert.drug}</h6>
+                            <p>Batch: {alert.batch} • Barcode: {alert.barcode}</p>
+                            <p>Issued by {alert.by} on {alert.issued}</p>
+                            <div className="pharma-alert-actions">
+                              <button className="pharma-btn-outline">
+                                <Link45deg className="pharma-icon" /> Trace Batch
+                              </button>
+                              <button className="pharma-btn-outline">
+                                <Printer className="pharma-icon" /> Print Notice
+                              </button>
                             </div>
                           </div>
                         </div>
-
-                        <div className="form-group">
-                          <label>Quantity</label>
-                          <input type="number" defaultValue={1} min={1} />
-                        </div>
-
-                        <div className="form-group">
-                          <label>Patient Information (Optional)</label>
-                          <input type="text" placeholder="Patient name" />
-                          <input type="text" placeholder="Patient ID" />
-                        </div>
-
-                        <button className="btn-primary">Complete Sale</button>
-                      </form>
+                      ))}
                     </div>
-                  </div>
-                </div>
-                <div className="current-sale">
-                  <div className="card">
-                    <div className="card-header">
-                      <h5>Current Sale</h5>
-                      <span className="badge primary">{currentSale.length} Item{currentSale.length !== 1 ? 's' : ''}</span>
+                  ) : (
+                    <div className="pharma-no-alerts">
+                      <CheckCircleFill className="pharma-icon pharma-success" />
+                      <h5>No Active Alerts</h5>
+                      <p>Your inventory has no current recalls or warnings</p>
                     </div>
-                    <div className="card-body">
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th>Drug</th>
-                            <th>Price</th>
-                            <th>Qty</th>
-                            <th>Total</th>
-                            <th></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {currentSale.map(item => (
-                            <tr key={item.id}>
-                              <td>{item.name}</td>
-                              <td>${item.price}</td>
-                              <td>{item.quantity}</td>
-                              <td>${(item.price * item.quantity).toFixed(2)}</td>
-                              <td>
-                                <button className="btn-icon danger"><Trash /></button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-
-                      <div className="sale-totals">
-                        <div className="total-row">
-                          <span>Subtotal:</span>
-                          <span>${calculateSaleTotal().subtotal}</span>
-                        </div>
-                        <div className="total-row">
-                          <span>Tax (7%):</span>
-                          <span>${calculateSaleTotal().tax}</span>
-                        </div>
-                        <div className="total-row bold">
-                          <span>Total:</span>
-                          <span>${calculateSaleTotal().total}</span>
-                        </div>
-
-                        <button className="btn-success">Process Payment</button>
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
