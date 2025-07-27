@@ -53,17 +53,20 @@ const UnitBarcodeInput = ({ quantity, barcodes = [], onBarcodesChange }) => {
   const [scanningStatus, setScanningStatus] = useState(Array(quantity).fill('idle')); // 'idle', 'scanning', 'success', 'error'
   const inputRefs = useRef([]);
 
-  // Initialize localBarcodes with any provided barcodes
+  // Initialize with cleaned barcodes
   useEffect(() => {
     inputRefs.current = inputRefs.current.slice(0, quantity);
     const initialBarcodes = Array(quantity).fill('');
-    if (barcodes && barcodes.length > 0) {
-      barcodes.forEach((barcode, index) => {
-        if (index < quantity) {
-          initialBarcodes[index] = barcode;
-        }
-      });
-    }
+    const cleanedBarcodes = barcodes
+      .filter(b => b !== null && b !== undefined)
+      .map(b => String(b).trim());
+    
+    cleanedBarcodes.forEach((barcode, index) => {
+      if (index < quantity) {
+        initialBarcodes[index] = barcode;
+      }
+    });
+    
     setLocalBarcodes(initialBarcodes);
   }, [quantity, barcodes]);
 
@@ -71,7 +74,10 @@ const UnitBarcodeInput = ({ quantity, barcodes = [], onBarcodesChange }) => {
     const newBarcodes = [...localBarcodes];
     newBarcodes[index] = value;
     setLocalBarcodes(newBarcodes);
-    onBarcodesChange(newBarcodes);
+    
+    // Clean the barcodes before sending to parent
+    const cleanedBarcodes = newBarcodes.map(b => b.trim());
+    onBarcodesChange(cleanedBarcodes);
     
     // Auto-focus next input if not last one and value entered
     if (value && index < quantity - 1) {
@@ -86,7 +92,12 @@ const UnitBarcodeInput = ({ quantity, barcodes = [], onBarcodesChange }) => {
       const newBarcodes = [...localBarcodes];
       newBarcodes[scanningIndex] = barcode;
       setLocalBarcodes(newBarcodes);
-      onBarcodesChange(newBarcodes);
+      
+      // Clean the barcode before sending to parent
+      const cleanedBarcode = barcode.trim();
+      const cleanedBarcodes = [...localBarcodes];
+      cleanedBarcodes[scanningIndex] = cleanedBarcode;
+      onBarcodesChange(cleanedBarcodes);
       
       // Update scanning status
       const newStatus = [...scanningStatus];
@@ -667,55 +678,52 @@ const handleManualSubmit = async (e) => {
   e.preventDefault();
   
   // Enhanced barcode validation
-  if (drugForm.batchBarcode && !/^[A-Za-z0-9-]+$/.test(drugForm.batchBarcode)) {
+  if (drugForm.batchBarcode && !/^[A-Za-z0-9-]+$/.test(drugForm.batchBarcode.trim())) {
     alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
     return;
   }
 
+  // Clean unit barcodes
+  const cleanedUnitBarcodes = drugForm.unitBarcodes
+    .filter(b => b !== null && b !== undefined)
+    .map(b => String(b).trim());
+
+  // Validate unit barcodes
+  for (const barcode of cleanedUnitBarcodes) {
+    if (barcode && !/^[A-Za-z0-9-]+$/.test(barcode)) {
+      alert(`Invalid unit barcode format: ${barcode}. Only letters, numbers and hyphens are allowed.`);
+      return;
+    }
+  }
+
   try {
-    // Prepare unit barcodes array according to schema
-    const unitBarcodesData = drugForm.unitBarcodes
-      .filter(b => b !== '') // Remove empty barcodes
-      .map(barcode => ({
-        barcode: barcode || generateBarcode(drugForm.name, drugForm.batch, Math.random().toString(36).substring(2, 8)),
+    // Prepare unit barcodes array
+    const unitBarcodesData = [];
+    const quantityInt = parseInt(drugForm.quantity);
+    
+    // Use provided barcodes or generate new ones
+    for (let i = 0; i < quantityInt; i++) {
+      unitBarcodesData.push({
+        barcode: cleanedUnitBarcodes[i] || generateBarcode(drugForm.name, drugForm.batch, i+1),
         status: 'in-stock',
         manufacturer: user._id,
         currentHolder: 'manufacturer'
-      }));
-
-    // If no unit barcodes were provided but quantity > 0, generate them
-    if (unitBarcodesData.length === 0 && parseInt(drugForm.quantity) > 0) {
-      for (let i = 1; i <= parseInt(drugForm.quantity); i++) {
-        unitBarcodesData.push({
-          barcode: generateBarcode(drugForm.name, drugForm.batch, i),
-          status: 'in-stock',
-          manufacturer: user._id,
-          currentHolder: 'manufacturer'
-        });
-      }
+      });
     }
 
     const response = await axios.post('http://localhost:5000/api/drugs/create', {
-      name: drugForm.name,
-      batch: drugForm.batch,
-      quantity: parseInt(drugForm.quantity),
+      name: drugForm.name.trim(),
+      batch: drugForm.batch.trim(),
+      quantity: quantityInt,
       mfgDate: drugForm.mfgDate,
       expiryDate: drugForm.expiryDate,
-      batchBarcode: drugForm.batchBarcode || generateBarcode(drugForm.name, drugForm.batch),
-      unitBarcodes: unitBarcodesData,
-      manufacturerId: user._id,
-      status: 'in-stock',
-      currentHolder: 'manufacturer'
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
+      batchBarcode: drugForm.batchBarcode.trim() || generateBarcode(drugForm.name, drugForm.batch),
+      unitBarcodes: unitBarcodesData.map(u => u.barcode), // Send only barcode strings
+      manufacturerId: user._id
     });
 
     if (response.data.success) {
       alert(`Drug ${response.data.drug.name} created successfully with ${response.data.drug.quantity} units`);
-      // Reset form
       setDrugForm({
         name: '',
         batch: '',
@@ -725,7 +733,6 @@ const handleManualSubmit = async (e) => {
         batchBarcode: '',
         unitBarcodes: []
       });
-      // Refresh inventory if on that tab
       if (activeTab === 'inventory') {
         fetchManufacturerDrugs();
       }
@@ -734,9 +741,6 @@ const handleManualSubmit = async (e) => {
     console.error('Drug creation error:', error);
     if (error.response?.data?.error) {
       alert(`Error: ${error.response.data.error}`);
-      if (error.response.data.existingDrug) {
-        console.log('Conflicting drug:', error.response.data.existingDrug);
-      }
     } else {
       alert('Failed to create drug. Please check the console for details.');
     }
