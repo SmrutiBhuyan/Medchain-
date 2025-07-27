@@ -212,20 +212,19 @@ export const getDrugsByManufacturer = async (req, res) => {
 // Get distributor's inventory
 export const getDistributorInventory = async (req, res) => {
   try {
-    console.log("Fetching Inventory...");
-    
     const { status } = req.query;
     const distributorId = req.user._id;
 
     // Build the base query
     const query = { 
       'unitBarcodes.currentHolder': 'distributor',
-      'unitBarcodes.distributor': distributorId
+      'unitBarcodes.distributor': distributorId,
+      'unitBarcodes.status': 'in-stock'
     };
 
     // Add status filter if provided
     if (status) {
-      query.status = status;
+      query['unitBarcodes.status'] = status;
     }
 
     // Find drugs with matching unit barcodes
@@ -235,25 +234,33 @@ export const getDistributorInventory = async (req, res) => {
       .select('name batch quantity mfgDate expiryDate batchBarcode unitBarcodes manufacturer distributor status currentHolder')
       .sort({ createdAt: -1 });
 
-    // Filter the unitBarcodes to only include those belonging to this distributor
-    const filteredDrugs = drugs.map(drug => {
-      const filteredUnits = drug.unitBarcodes.filter(unit => 
-        unit.currentHolder === 'distributor' && 
-        unit.distributor && 
-        unit.distributor.toString() === distributorId.toString()
-      );
-      
-      return {
-        ...drug.toObject(),
-        unitBarcodes: filteredUnits,
-        quantity: filteredUnits.length // Update quantity to reflect actual units
-      };
-    }).filter(drug => drug.unitBarcodes.length > 0); // Only include drugs with matching units
+    // Transform the data to include both drug and unit information
+    const inventoryItems = drugs.flatMap(drug => {
+      return drug.unitBarcodes
+        .filter(unit => 
+          unit.currentHolder === 'distributor' && 
+          unit.distributor && 
+          unit.distributor.toString() === distributorId.toString() &&
+          (status ? unit.status === status : unit.status === 'in-stock')
+        )
+        .map(unit => ({
+          drugId: drug._id,
+          name: drug.name,
+          batch: drug.batch,
+          batchBarcode: drug.batchBarcode,
+          unitBarcode: unit.barcode,
+          expiryDate: drug.expiryDate,
+          manufacturer: drug.manufacturer,
+          distributor: drug.distributor,
+          status: unit.status,
+          currentHolder: unit.currentHolder
+        }));
+    });
 
     res.json({
       success: true,
-      count: filteredDrugs.length,
-      drugs: filteredDrugs
+      count: inventoryItems.length,
+      items: inventoryItems
     });
   } catch (error) {
     console.error('Error fetching distributor drugs:', error);

@@ -286,53 +286,110 @@ export const rejectShipment = async (req, res) => {
   }
 };
 
-// Add new functions for wholesaler, retailer, and pharmacy
-// Update createShipmentToWholesaler
+
+// Updated createShipmentToWholesaler
 export const createShipmentToWholesaler = async (req, res) => {
   try {
-    const { drugIds, wholesalerId } = req.body;
+    const { drugIds, wholesalerId, unitBarcodes } = req.body;
     const distributorId = req.user._id;
 
-    if (!drugIds || !wholesalerId) {
-      return res.status(400).json({ error: 'Missing required fields: drugIds or wholesalerId' });
-    }
-
-    if (!Array.isArray(drugIds) || drugIds.length === 0) {
-      return res.status(400).json({ error: 'drugIds must be a non-empty array' });
-    }
-
-    // Validate drugs belong to distributor and are in stock
-    const invalidDrugs = await Drug.find({
-      _id: { $in: drugIds },
-      $or: [
-        { distributor: { $ne: distributorId } },
-        { status: { $ne: 'in-stock with distributor' } }
-      ]
-    });
-
-    if (invalidDrugs.length > 0) {
-      return res.status(400).json({ 
-        error: 'Some drugs are invalid or not available',
-        invalidDrugs: invalidDrugs.map(d => d._id)
+    // Validate input
+    if (!drugIds || !wholesalerId || !unitBarcodes) {
+      return res.status(400).json({
+        error: 'Missing required fields: drugIds, wholesalerId, or unitBarcodes'
       });
     }
 
-    // Get drug details for unit barcodes
-    const drugDetails = await Drug.find({ _id: { $in: drugIds } });
+    if (!Array.isArray(drugIds) || !Array.isArray(unitBarcodes)) {
+      return res.status(400).json({
+        error: 'drugIds and unitBarcodes must be arrays'
+      });
+    }
+
+    if (drugIds.length === 0 || unitBarcodes.length === 0) {
+      return res.status(400).json({
+        error: 'drugIds and unitBarcodes cannot be empty'
+      });
+    }
+
+    if (drugIds.length !== new Set(drugIds).size) {
+      return res.status(400).json({
+        error: 'Duplicate drug IDs found'
+      });
+    }
+
+    // Get drugs with inventory status check
+    const drugs = await Drug.find({
+      _id: { $in: drugIds },
+      distributor: distributorId,
+      status: 'in-stock with distributor'
+    }).populate('manufacturer', 'name');
+
+    // Detailed validation
+    const missingDrugs = drugIds.filter(id => 
+      !drugs.some(d => d._id.toString() === id.toString())
+    );
+
+    if (missingDrugs.length > 0) {
+      return res.status(400).json({
+        error: 'Some drugs not found or not available',
+        missingDrugs,
+        message: `The following drugs are not available: ${missingDrugs.join(', ')}`
+      });
+    }
+
+    // Validate barcodes
+    const invalidBarcodes = [];
+    const validBarcodes = [];
+
+    unitBarcodes.forEach(barcode => {
+      const valid = drugs.some(drug => 
+        drug.unitBarcodes.some(unit => unit.barcode === barcode)
+      );
+      if (!valid) {
+        invalidBarcodes.push(barcode);
+      } else {
+        validBarcodes.push(barcode);
+      }
+    });
+
+    if (invalidBarcodes.length > 0) {
+      return res.status(400).json({
+        error: 'Some barcodes are invalid',
+        invalidBarcodes,
+        validBarcodes,
+        message: `${invalidBarcodes.length} barcodes are invalid`
+      });
+    }
 
     // Generate tracking number
     const trackingNumber = `SH-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    // Create shipment with only valid units
+    const shippedUnits = [];
+    const barcodeToDrugMap = new Map();
+
+    // Create a map of barcode to drug for quick lookup
+    drugs.forEach(drug => {
+      drug.unitBarcodes.forEach(unit => {
+        barcodeToDrugMap.set(unit.barcode, drug);
+      });
+    });
+
+    // Create shippedUnits array ensuring all barcodes are valid
+    unitBarcodes.forEach(barcode => {
+      const drug = barcodeToDrugMap.get(barcode);
+      shippedUnits.push({
+        barcode,
+        drugId: drug._id
+      });
+    });
 
     // Create shipment
     const shipment = new Shipment({
       trackingNumber,
       drugs: drugIds,
-      shippedUnits: drugDetails.flatMap(drug => 
-        drug.unitBarcodes.map(unit => ({
-          barcode: unit.barcode,
-          drugId: drug._id
-        }))
-      ),
+      shippedUnits,
       participants: [
         {
           type: 'distributor',
@@ -355,66 +412,166 @@ export const createShipmentToWholesaler = async (req, res) => {
 
     await shipment.save();
 
-    // Update drug statuses
-    await Drug.updateMany(
-      { _id: { $in: drugIds } },
-      { 
-        $set: { 
-          status: 'shipped to wholesaler',
-          currentHolder: 'in-transit',
-          wholesaler: wholesalerId,
-          'unitBarcodes.$[].status': 'shipped',
-          'unitBarcodes.$[].currentHolder': 'in-transit'
-        } 
-      }
-    );
+    // Update all shipped units using arrayFilters
+    await Drug.bulkWrite(drugs.map(drug => {
+      const shippedBarcodes = drug.unitBarcodes
+        .filter(unit => unitBarcodes.includes(unit.barcode))
+        .map(unit => unit.barcode);
 
-    res.json({ success: true, shipment });
+      return {
+        updateOne: {
+          filter: { _id: drug._id },
+          update: {
+            $set: {
+              'unitBarcodes.$[elem].status': 'shipped',
+              'unitBarcodes.$[elem].currentHolder': 'in-transit',
+              'unitBarcodes.$[elem].wholesaler': wholesalerId
+            }
+          },
+          arrayFilters: [
+            { 'elem.barcode': { $in: shippedBarcodes } }
+          ]
+        }
+      };
+    }));
+
+    // Update overall drug status if all units are shipped
+    for (const drugId of drugIds) {
+      const drug = await Drug.findById(drugId);
+      const allUnitsShipped = drug.unitBarcodes.every(unit => 
+        unitBarcodes.includes(unit.barcode)
+      );
+
+      if (allUnitsShipped) {
+        await Drug.updateOne(
+          { _id: drugId },
+          { 
+            $set: { 
+              status: 'shipped to wholesaler',
+              currentHolder: 'in-transit',
+              wholesaler: wholesalerId
+            } 
+          }
+        );
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      shipment,
+      shippedUnits: unitBarcodes.length
+    });
   } catch (error) {
     console.error('Shipment creation error:', error);
-    res.status(500).json({ error: 'Failed to create shipment', details: error.message });
+    res.status(500).json({ 
+      error: 'Failed to create shipment', 
+      details: error.message 
+    });
   }
 };
 
-// Update createShipmentToRetailer
+// Updated createShipmentToRetailer
 export const createShipmentToRetailer = async (req, res) => {
   try {
-    const { drugIds, retailerId } = req.body;
+    const { drugIds, retailerId, unitBarcodes } = req.body;
     const distributorId = req.user._id;
 
-    if (!drugIds || !retailerId) {
-      return res.status(400).json({ error: 'Missing required fields: drugIds or retailerId' });
+    // Validate input
+    if (!drugIds || !retailerId || !unitBarcodes) {
+      return res.status(400).json({
+        error: 'Missing required fields: drugIds, retailerId, or unitBarcodes'
+      });
     }
 
-    // Validate drugs belong to distributor and are in stock
+    if (!Array.isArray(drugIds) || !Array.isArray(unitBarcodes)) {
+      return res.status(400).json({
+        error: 'drugIds and unitBarcodes must be arrays'
+      });
+    }
+
+    if (drugIds.length === 0 || unitBarcodes.length === 0) {
+      return res.status(400).json({
+        error: 'drugIds and unitBarcodes cannot be empty'
+      });
+    }
+
+    if (drugIds.length !== new Set(drugIds).size) {
+      return res.status(400).json({
+        error: 'Duplicate drug IDs found'
+      });
+    }
+
+    // Get drugs with inventory status check
     const drugs = await Drug.find({
       _id: { $in: drugIds },
       distributor: distributorId,
       status: 'in-stock with distributor'
+    }).populate('manufacturer', 'name');
+
+    // Detailed validation
+    const missingDrugs = drugIds.filter(id => 
+      !drugs.some(d => d._id.toString() === id.toString())
+    );
+
+    if (missingDrugs.length > 0) {
+      return res.status(400).json({
+        error: 'Some drugs not found or not available',
+        missingDrugs,
+        message: `The following drugs are not available: ${missingDrugs.join(', ')}`
+      });
+    }
+
+    // Validate barcodes
+    const invalidBarcodes = [];
+    const validBarcodes = [];
+
+    unitBarcodes.forEach(barcode => {
+      const valid = drugs.some(drug => 
+        drug.unitBarcodes.some(unit => unit.barcode === barcode)
+      );
+      if (!valid) {
+        invalidBarcodes.push(barcode);
+      } else {
+        validBarcodes.push(barcode);
+      }
     });
 
-    if (drugs.length !== drugIds.length) {
-      return res.status(400).json({ 
-        error: 'Some drugs are invalid or not available',
-        invalidDrugs: drugIds.filter(id => 
-          !drugs.some(d => d._id.toString() === id.toString())
-        )
+    if (invalidBarcodes.length > 0) {
+      return res.status(400).json({
+        error: 'Some barcodes are invalid',
+        invalidBarcodes,
+        validBarcodes,
+        message: `${invalidBarcodes.length} barcodes are invalid`
       });
     }
 
     // Generate tracking number
     const trackingNumber = `SH-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    // Create shipment
+    // Create shipment with only valid units
+    const shippedUnits = [];
+    const barcodeToDrugMap = new Map();
+
+    // Create a map of barcode to drug for quick lookup
+    drugs.forEach(drug => {
+      drug.unitBarcodes.forEach(unit => {
+        barcodeToDrugMap.set(unit.barcode, drug);
+      });
+    });
+
+    // Create shippedUnits array ensuring all barcodes are valid
+    unitBarcodes.forEach(barcode => {
+      const drug = barcodeToDrugMap.get(barcode);
+      shippedUnits.push({
+        barcode,
+        drugId: drug._id
+      });
+    });
+
     const shipment = new Shipment({
       trackingNumber,
       drugs: drugIds,
-      shippedUnits: drugs.flatMap(drug => 
-        drug.unitBarcodes.map(unit => ({
-          barcode: unit.barcode,
-          drugId: drug._id
-        }))
-      ),
+      shippedUnits,
       participants: [
         {
           type: 'distributor',
@@ -437,66 +594,166 @@ export const createShipmentToRetailer = async (req, res) => {
 
     await shipment.save();
 
-    // Update drug statuses
-    await Drug.updateMany(
-      { _id: { $in: drugIds } },
-      { 
-        $set: { 
-          status: 'shipped to retailer',
-          currentHolder: 'in-transit',
-          retailer: retailerId,
-          'unitBarcodes.$[].status': 'shipped',
-          'unitBarcodes.$[].currentHolder': 'in-transit'
-        } 
-      }
-    );
+    // Update all shipped units using arrayFilters
+    await Drug.bulkWrite(drugs.map(drug => {
+      const shippedBarcodes = drug.unitBarcodes
+        .filter(unit => unitBarcodes.includes(unit.barcode))
+        .map(unit => unit.barcode);
 
-    res.json({ success: true, shipment });
+      return {
+        updateOne: {
+          filter: { _id: drug._id },
+          update: {
+            $set: {
+              'unitBarcodes.$[elem].status': 'shipped',
+              'unitBarcodes.$[elem].currentHolder': 'in-transit',
+              'unitBarcodes.$[elem].retailer': retailerId
+            }
+          },
+          arrayFilters: [
+            { 'elem.barcode': { $in: shippedBarcodes } }
+          ]
+        }
+      };
+    }));
+
+    // Update overall drug status if all units are shipped
+    for (const drugId of drugIds) {
+      const drug = await Drug.findById(drugId);
+      const allUnitsShipped = drug.unitBarcodes.every(unit => 
+        unitBarcodes.includes(unit.barcode)
+      );
+
+      if (allUnitsShipped) {
+        await Drug.updateOne(
+          { _id: drugId },
+          { 
+            $set: { 
+              status: 'shipped to retailer',
+              currentHolder: 'in-transit',
+              retailer: retailerId
+            } 
+          }
+        );
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      shipment,
+      shippedUnits: unitBarcodes.length
+    });
   } catch (error) {
     console.error('Shipment creation error:', error);
-    res.status(500).json({ error: 'Failed to create shipment', details: error.message });
+    res.status(500).json({ 
+      error: 'Failed to create shipment', 
+      details: error.message 
+    });
   }
 };
 
-// Update createShipmentToPharmacy
+// Updated createShipmentToPharmacy
 export const createShipmentToPharmacy = async (req, res) => {
   try {
-    const { drugIds, pharmacyId } = req.body;
+    const { drugIds, pharmacyId, unitBarcodes } = req.body;
     const distributorId = req.user._id;
 
-    if (!drugIds || !pharmacyId) {
-      return res.status(400).json({ error: 'Missing required fields: drugIds or pharmacyId' });
+    // Validate input
+    if (!drugIds || !pharmacyId || !unitBarcodes) {
+      return res.status(400).json({
+        error: 'Missing required fields: drugIds, pharmacyId, or unitBarcodes'
+      });
     }
 
-    // Validate drugs belong to distributor and are in stock
+    if (!Array.isArray(drugIds) || !Array.isArray(unitBarcodes)) {
+      return res.status(400).json({
+        error: 'drugIds and unitBarcodes must be arrays'
+      });
+    }
+
+    if (drugIds.length === 0 || unitBarcodes.length === 0) {
+      return res.status(400).json({
+        error: 'drugIds and unitBarcodes cannot be empty'
+      });
+    }
+
+    if (drugIds.length !== new Set(drugIds).size) {
+      return res.status(400).json({
+        error: 'Duplicate drug IDs found'
+      });
+    }
+
+    // Get drugs with inventory status check
     const drugs = await Drug.find({
       _id: { $in: drugIds },
       distributor: distributorId,
       status: 'in-stock with distributor'
+    }).populate('manufacturer', 'name');
+
+    // Detailed validation
+    const missingDrugs = drugIds.filter(id => 
+      !drugs.some(d => d._id.toString() === id.toString())
+    );
+
+    if (missingDrugs.length > 0) {
+      return res.status(400).json({
+        error: 'Some drugs not found or not available',
+        missingDrugs,
+        message: `The following drugs are not available: ${missingDrugs.join(', ')}`
+      });
+    }
+
+    // Validate barcodes
+    const invalidBarcodes = [];
+    const validBarcodes = [];
+
+    unitBarcodes.forEach(barcode => {
+      const valid = drugs.some(drug => 
+        drug.unitBarcodes.some(unit => unit.barcode === barcode)
+      );
+      if (!valid) {
+        invalidBarcodes.push(barcode);
+      } else {
+        validBarcodes.push(barcode);
+      }
     });
 
-    if (drugs.length !== drugIds.length) {
-      return res.status(400).json({ 
-        error: 'Some drugs are invalid or not available',
-        invalidDrugs: drugIds.filter(id => 
-          !drugs.some(d => d._id.toString() === id.toString())
-        )
+    if (invalidBarcodes.length > 0) {
+      return res.status(400).json({
+        error: 'Some barcodes are invalid',
+        invalidBarcodes,
+        validBarcodes,
+        message: `${invalidBarcodes.length} barcodes are invalid`
       });
     }
 
     // Generate tracking number
     const trackingNumber = `SH-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    // Create shipment
+    // Create shipment with only valid units
+    const shippedUnits = [];
+    const barcodeToDrugMap = new Map();
+
+    // Create a map of barcode to drug for quick lookup
+    drugs.forEach(drug => {
+      drug.unitBarcodes.forEach(unit => {
+        barcodeToDrugMap.set(unit.barcode, drug);
+      });
+    });
+
+    // Create shippedUnits array ensuring all barcodes are valid
+    unitBarcodes.forEach(barcode => {
+      const drug = barcodeToDrugMap.get(barcode);
+      shippedUnits.push({
+        barcode,
+        drugId: drug._id
+      });
+    });
+
     const shipment = new Shipment({
       trackingNumber,
       drugs: drugIds,
-      shippedUnits: drugs.flatMap(drug => 
-        drug.unitBarcodes.map(unit => ({
-          barcode: unit.barcode,
-          drugId: drug._id
-        }))
-      ),
+      shippedUnits,
       participants: [
         {
           type: 'distributor',
@@ -519,26 +776,64 @@ export const createShipmentToPharmacy = async (req, res) => {
 
     await shipment.save();
 
-    // Update drug statuses
-    await Drug.updateMany(
-      { _id: { $in: drugIds } },
-      { 
-        $set: { 
-          status: 'shipped to pharmacy',
-          currentHolder: 'in-transit',
-          pharmacy: pharmacyId,
-          'unitBarcodes.$[].status': 'shipped',
-          'unitBarcodes.$[].currentHolder': 'in-transit'
-        } 
-      }
-    );
+    // Update all shipped units using arrayFilters
+    await Drug.bulkWrite(drugs.map(drug => {
+      const shippedBarcodes = drug.unitBarcodes
+        .filter(unit => unitBarcodes.includes(unit.barcode))
+        .map(unit => unit.barcode);
 
-    res.json({ success: true, shipment });
+      return {
+        updateOne: {
+          filter: { _id: drug._id },
+          update: {
+            $set: {
+              'unitBarcodes.$[elem].status': 'shipped',
+              'unitBarcodes.$[elem].currentHolder': 'in-transit',
+              'unitBarcodes.$[elem].pharmacy': pharmacyId
+            }
+          },
+          arrayFilters: [
+            { 'elem.barcode': { $in: shippedBarcodes } }
+          ]
+        }
+      };
+    }));
+
+    // Update overall drug status if all units are shipped
+    for (const drugId of drugIds) {
+      const drug = await Drug.findById(drugId);
+      const allUnitsShipped = drug.unitBarcodes.every(unit => 
+        unitBarcodes.includes(unit.barcode)
+      );
+
+      if (allUnitsShipped) {
+        await Drug.updateOne(
+          { _id: drugId },
+          { 
+            $set: { 
+              status: 'shipped to pharmacy',
+              currentHolder: 'in-transit',
+              pharmacy: pharmacyId
+            } 
+          }
+        );
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      shipment,
+      shippedUnits: unitBarcodes.length
+    });
   } catch (error) {
     console.error('Shipment creation error:', error);
-    res.status(500).json({ error: 'Failed to create shipment', details: error.message });
+    res.status(500).json({ 
+      error: 'Failed to create shipment', 
+      details: error.message 
+    });
   }
 };
+
 
 
 // Accept shipment for wholesaler

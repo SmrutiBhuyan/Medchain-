@@ -67,29 +67,22 @@ useEffect(() => {
       // Get inventory
       const inventoryRes = await axios.get('http://localhost:5000/api/drugs/inventory', {
         headers: { Authorization: `Bearer ${token}` },
-        params: { status: 'in-stock with distributor' }
+        params: { status: 'in-stock' }
       });
       
-      // Flatten the inventory data
-      const flattenedInventory = inventoryRes.data.drugs.flatMap(drug => {
-        if (!drug.unitBarcodes || !Array.isArray(drug.unitBarcodes)) {
-          return [];
-        }
-        return drug.unitBarcodes.map(unit => ({
-          _id: `${drug._id}-${unit.barcode}`,
-          name: drug.name,
-          batch: drug.batch,
-          barcode: unit.barcode,
-          batchBarcode: drug.batchBarcode,
-          expiryDate: drug.expiryDate,
-          manufacturer: drug.manufacturer,
-          status: drug.status,
-          currentHolder: drug.currentHolder,
-          unitStatus: unit.status
-        }));
-      });
-
-      setInventory(flattenedInventory);
+           // The backend now returns properly formatted items with unit barcodes
+      setInventory(inventoryRes.data.items.map(item => ({
+        _id: `${item.drugId}-${item.unitBarcode}`,
+        name: item.name,
+        batch: item.batch,
+        barcode: item.unitBarcode, // Now using the actual unit barcode
+        batchBarcode: item.batchBarcode,
+        expiryDate: item.expiryDate,
+        manufacturer: item.manufacturer,
+        status: item.status,
+        currentHolder: item.currentHolder,
+        unitStatus: item.status
+      })));
 
        const retailersRes = await axios.get('http://localhost:5000/api/users/retailers', {
           headers: { Authorization: `Bearer ${token}` }
@@ -212,61 +205,99 @@ useEffect(() => {
         : [...prev, drugId]
     );
   };
+const handleShipToRecipient = async () => {
+  if (selectedDrugs.length === 0 || !selectedRecipient) {
+    alert('Please select both drugs and a recipient');
+    return;
+  }
 
-  const handleShipToRecipient = async () => {
-    if (selectedDrugs.length === 0 || !selectedRecipient) return;
-    
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      
-      const drugData = selectedDrugs.map(id => {
-        const [drugId, barcode] = id.split('-');
-        return { drugId, barcode };
-      });
-      
-      const drugIds = [...new Set(drugData.map(d => d.drugId))];
-      
-      let endpoint;
-      let payload = { 
-        drugIds,
-        unitBarcodes: drugData.map(d => d.barcode) 
-      };
-      
-      switch (recipientType) {
-        case 'wholesaler':
-          endpoint = '/api/shipments/to-wholesaler';
-          payload.wholesalerId = selectedRecipient;
-          break;
-        case 'retailer':
-          endpoint = '/api/shipments/to-retailer';
-          payload.retailerId = selectedRecipient;
-          break;
-        case 'pharmacy':
-          endpoint = '/api/shipments/to-pharmacy';
-          payload.pharmacyId = selectedRecipient;
-          break;
-        default:
-          throw new Error('Invalid recipient type');
+  try {
+    setLoading(true);
+    const token = localStorage.getItem('token');
+
+    // Transform selected drugs into backend-expected format
+    const drugPayload = selectedDrugs.map(drugId => {
+      const drug = inventory.find(d => d._id === drugId);
+      if (!drug) {
+        throw new Error(`Drug ${drugId} not found in inventory`);
       }
-      
-      const response = await axios.post(`http://localhost:5000${endpoint}`, payload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      setInventory(prev => prev.filter(drug => !selectedDrugs.includes(drug._id)));
+      return {
+        drugId: drug._id.split('-')[0], // Extract just the drug ID part
+        unitBarcode: drug.barcode
+      };
+    });
+
+    // Separate into arrays for backend
+    const drugIds = [...new Set(drugPayload.map(d => d.drugId))];
+    const unitBarcodes = drugPayload.map(d => d.unitBarcode);
+
+    // Prepare API call based on recipient type
+    let endpoint, payload;
+    switch (recipientType) {
+      case 'wholesaler':
+        endpoint = '/api/shipments/to-wholesaler';
+        payload = {
+          drugIds,
+          unitBarcodes,
+          wholesalerId: selectedRecipient
+        };
+        break;
+      case 'retailer':
+        endpoint = '/api/shipments/to-retailer';
+        payload = {
+          drugIds,
+          unitBarcodes,
+          retailerId: selectedRecipient
+        };
+        break;
+      case 'pharmacy':
+        endpoint = '/api/shipments/to-pharmacy';
+        payload = {
+          drugIds,
+          unitBarcodes,
+          pharmacyId: selectedRecipient
+        };
+        break;
+      default:
+        throw new Error('Invalid recipient type');
+    }
+
+    // Make API call
+    const response = await axios.post(
+      `http://localhost:5000${endpoint}`,
+      payload,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // Handle success
+    if (response.data.success) {
+      // Refresh data
+      const [shipmentsRes, inventoryRes] = await Promise.all([
+        axios.get('http://localhost:5000/api/shipments/distributor', {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get('http://localhost:5000/api/drugs/inventory', {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { status: 'in-stock' }
+        })
+      ]);
+
+      setShipments(shipmentsRes.data);
+      setInventory(inventoryRes.data.items || []);
       setSelectedDrugs([]);
       setSelectedRecipient('');
-      
-      alert(`Successfully shipped ${selectedDrugs.length} units to ${getRecipientName(selectedRecipient)}`);
-    } catch (error) {
-      console.error('Error creating shipment:', error);
-      const errorMsg = error.response?.data?.error || 'Failed to create shipment';
-      alert(`Error: ${errorMsg}`);
-    } finally {
-      setLoading(false);
+
+      alert(`Successfully shipped ${selectedDrugs.length} items to ${getRecipientName(selectedRecipient)}`);
+    } else {
+      throw new Error(response.data.error || 'Shipment failed');
     }
-  };
+  } catch (error) {
+    console.error('Shipping error:', error);
+    alert(`Shipping failed: ${error.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const getRecipientName = (recipientId) => {
     let recipient;
@@ -325,6 +356,7 @@ useEffect(() => {
 
   return (
     <div className="dashboard-container">
+      
       {/* Sidebar */}
       <div className="sidebar" >
         <div className="sidebar-header">
@@ -571,7 +603,7 @@ useEffect(() => {
             
             <div className="ship-grid">
               <div className="drug-selection">
-                <h4>Select Drugs to Ship</h4>
+                <h4>Select Units to Ship</h4>
                 
                 <div className="search-box">
   <FaSearch className="search-icon" />
@@ -597,7 +629,8 @@ useEffect(() => {
                       <tr>
                         <th></th>
                         <th>Drug Name</th>
-                        <th>Barcode</th>
+                        <th>Unit Barcode</th>
+                        <th>Batch Barcode</th>
                         <th>Expiry</th>
                       </tr>
                     </thead>
@@ -616,6 +649,7 @@ useEffect(() => {
                             )}
                           </td>
                           <td>{drug.name}</td>
+                          <td>{drug.barcode}</td> 
                           <td>{drug.batchBarcode || "No rendering"}</td>
                           <td>{new Date(drug.expiryDate).toLocaleDateString()}</td>
                         </tr>
@@ -866,6 +900,7 @@ useEffect(() => {
             </div>
           </div>
         )}
+        
       </div>
     </div>
   );

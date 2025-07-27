@@ -31,8 +31,6 @@ export const getWholesalers = async (req, res) => {
         documents: 0 // exclude documents
       }
     ).sort({ name: 1 });
-
-    console.log(wholesalers);
     
     res.status(200).json(wholesalers);
   } catch (error) {
