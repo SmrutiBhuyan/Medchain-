@@ -7,8 +7,6 @@ const isValidBarcode = (barcode) => {
 };
 
 // Enhanced createDrug controller
-// Update createDrug controller to handle unitBarcodes properly
-// Update createDrug controller to handle unitBarcodes properly
 export const createDrug = async (req, res) => {
   try {
     const { 
@@ -211,7 +209,6 @@ export const getDrugsByManufacturer = async (req, res) => {
   }
 };
 
-// Enhanced getDistributorDrugs controller
 // Get distributor's inventory
 export const getDistributorInventory = async (req, res) => {
   try {
@@ -220,24 +217,43 @@ export const getDistributorInventory = async (req, res) => {
     const { status } = req.query;
     const distributorId = req.user._id;
 
+    // Build the base query
     const query = { 
-      distributor: distributorId,
-      currentHolder: 'distributor'
+      'unitBarcodes.currentHolder': 'distributor',
+      'unitBarcodes.distributor': distributorId
     };
 
+    // Add status filter if provided
     if (status) {
       query.status = status;
     }
 
+    // Find drugs with matching unit barcodes
     const drugs = await Drug.find(query)
       .populate('manufacturer', 'name organization')
-      .select('name batch quantity mfgDate expiryDate batchBarcode unitBarcodes manufacturer status currentHolder')
+      .populate('distributor', 'name organization')
+      .select('name batch quantity mfgDate expiryDate batchBarcode unitBarcodes manufacturer distributor status currentHolder')
       .sort({ createdAt: -1 });
+
+    // Filter the unitBarcodes to only include those belonging to this distributor
+    const filteredDrugs = drugs.map(drug => {
+      const filteredUnits = drug.unitBarcodes.filter(unit => 
+        unit.currentHolder === 'distributor' && 
+        unit.distributor && 
+        unit.distributor.toString() === distributorId.toString()
+      );
+      
+      return {
+        ...drug.toObject(),
+        unitBarcodes: filteredUnits,
+        quantity: filteredUnits.length // Update quantity to reflect actual units
+      };
+    }).filter(drug => drug.unitBarcodes.length > 0); // Only include drugs with matching units
 
     res.json({
       success: true,
-      count: drugs.length,
-      drugs
+      count: filteredDrugs.length,
+      drugs: filteredDrugs
     });
   } catch (error) {
     console.error('Error fetching distributor drugs:', error);

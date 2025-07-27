@@ -152,8 +152,6 @@ export const getDistributorShipments = async (req, res) => {
 // Accept shipment
 export const acceptShipment = async (req, res) => {
   try {
-    console.log("Accept drugs endpoint hit...");
-    
     const shipment = await Shipment.findOne({
       _id: req.params.id,
       'participants.participantId': req.user._id,
@@ -180,7 +178,6 @@ export const acceptShipment = async (req, res) => {
     }
 
     await shipment.save();
-    console.log("shipment saved...");
 
     // Update drug statuses and current holder
     await Drug.updateMany(
@@ -189,12 +186,45 @@ export const acceptShipment = async (req, res) => {
         $set: { 
           status: 'in-stock with distributor',
           currentHolder: 'distributor',
-          distributor: req.user._id,
-          'unitBarcodes.$[].status': 'in-stock',
-          'unitBarcodes.$[].currentHolder': 'distributor'
-        } 
+          distributor: req.user._id
+        },
+        $push: {
+          'unitBarcodes.$[].history': {
+            holderType: 'distributor',
+            holderId: req.user._id,
+            status: 'in-stock',
+            date: new Date()
+          }
+        }
       }
     );
+
+    // Update each unit barcode in the drugs
+    for (const drugId of shipment.drugs) {
+      const drug = await Drug.findById(drugId);
+      if (drug) {
+        const updatedUnitBarcodes = drug.unitBarcodes.map(unit => ({
+          ...unit.toObject(),
+          status: 'in-stock',
+          currentHolder: 'distributor',
+          distributor: req.user._id,
+          history: [
+            ...(unit.history || []),
+            {
+              holderType: 'distributor',
+              holderId: req.user._id,
+              status: 'in-stock',
+              date: new Date()
+            }
+          ]
+        }));
+
+        await Drug.updateOne(
+          { _id: drugId },
+          { $set: { unitBarcodes: updatedUnitBarcodes } }
+        );
+      }
+    }
     
     res.json({ 
       message: 'Shipment accepted successfully', 
@@ -202,7 +232,10 @@ export const acceptShipment = async (req, res) => {
     });
   } catch (error) {
     console.error('Error accepting shipment:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'Server error',
+      details: error.message 
+    });
   }
 };
 
