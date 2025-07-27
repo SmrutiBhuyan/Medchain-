@@ -46,11 +46,44 @@ const DrugSchema = new mongoose.Schema({
       enum: ['in-stock', 'shipped', 'delivered', 'recalled', 'expired'],
       default: 'in-stock'
     },
+    manufacturer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    distributor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    wholesaler: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    retailer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    pharmacy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
     currentHolder: {
       type: String,
       enum: ['manufacturer', 'distributor', 'wholesaler', 'retailer', 'pharmacy'],
       default: 'manufacturer'
-    }
+    },
+    history: [{
+      holderType: String,
+      holderId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      date: {
+        type: Date,
+        default: Date.now
+      },
+      status: String
+    }]
   }],
   manufacturer: {
     type: mongoose.Schema.Types.ObjectId,

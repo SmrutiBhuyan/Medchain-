@@ -65,6 +65,7 @@ export const uploadCSV = async (req, res) => {
               unitBarcodes = barcodeArray.map(barcode => ({
                 barcode: barcode,
                 status: 'in-stock',
+                manufacturer:req.body.manufacturerId,
                 currentHolder: 'manufacturer'
               }));
             } else {
@@ -73,6 +74,7 @@ export const uploadCSV = async (req, res) => {
                 unitBarcodes.push({
                   barcode: generateBarcode(drugData.name, drugData.batch, i),
                   status: 'in-stock',
+                  manufacturer: req.body.manufacturerId,
                   currentHolder: 'manufacturer'
                 });
               }

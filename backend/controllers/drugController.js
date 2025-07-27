@@ -92,6 +92,7 @@ export const createDrug = async (req, res) => {
         processedUnitBarcodes.push({
           barcode: generateBarcode(name, batch, i),
           status: 'in-stock',
+          manufacturer: manufacturerId,
           currentHolder: 'manufacturer'
         });
       }

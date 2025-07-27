@@ -310,7 +310,7 @@ const [drugForm, setDrugForm] = useState({
   expiryDate: '',
   batchBarcode: '',
   unitBarcodes: []
-});
+})
 
  const parseCSV = (file) => {
   return new Promise((resolve, reject) => {
