@@ -424,7 +424,8 @@ const DrugVerificationGlobal = () => {
   };
 
   return (
-    <div className="verify-tab">
+    <div className="verify-drug-body">
+        <div className="verify-tab">
       <div className="verify-card">
         <h3>Verify Drug Authenticity</h3>
         
@@ -604,6 +605,7 @@ const DrugVerificationGlobal = () => {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 };

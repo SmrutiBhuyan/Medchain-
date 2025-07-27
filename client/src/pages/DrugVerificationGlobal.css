@@ -1,7 +1,7 @@
 /* DrugVerificationGlobal.css */
 
 /* General Styles & Body Background */
-body {
+.verify-drug-body {
   font-family: 'Poppins', sans-serif; /* Modern, clean font */
   background: linear-gradient(135deg, #f0f2f5 0%, #e0e6ed 100%); /* Soft gradient background */
   display: flex;

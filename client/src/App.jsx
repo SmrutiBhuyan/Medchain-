@@ -30,6 +30,8 @@ function App() {
           <Route path="/register/:role" element={<ShowForm />} />
           <Route path="/pending-approval" element={<PendingApproval />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/verify-drug" element={<DrugVerificationGlobal/>}/>
+
           </Route>
           <Route path="/manufacturer/dashboard" element={<ManufacturerDashboard />} />
           <Route path="/distributor/dashboard" element={<DistributorDashboard/>}/>
@@ -37,7 +39,6 @@ function App() {
           <Route path="/retailer/dashboard" element={<RetailerDashboard/>}/>
           <Route path="/pharmacy/dashboard" element={<PharmacyDashboard/>}/>
           <Route path="/public/dashboard" element={<PublicDrugDashboard/>}/>
-          <Route path="/verify-drug" element={<DrugVerificationGlobal/>}/>
         </Routes>
      
       </AuthProvider>
