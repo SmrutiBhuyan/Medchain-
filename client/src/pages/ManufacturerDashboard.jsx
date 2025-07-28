@@ -883,942 +883,941 @@ useEffect(() => {
   }
 }, [activeTab, user?._id]);
 
-  return (
-    <div className="dashboard">
-      {/* Sidebar */}
-      <div className="sidebar">
-        <div className="logo">
-          <FaPills />
-          <h1>PharmaTrack</h1>
-        </div>
-        <div className="nav-menu">
-          <a href="#" className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-            <FaTachometerAlt />
-            <span>Dashboard</span>
-          </a>
-          <a href="#" className={`nav-item ${activeTab === 'drug-creation' ? 'active' : ''}`} onClick={() => setActiveTab('drug-creation')}>
-            <FaPlusCircle />
-            <span>Create Drugs</span>
-          </a>
-          <a href="#" className={`nav-item ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>
-            <FaCapsules />
-            <span>Your Drugs</span>
-          </a>
-          <a href="#" className={`nav-item ${activeTab === 'shipment' ? 'active' : ''}`} onClick={() => setActiveTab('shipment')}>
-            <FaTruck />
-            <span>Shipments</span>
-          </a>
-          <a href="#" className={`nav-item ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>
-            <FaChartLine />
-            <span>Analytics</span>
-          </a>
-          <a href="#" className={`nav-item ${activeTab === 'recalls' ? 'active' : ''}`} onClick={() => setActiveTab('recalls')}>
-            <FaBell />
-            <span>Recalls</span>
-          </a>
-          <a href="#" className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
-            <FaCog />
-            <span>Settings</span>
-          </a>
-        </div>
+ return (
+  <div className="manufacturer-dashboard">
+    {/* Sidebar */}
+    <div className="manufacturer-sidebar">
+      <div className="manufacturer-logo">
+        <FaPills />
+        <h1>PharmaTrack</h1>
       </div>
+      <div className="manufacturer-nav-menu">
+        <a href="#" className={`manufacturer-nav-item ${activeTab === 'dashboard' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+          <FaTachometerAlt />
+          <span>Dashboard</span>
+        </a>
+        <a href="#" className={`manufacturer-nav-item ${activeTab === 'drug-creation' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('drug-creation')}>
+          <FaPlusCircle />
+          <span>Create Drugs</span>
+        </a>
+        <a href="#" className={`manufacturer-nav-item ${activeTab === 'inventory' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('inventory')}>
+          <FaCapsules />
+          <span>Your Drugs</span>
+        </a>
+        <a href="#" className={`manufacturer-nav-item ${activeTab === 'shipment' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('shipment')}>
+          <FaTruck />
+          <span>Shipments</span>
+        </a>
+        <a href="#" className={`manufacturer-nav-item ${activeTab === 'analytics' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('analytics')}>
+          <FaChartLine />
+          <span>Analytics</span>
+        </a>
+        <a href="#" className={`manufacturer-nav-item ${activeTab === 'recalls' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('recalls')}>
+          <FaBell />
+          <span>Recalls</span>
+        </a>
+        <a href="#" className={`manufacturer-nav-item ${activeTab === 'settings' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('settings')}>
+          <FaCog />
+          <span>Settings</span>
+        </a>
+      </div>
+    </div>
 
-      {/* Main Content */}
-      <div className="main-content">
-        <div className="header">
-          <h1 className="page-title">Manufacturer Dashboard</h1>
-          <div className="user-profile">
-            <div className="user-avatar">
-              {user?.name?.split(' ').map(n => n[0]).join('')}
-            </div>
-            <span>{user?.name || 'User'}</span>
-            {/* Wallet connection status */}
-            {walletAddress ? (
-              <div className="wallet-connected">
-                <span className="wallet-address">
-                  {`${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}`}
-                </span>
-                <button 
-                  onClick={disconnectWallet}
-                  className="btn btn-small btn-outline"
-                  style={{ marginLeft: '10px' }}
-                >
-                  Disconnect
-                </button>
-              </div>
-            ) : (
-              <button 
-                onClick={connectWallet}
-                className="btn btn-small btn-primary"
-                disabled={isConnectingWallet}
+    {/* Main Content */}
+    <div className="manufacturer-main-content">
+      <div className="manufacturer-header">
+        <h1 className="manufacturer-page-title">Manufacturer Dashboard</h1>
+        <div className="manufacturer-user-profile">
+          <div className="manufacturer-user-avatar">
+            {user?.name?.split(' ').map(n => n[0]).join('')}
+          </div>
+          <span>{user?.name || 'User'}</span>
+          {/* Wallet connection status */}
+          {walletAddress ? (
+            <div className="manufacturer-wallet-connected">
+              <span className="manufacturer-wallet-address">
+                {`${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}`}
+              </span>
+              <button
+                onClick={disconnectWallet}
+                className="manufacturer-btn manufacturer-btn-small manufacturer-btn-outline"
                 style={{ marginLeft: '10px' }}
               >
-                {isConnectingWallet ? 'Connecting...' : (
-                  <>
-                    <FaWallet /> Connect Wallet
-                  </>
-                )}
+                Disconnect
               </button>
-            )}
-             <button 
-    onClick={() => logout()}
-    className="btn btn-small btn-danger"
-    style={{ marginLeft: '10px' }}
-  >
-    Logout
-  </button>
-            <FaChevronDown />
+            </div>
+          ) : (
+            <button
+              onClick={connectWallet}
+              className="manufacturer-btn manufacturer-btn-small manufacturer-btn-primary"
+              disabled={isConnectingWallet}
+              style={{ marginLeft: '10px' }}
+            >
+              {isConnectingWallet ? 'Connecting...' : (
+                <>
+                  <FaWallet /> Connect Wallet
+                </>
+              )}
+            </button>
+          )}
+          <button
+            onClick={() => logout()}
+            className="manufacturer-btn manufacturer-btn-small manufacturer-btn-danger"
+            style={{ marginLeft: '10px' }}
+          >
+            Logout
+          </button>
+          <FaChevronDown />
+        </div>
+      </div>
+
+      {/* Stats Cards - Only shown on dashboard tab */}
+      {activeTab === 'dashboard' && (
+        <div className="manufacturer-grid1">
+          <div className="manufacturer-stats-card">
+            <div className="manufacturer-icon manufacturer-primary">
+              <FaCapsules />
+            </div>
+            <h3>{isLoadingStats ? '...' : dashboardStats.totalDrugs.toLocaleString()}</h3>
+            <p>Total Drugs</p>
+          </div>
+          <div className="manufacturer-stats-card manufacturer-clickable"
+            onClick={() => {
+              setShowShipmentsModal(true);
+              fetchManufacturerShipments();
+            }}>
+            <div className="manufacturer-icon manufacturer-success">
+              <FaTruck />
+            </div>
+            <h3>{isLoadingStats ? '...' : dashboardStats.activeShipments}</h3>
+            <p>Total Shipments</p>
+          </div>
+          <div className="manufacturer-stats-card">
+            <div className="manufacturer-icon manufacturer-warning">
+              <FaBell />
+            </div>
+            <h3>{isLoadingStats ? '...' : dashboardStats.nearExpiry}</h3>
+            <p>Near Expiry</p>
+          </div>
+          <div className="manufacturer-stats-card">
+            <div className="manufacturer-icon manufacturer-danger">
+              <FaBell />
+            </div>
+            <h3>0</h3> {/* Placeholder for recalled batches */}
+            <p>Recalled Batches</p>
           </div>
         </div>
-
-        {/* Stats Cards - Only shown on dashboard tab */}
-       {activeTab === 'dashboard' && (
-  <div className="grid1">
-    <div className="stats-card">
-      <div className="icon primary">
-        <FaCapsules />
-      </div>
-      <h3>{isLoadingStats ? '...' : dashboardStats.totalDrugs.toLocaleString()}</h3>
-      <p>Total Drugs</p>
-    </div>
-    <div className="stats-card clickable"
-     onClick={() => {
-    setShowShipmentsModal(true);
-    fetchManufacturerShipments();
-  }}>
-      <div className="icon success">
-        <FaTruck />
-      </div>
-      <h3>{isLoadingStats ? '...' : dashboardStats.activeShipments}</h3>
-      <p>Total Shipments</p>
-   
-   
-   
-    </div>
-    <div className="stats-card">
-      <div className="icon warning">
-        <FaBell />
-      </div>
-      <h3>{isLoadingStats ? '...' : dashboardStats.nearExpiry}</h3>
-      <p>Near Expiry</p>
-    
-    </div>
-    <div className="stats-card">
-      <div className="icon danger">
-        <FaBell />
-      </div>
-      <h3>0</h3> {/* Placeholder for recalled batches */}
-      <p>Recalled Batches</p>
-    </div>
-  </div>
-)}
-        {/* Tabs for Main Sections */}
-        <div className="tabs">
-          <div className={`tab ${activeTab === 'drug-creation' ? 'active' : ''}`} onClick={() => setActiveTab('drug-creation')}>Drug Creation</div>
-          <div className={`tab ${activeTab === 'inventory' ? 'active' : ''}`} onClick={() => setActiveTab('inventory')}>Your Drugs</div>
-          <div className={`tab ${activeTab === 'shipment' ? 'active' : ''}`} onClick={() => setActiveTab('shipment')}>Create Shipment</div>
-          <div className={`tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>Shipment History</div>
-          <div className={`tab ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>Analytics</div>
-        </div>
-
-        {/* Drug Creation Tab */}
-        {activeTab === 'drug-creation' && (
-          <>
-            <div className="card">
-              <div className="card-header">
-                <h2 className="card-title">Create New Drugs</h2>
-              </div>
-              <div className="tabs">
-                <div className={`tab ${activeSubTab === 'bulk' ? 'active' : ''}`} onClick={() => setActiveSubTab('bulk')}>Bulk Upload</div>
-                <div className={`tab ${activeSubTab === 'manual' ? 'active' : ''}`} onClick={() => setActiveSubTab('manual')}>Manual Entry</div>
-              </div>
-              
-              {activeSubTab === 'bulk' && (
-  <div className="tab-subcontent active" id="bulk">
-    <div 
-      className={`file-upload ${fileUploadState.isDragging ? 'dragging' : ''}`} 
-      id="csv-upload"
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      onClick={() => document.getElementById('csv-file-input').click()}
-    >
-      <FaFileCsv />
-      <p>Drag & drop your CSV file here</p>
-      <p>or</p>
-      <input
-  type="file"
-  id="csv-file-input"
-  accept=".csv"
-  style={{ display: 'none' }}
-  onChange={async (e) => {
-    if (e.target.files.length > 0) {
-      const file = e.target.files[0];
-      setFileUploadState({
-        isDragging: false,
-        file
-      });
-      
-      try {
-        const parsedData = await parseCSV(file);
-        setPreviewData(parsedData);
-      } catch (error) {
-        console.error('Error parsing CSV:', error);
-        alert('Error parsing CSV file. Please check the format.');
-      }
-    }
-  }}
-/>
-      <button 
-        className="btn btn-primary"
-        onClick={(e) => {
-          e.stopPropagation();
-          document.getElementById('csv-file-input').click();
-        }}
-      >
-        <FaUpload /> Browse Files
-      </button>
-      <small>CSV template: 
-Drug Name, Batch Number, Quantity, Manufacturing Date, Expiry Date, Batch Barcode, Unit Barcodes
-
-For Unit Barcodes:
-- Leave blank to auto-generate
-- Or provide comma-separated list of barcodes (must match quantity)
-Example: "ABC-123-456,ABC-123-457,ABC-123-458"CSV template: Drug Name, Batch Number, Quantity, Manufacturing Date, Expiry Date</small>
-      
-      {fileUploadState.file && (
-  <div className="file-info">
-    <p>Selected file: {fileUploadState.file.name}</p>
-    <button 
-      className="btn btn-primary"
-      onClick={() => handleFileUpload(fileUploadState.file)}
-    >
-      Upload File
-    </button>
-  </div>
-)}
-    </div>
-  </div>
-)}
-              {activeSubTab === 'manual' && (
-  <div className="tab-subcontent active" id="manual">
-    <form onSubmit={handleManualSubmit}>
-      <div className="form-group">
-        <label className="form-label">Drug Name*</label>
-        <input 
-          type="text" 
-          className="form-control" 
-          placeholder="Enter drug name"
-          name="name"
-          value={drugForm.name}
-          onChange={handleInputChange}
-          required
-        />
-      </div>
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
-        <div className="form-group">
-          <label className="form-label">Batch Number*</label>
-          <input 
-            type="text" 
-            className="form-control" 
-            placeholder="Enter batch number"
-            name="batch"
-            value={drugForm.batch}
-            onChange={handleInputChange}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Quantity*</label>
-          <input 
-            type="number" 
-            className="form-control" 
-            placeholder="Enter quantity"
-            name="quantity"
-            value={drugForm.quantity}
-            onChange={handleInputChange}
-            min="1"
-            required
-          />
-        </div>
-      </div>
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
-        <div className="form-group">
-          <label className="form-label">Manufacturing Date*</label>
-          <input 
-            type="date" 
-            className="form-control"
-            name="mfgDate"
-            value={drugForm.mfgDate}
-            onChange={handleInputChange}
-            max={new Date().toISOString().split('T')[0]}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Expiry Date*</label>
-          <input 
-            type="date" 
-            className="form-control"
-            name="expiryDate"
-            value={drugForm.expiryDate}
-            onChange={handleInputChange}
-            min={drugForm.mfgDate || new Date().toISOString().split('T')[0]}
-            required
-          />
-        </div>
-      </div>
-      <div className="form-group">
-        <label className="form-label">Barcode (leave blank for auto-generation)</label>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <input 
-  type="text" 
-  className="form-control" 
-  placeholder="Enter custom barcode"
-  name="batchBarcode"
-  value={drugForm.batchBarcode}
-  onChange={handleInputChange}
-  pattern="[A-Za-z0-9\-]+"
-  title="Only letters, numbers and hyphens allowed"
-/>
-         <button 
-  type="button" 
-  className={`btn ${scanningStatus === 'scanning' ? 'btn-warning' : 'btn-outline'}`}
-  onClick={handleStartScan}
-  disabled={scanningStatus !== 'idle'}
-  style={{ whiteSpace: 'nowrap' }}
->
-  {scanningStatus === 'scanning' ? (
-    <span>Scanning...</span>
-  ) : scanningStatus === 'success' ? (
-    <span>✓ Scanned!</span>
-  ) : scanningStatus === 'error' ? (
-    <span>Scan Failed</span>
-  ) : (
-    <span>Scan Barcode</span>
-  )}
-</button>
-        </div>
-      {showScanner && (
-  <div className="scanner-modal">
-    <div className="scanner-modal-content">
-      <div className="scanner-modal-header">
-        <h3>Scan Barcode</h3>
-        <button 
-          className="btn btn-close" 
-          onClick={() => {
-            setShowScanner(false);
-            setScanningStatus('idle');
-          }}
-        >
-          &times;
-        </button>
-      </div>
-      <BarcodeScanner 
-  onScan={(barcode) => {
-    setDrugForm(prev => ({ ...prev, batchBarcode:barcode }));
-    setShowScanner(false);
-    setScanningStatus('success');
-  }}
-  onClose={() => {
-    setShowScanner(false);
-    setScanningStatus('idle');
-  }}
-  onError={(error) => {
-    console.error('Scanner error:', error);
-    setScanningStatus('error');
-  }}
-/>
-    </div>
-  </div>
-)}
-
-        <small className="form-text">
-          Barcode must be unique. If left blank, a barcode will be automatically generated.
-        </small>
-  {parseInt(drugForm.quantity) > 0 && (
-  <UnitBarcodeInput 
-  quantity={parseInt(drugForm.quantity)} 
-  barcodes={drugForm.unitBarcodes || []}
-  onBarcodesChange={(barcodes) => setDrugForm(prev => ({ ...prev, unitBarcodes: barcodes }))}
-/>
-)}s
-      </div>
-      <div className="form-actions">
-        <button 
-          type="button" 
-          className="btn btn-outline"
-          onClick={() => setDrugForm({
-            name: '',
-            batch: '',
-            quantity: '',
-            mfgDate: '',
-            expiryDate: '',
-            barcode: ''
-          })}
-        >
-          Clear
-        </button>
-        <button 
-          type="submit" 
-          className="btn btn-primary"
-          disabled={!drugForm.name || !drugForm.batch || !drugForm.quantity || !drugForm.mfgDate || !drugForm.expiryDate}
-        >
-          <FaPlusCircle /> Create Drug
-        </button>
-      </div>
-    </form>
-  </div>
-)}
-            </div>
-
-      <div className="table-responsive">
-  <table>
-    <thead>
-      <tr>
-        <th>Drug Name</th>
-        <th>Batch No.</th>
-        <th>Quantity</th>
-        <th>Mfg. Date</th>
-        <th>Exp. Date</th>
-        <th>Batch Barcode</th>
-        <th>Unit Barcodes</th>
-      </tr>
-    </thead>
-    <tbody>
-      {previewData.map((drug, index) => (
-        <tr key={index}>
-          <td>{drug.name || 'N/A'}</td>
-          <td>{drug.batch || 'N/A'}</td>
-          <td>{drug.quantity || 'N/A'}</td>
-          <td>{drug.mfgDate || 'N/A'}</td>
-          <td>{drug.expiryDate || 'N/A'}</td>
-          <td>{drug.batchBarcode || 'Auto-generate'}</td>
-          <td>
-            {drug.unitBarcodes?.length > 0 
-              ? drug.unitBarcodes.join(', ') 
-              : 'Auto-generate'}
-          </td>
-        </tr>
-      ))}
-      {previewData.length === 0 && (
-        <tr>
-          <td colSpan="7" style={{ textAlign: 'center', color: 'var(--gray)' }}>
-            No drugs to preview. Add drugs manually or upload a CSV file.
-          </td>
-        </tr>
       )}
-    </tbody>
-  </table>
-</div>
-          </>
-        )}
-
-        {/* Inventory Tab */}
-        {activeTab === 'inventory' && (
-  <div className="card">
-    <div className="card-header">
-      <h2 className="card-title">Your Drug Inventory</h2>
-      <div className="card-actions">
-        <button className="btn btn-outline">
-          <FaFilter /> Filters
-        </button>
-        <button className="btn btn-outline">
-          <FaDownload /> Export
-        </button>
+      {/* Tabs for Main Sections */}
+      <div className="manufacturer-tabs">
+        <div className={`manufacturer-tab ${activeTab === 'drug-creation' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('drug-creation')}>Drug Creation</div>
+        <div className={`manufacturer-tab ${activeTab === 'inventory' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('inventory')}>Your Drugs</div>
+        <div className={`manufacturer-tab ${activeTab === 'shipment' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('shipment')}>Create Shipment</div>
+        <div className={`manufacturer-tab ${activeTab === 'history' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('history')}>Shipment History</div>
+        <div className={`manufacturer-tab ${activeTab === 'analytics' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('analytics')}>Analytics</div>
       </div>
-    </div>
-    <div className="search-bar">
-      <input type="text" placeholder="Search drugs..." />
-      <button><FaSearch /></button>
-    </div>
-    <div className="table-responsive">
-      <table>
-        <thead>
-          <tr>
-            <th>Drug Name</th>
-            <th>Barcode</th>
-            <th>Batch No.</th>
-            <th>Status</th>
-            <th>Expiry Date</th>
-            <th>Current Holder</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {isLoadingInventory ? (
-            <tr>
-              <td colSpan="7" style={{ textAlign: 'center' }}>
-                Loading inventory...
-              </td>
-            </tr>
-          ) : inventoryDrugs.length > 0 ? (
-            inventoryDrugs.map(drug => (
-              <tr key={drug._id}>
-                <td>{drug.name}</td>
-                <td>{drug.barcode}</td>
-                <td>{drug.batch}</td>
-                <td><StatusBadge status={drug.status} /></td>
-                <td>{new Date(drug.expiryDate).toLocaleDateString()}</td>
-                <td>{drug.currentHolder || 'Your Facility'}</td>
-                <td>
-                  <button className="btn btn-outline" style={{ padding: '0.25rem 0.5rem' }}>
-                    <FaEye />
+
+      {/* Drug Creation Tab */}
+      {activeTab === 'drug-creation' && (
+        <>
+          <div className="manufacturer-card">
+            <div className="manufacturer-card-header">
+              <h2 className="manufacturer-card-title">Create New Drugs</h2>
+            </div>
+            <div className="manufacturer-tabs">
+              <div className={`manufacturer-tab ${activeSubTab === 'bulk' ? 'manufacturer-active' : ''}`} onClick={() => setActiveSubTab('bulk')}>Bulk Upload</div>
+              <div className={`manufacturer-tab ${activeSubTab === 'manual' ? 'manufacturer-active' : ''}`} onClick={() => setActiveSubTab('manual')}>Manual Entry</div>
+            </div>
+
+            {activeSubTab === 'bulk' && (
+              <div className="manufacturer-tab-subcontent manufacturer-active" id="bulk">
+                <div
+                  className={`manufacturer-file-upload ${fileUploadState.isDragging ? 'manufacturer-dragging' : ''}`}
+                  id="csv-upload"
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => document.getElementById('csv-file-input').click()}
+                >
+                  <FaFileCsv />
+                  <p>Drag & drop your CSV file here</p>
+                  <p>or</p>
+                  <input
+                    type="file"
+                    id="csv-file-input"
+                    accept=".csv"
+                    style={{ display: 'none' }}
+                    onChange={async (e) => {
+                      if (e.target.files.length > 0) {
+                        const file = e.target.files[0];
+                        setFileUploadState({
+                          isDragging: false,
+                          file
+                        });
+
+                        try {
+                          const parsedData = await parseCSV(file);
+                          setPreviewData(parsedData);
+                        } catch (error) {
+                          console.error('Error parsing CSV:', error);
+                          alert('Error parsing CSV file. Please check the format.');
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    className="manufacturer-btn manufacturer-btn-primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      document.getElementById('csv-file-input').click();
+                    }}
+                  >
+                    <FaUpload /> Browse Files
                   </button>
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="7" style={{ textAlign: 'center' }}>
-                No drugs found in your inventory
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-    <div className="pagination">
-      <button><FaChevronLeft /></button>
-      <button className="active">1</button>
-      <button>2</button>
-      <button>3</button>
-      <button><FaChevronRight /></button>
-    </div>
-  </div>
-)}
+                  <small>CSV template:
+                    Drug Name, Batch Number, Quantity, Manufacturing Date, Expiry Date, Batch Barcode, Unit Barcodes
 
-        {/* Create Shipment Tab */}
-        {activeTab === 'shipment' && (
-  <div className="card">
-    <div className="card-header">
-      <h2 className="card-title">Create New Shipment</h2>
-    </div>
-    <form onSubmit={handleShipmentSubmit}>
-      <div className="form-group">
-        <label className="form-label">Select Drugs to Ship</label>
-        <div className="table-responsive">
-          <table>
-            <thead>
-              <tr>
-                <th width="50px"></th>
-                <th>Drug Name</th>
-                <th>Batch No.</th>
-                <th>Barcode</th>
-                <th>Expiry Date</th>
-                <th>Current Stock</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoadingShipmentData ? (
-                <tr>
-                  <td colSpan="6" style={{ textAlign: 'center' }}>
-                    Loading drugs...
-                  </td>
-                </tr>
-              ) : shipmentDrugs.length > 0 ? (
-                shipmentDrugs.map(drug => (
-                  <tr key={drug._id}>
-                    <td>
-                      <input 
-                        type="checkbox" 
-                        checked={selectedDrugs.includes(drug._id)}
-                        onChange={(e) => handleDrugSelection(drug._id, e.target.checked)}
-                      />
-                    </td>
-                    <td>{drug.name}</td>
-                    <td>{drug.batch}</td>
-                    <td>{drug.barcode}</td>
-                    <td>{new Date(drug.expiryDate).toLocaleDateString()}</td>
-                    <td>{drug.quantity} units</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" style={{ textAlign: 'center' }}>
-                    No drugs available for shipment
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-        <div className="form-group">
-          <label className="form-label">Select Distributor</label>
-          <select 
-            className="form-control"
-            name="distributor"
-            value={shipmentForm.distributor}
-            onChange={handleShipmentInputChange}
-            required
-          >
-            <option value="">-- Select Distributor --</option>
-            {distributors.map(distributor => (
-              <option key={distributor._id} value={distributor._id}>
-                {distributor.organization || distributor.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="form-group">
-          <label className="form-label">Estimated Delivery Date</label>
-          <input 
-            type="date" 
-            className="form-control" 
-            name="deliveryDate"
-            value={shipmentForm.deliveryDate}
-            onChange={handleShipmentInputChange}
-            min={new Date().toISOString().split('T')[0]}
-          />
-        </div>
-      </div>
-      <div className="form-group">
-        <label className="form-label">Shipping Notes</label>
-        <textarea 
-          className="form-control" 
-          rows="3" 
-          placeholder="Any special instructions..."
-          name="notes"
-          value={shipmentForm.notes}
-          onChange={handleShipmentInputChange}
-        ></textarea>
-      </div>
-      <div className="card" style={{ backgroundColor: '#f8f9ff', marginTop: '1.5rem' }}>
-        <div className="card-header">
-          <h3 className="card-title">Shipment Summary</h3>
-        </div>
-        <div style={{ padding: '1rem' }}>
-          <p><strong>Selected Drugs:</strong> {selectedDrugs.length}</p>
-          <p><strong>Total Units:</strong> {
-            shipmentDrugs
-              .filter(drug => selectedDrugs.includes(drug._id))
-              .reduce((sum, drug) => sum + drug.quantity, 0)
-          }</p>
-          <p><strong>Distributor:</strong> {
-            shipmentForm.distributor 
-              ? distributors.find(d => d._id === shipmentForm.distributor)?.organization 
-              : 'Not selected'
-          }</p>
-        </div>
-      </div>
-      <button type="submit" className="btn btn-primary" style={{ marginTop: '1.5rem' }}>
-        <FaPaperPlane /> Create Shipment
-      </button>
-    </form>
-  </div>
-)}
+                    For Unit Barcodes:
+                    - Leave blank to auto-generate
+                    - Or provide comma-separated list of barcodes (must match quantity)
+                    Example: "ABC-123-456,ABC-123-457,ABC-123-458"CSV template: Drug Name, Batch Number, Quantity, Manufacturing Date, Expiry Date</small>
 
-        {/* Shipment History Tab */}
-        {activeTab === 'history' && (
-          <div className="card">
-            <div className="card-header">
-              <h2 className="card-title">Shipment History</h2>
-              <div className="card-actions">
-                <button className="btn btn-outline">
-                  <FaFilter /> Filters
-                </button>
-                <button className="btn btn-outline">
-                  <FaDownload /> Export
-                </button>
+                  {fileUploadState.file && (
+                    <div className="manufacturer-file-info">
+                      <p>Selected file: {fileUploadState.file.name}</p>
+                      <button
+                        className="manufacturer-btn manufacturer-btn-primary"
+                        onClick={() => handleFileUpload(fileUploadState.file)}
+                      >
+                        Upload File
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="search-bar">
-              <input type="text" placeholder="Search shipments..." />
-              <button><FaSearch /></button>
-            </div>
-            <div className="table-responsive">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Shipment ID</th>
-                    <th>Drugs Included</th>
-                    <th>Distributor</th>
-                    <th>Status</th>
-                    <th>Date Created</th>
-                    <th>Actions</th>
+            )}
+            {activeSubTab === 'manual' && (
+              <div className="manufacturer-tab-subcontent manufacturer-active" id="manual">
+                <form onSubmit={handleManualSubmit}>
+                  <div className="manufacturer-form-group">
+                    <label className="manufacturer-form-label">Drug Name*</label>
+                    <input
+                      type="text"
+                      className="manufacturer-form-control"
+                      placeholder="Enter drug name"
+                      name="name"
+                      value={drugForm.name}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="manufacturer-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                    <div className="manufacturer-form-group">
+                      <label className="manufacturer-form-label">Batch Number*</label>
+                      <input
+                        type="text"
+                        className="manufacturer-form-control"
+                        placeholder="Enter batch number"
+                        name="batch"
+                        value={drugForm.batch}
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    <div className="manufacturer-form-group">
+                      <label className="manufacturer-form-label">Quantity*</label>
+                      <input
+                        type="number"
+                        className="manufacturer-form-control"
+                        placeholder="Enter quantity"
+                        name="quantity"
+                        value={drugForm.quantity}
+                        onChange={handleInputChange}
+                        min="1"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="manufacturer-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                    <div className="manufacturer-form-group">
+                      <label className="manufacturer-form-label">Manufacturing Date*</label>
+                      <input
+                        type="date"
+                        className="manufacturer-form-control"
+                        name="mfgDate"
+                        value={drugForm.mfgDate}
+                        onChange={handleInputChange}
+                        max={new Date().toISOString().split('T')[0]}
+                        required
+                      />
+                    </div>
+                    <div className="manufacturer-form-group">
+                      <label className="manufacturer-form-label">Expiry Date*</label>
+                      <input
+                        type="date"
+                        className="manufacturer-form-control"
+                        name="expiryDate"
+                        value={drugForm.expiryDate}
+                        onChange={handleInputChange}
+                        min={drugForm.mfgDate || new Date().toISOString().split('T')[0]}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="manufacturer-form-group">
+                    <label className="manufacturer-form-label">Barcode (leave blank for auto-generation)</label>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        className="manufacturer-form-control"
+                        placeholder="Enter custom barcode"
+                        name="batchBarcode"
+                        value={drugForm.batchBarcode}
+                        onChange={handleInputChange}
+                        pattern="[A-Za-z0-9\-]+"
+                        title="Only letters, numbers and hyphens allowed"
+                      />
+                      <button
+                        type="button"
+                        className={`manufacturer-btn ${scanningStatus === 'scanning' ? 'manufacturer-btn-warning' : 'manufacturer-btn-outline'}`}
+                        onClick={handleStartScan}
+                        disabled={scanningStatus !== 'idle'}
+                        style={{ whiteSpace: 'nowrap' }}
+                      >
+                        {scanningStatus === 'scanning' ? (
+                          <span>Scanning...</span>
+                        ) : scanningStatus === 'success' ? (
+                          <span>✓ Scanned!</span>
+                        ) : scanningStatus === 'error' ? (
+                          <span>Scan Failed</span>
+                        ) : (
+                          <span>Scan Barcode</span>
+                        )}
+                      </button>
+                    </div>
+                    {showScanner && (
+                      <div className="manufacturer-scanner-modal">
+                        <div className="manufacturer-scanner-modal-content">
+                          <div className="manufacturer-scanner-modal-header">
+                            <h3>Scan Barcode</h3>
+                            <button
+                              className="manufacturer-btn manufacturer-btn-close"
+                              onClick={() => {
+                                setShowScanner(false);
+                                setScanningStatus('idle');
+                              }}
+                            >
+                              &times;
+                            </button>
+                          </div>
+                          <BarcodeScanner
+                            onScan={(barcode) => {
+                              setDrugForm(prev => ({ ...prev, batchBarcode: barcode }));
+                              setShowScanner(false);
+                              setScanningStatus('success');
+                            }}
+                            onClose={() => {
+                              setShowScanner(false);
+                              setScanningStatus('idle');
+                            }}
+                            onError={(error) => {
+                              console.error('Scanner error:', error);
+                              setScanningStatus('error');
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <small className="manufacturer-form-text">
+                      Barcode must be unique. If left blank, a barcode will be automatically generated.
+                    </small>
+                    {parseInt(drugForm.quantity) > 0 && (
+                      <UnitBarcodeInput
+                        quantity={parseInt(drugForm.quantity)}
+                        barcodes={drugForm.unitBarcodes || []}
+                        onBarcodesChange={(barcodes) => setDrugForm(prev => ({ ...prev, unitBarcodes: barcodes }))}
+                      />
+                    )}s
+                  </div>
+                  <div className="manufacturer-form-actions">
+                    <button
+                      type="button"
+                      className="manufacturer-btn manufacturer-btn-outline"
+                      onClick={() => setDrugForm({
+                        name: '',
+                        batch: '',
+                        quantity: '',
+                        mfgDate: '',
+                        expiryDate: '',
+                        barcode: ''
+                      })}
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="submit"
+                      className="manufacturer-btn manufacturer-btn-primary"
+                      disabled={!drugForm.name || !drugForm.batch || !drugForm.quantity || !drugForm.mfgDate || !drugForm.expiryDate}
+                    >
+                      <FaPlusCircle /> Create Drug
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+
+          <div className="manufacturer-table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Drug Name</th>
+                  <th>Batch No.</th>
+                  <th>Quantity</th>
+                  <th>Mfg. Date</th>
+                  <th>Exp. Date</th>
+                  <th>Batch Barcode</th>
+                  <th>Unit Barcodes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {previewData.map((drug, index) => (
+                  <tr key={index}>
+                    <td>{drug.name || 'N/A'}</td>
+                    <td>{drug.batch || 'N/A'}</td>
+                    <td>{drug.quantity || 'N/A'}</td>
+                    <td>{drug.mfgDate || 'N/A'}</td>
+                    <td>{drug.expiryDate || 'N/A'}</td>
+                    <td>{drug.batchBarcode || 'Auto-generate'}</td>
+                    <td>
+                      {drug.unitBarcodes?.length > 0
+                        ? drug.unitBarcodes.join(', ')
+                        : 'Auto-generate'}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {shipmentsData.map(shipment => (
-                    <tr key={shipment.id}>
-                      <td>{shipment.id}</td>
-                      <td>{shipment.drugs}</td>
-                      <td>{shipment.distributor}</td>
-                      <td><StatusBadge status={shipment.status} /></td>
-                      <td>{shipment.date}</td>
+                ))}
+                {previewData.length === 0 && (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: 'center', color: 'var(--gray)' }}>
+                      No drugs to preview. Add drugs manually or upload a CSV file.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* Inventory Tab */}
+      {activeTab === 'inventory' && (
+        <div className="manufacturer-card">
+          <div className="manufacturer-card-header">
+            <h2 className="manufacturer-card-title">Your Drug Inventory</h2>
+            <div className="manufacturer-card-actions">
+              <button className="manufacturer-btn manufacturer-btn-outline">
+                <FaFilter /> Filters
+              </button>
+              <button className="manufacturer-btn manufacturer-btn-outline">
+                <FaDownload /> Export
+              </button>
+            </div>
+          </div>
+          <div className="manufacturer-search-bar">
+            <input type="text" placeholder="Search drugs..." />
+            <button><FaSearch /></button>
+          </div>
+          <div className="manufacturer-table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Drug Name</th>
+                  <th>Barcode</th>
+                  <th>Batch No.</th>
+                  <th>Status</th>
+                  <th>Expiry Date</th>
+                  <th>Current Holder</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoadingInventory ? (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: 'center' }}>
+                      Loading inventory...
+                    </td>
+                  </tr>
+                ) : inventoryDrugs.length > 0 ? (
+                  inventoryDrugs.map(drug => (
+                    <tr key={drug._id}>
+                      <td>{drug.name}</td>
+                      <td>{drug.barcode}</td>
+                      <td>{drug.batch}</td>
+                      <td><StatusBadge status={drug.status} /></td>
+                      <td>{new Date(drug.expiryDate).toLocaleDateString()}</td>
+                      <td>{drug.currentHolder || 'Your Facility'}</td>
                       <td>
-                        <button className="btn btn-outline" style={{ padding: '0.25rem 0.5rem' }}>
+                        <button className="manufacturer-btn manufacturer-btn-outline" style={{ padding: '0.25rem 0.5rem' }}>
                           <FaEye />
                         </button>
                       </td>
                     </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: 'center' }}>
+                      No drugs found in your inventory
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="manufacturer-pagination">
+            <button><FaChevronLeft /></button>
+            <button className="manufacturer-active">1</button>
+            <button>2</button>
+            <button>3</button>
+            <button><FaChevronRight /></button>
+          </div>
+        </div>
+      )}
+
+      {/* Create Shipment Tab */}
+      {activeTab === 'shipment' && (
+        <div className="manufacturer-card">
+          <div className="manufacturer-card-header">
+            <h2 className="manufacturer-card-title">Create New Shipment</h2>
+          </div>
+          <form onSubmit={handleShipmentSubmit}>
+            <div className="manufacturer-form-group">
+              <label className="manufacturer-form-label">Select Drugs to Ship</label>
+              <div className="manufacturer-table-responsive">
+                <table>
+                  <thead>
+                    <tr>
+                      <th width="50px"></th>
+                      <th>Drug Name</th>
+                      <th>Batch No.</th>
+                      <th>Barcode</th>
+                      <th>Expiry Date</th>
+                      <th>Current Stock</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoadingShipmentData ? (
+                      <tr>
+                        <td colSpan="6" style={{ textAlign: 'center' }}>
+                          Loading drugs...
+                        </td>
+                      </tr>
+                    ) : shipmentDrugs.length > 0 ? (
+                      shipmentDrugs.map(drug => (
+                        <tr key={drug._id}>
+                          <td>
+                            <input
+                              type="checkbox"
+                              checked={selectedDrugs.includes(drug._id)}
+                              onChange={(e) => handleDrugSelection(drug._id, e.target.checked)}
+                            />
+                          </td>
+                          <td>{drug.name}</td>
+                          <td>{drug.batch}</td>
+                          <td>{drug.barcode}</td>
+                          <td>{new Date(drug.expiryDate).toLocaleDateString()}</td>
+                          <td>{drug.quantity} units</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="6" style={{ textAlign: 'center' }}>
+                          No drugs available for shipment
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="manufacturer-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+              <div className="manufacturer-form-group">
+                <label className="manufacturer-form-label">Select Distributor</label>
+                <select
+                  className="manufacturer-form-control"
+                  name="distributor"
+                  value={shipmentForm.distributor}
+                  onChange={handleShipmentInputChange}
+                  required
+                >
+                  <option value="">-- Select Distributor --</option>
+                  {distributors.map(distributor => (
+                    <option key={distributor._id} value={distributor._id}>
+                      {distributor.organization || distributor.name}
+                    </option>
                   ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="pagination">
-              <button><FaChevronLeft /></button>
-              <button className="active">1</button>
-              <button>2</button>
-              <button>3</button>
-              <button><FaChevronRight /></button>
-            </div>
-          </div>
-        )}
-
-        {/* Analytics Tab */}
-{/* Analytics Tab */}
-{activeTab === 'analytics' && (
-  <>
-    {/* Stats Cards */}
-    <div className="grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
-      <div className="stats-card">
-        <div className="icon primary">
-          <FaCapsules />
-        </div>
-        <h3>{isLoadingStats ? '...' : dashboardStats.totalDrugs?.toLocaleString() || 0}</h3>
-        <p>Total Drugs</p>
-      </div>
-      <div className="stats-card">
-        <div className="icon success">
-          <FaTruck />
-        </div>
-        <h3>{isLoadingStats ? '...' : dashboardStats.activeShipments || 0}</h3>
-        <p>Active Shipments</p>
-      </div>
-      <div className="stats-card">
-        <div className="icon warning">
-          <FaBell />
-        </div>
-        <h3>{isLoadingStats ? '...' : dashboardStats.nearExpiry || 0}</h3>
-        <p>Near Expiry</p>
-      </div>
-      <div className="stats-card">
-        <div className="icon danger">
-          <FaBell />
-        </div>
-        <h3>{isLoadingStats ? '...' : dashboardStats.recalledBatches || 0}</h3>
-        <p>Recalled Batches</p>
-      </div>
-    </div>
-
-    {/* Main Charts */}
-    <div className="grid" style={{ gridTemplateColumns: '2fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-      {/* Drug Volume Chart */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">Drug Volume by Batch</h2>
-          <div className="card-actions">
-            <select 
-              className="form-control" 
-              style={{ width: 'auto', display: 'inline-block' }}
-              onChange={(e) => handleTimeRangeChange('drugVolume', e.target.value)}
-            >
-              <option value="30">Last 30 Days</option>
-              <option value="90">Last 90 Days</option>
-              <option value="365">This Year</option>
-            </select>
-          </div>
-        </div>
-        <div className="chart-container" style={{ height: '400px' }}>
-          {dashboardStats.drugVolume && dashboardStats.drugVolume?.length > 0 ? (
-            <Bar
-              data={dashboardStats.drugVolume}
-              xField="drugName"
-              yField="totalQuantity"
-              seriesField="drugName"
-              height={400}
-              legend={{
-                position: 'top-right',
-              }}
-              xAxis={{
-                label: {
-                  autoRotate: false,
-                },
-              }}
-              yAxis={{
-                label: {
-                  formatter: (v) => `${v} units`,
-                },
-              }}
-              tooltip={{
-                formatter: (datum) => {
-                  return { name: datum.drugName, value: `${datum.totalQuantity} units` };
-                },
-              }}
-              color={['#1890ff', '#13c2c2', '#52c41a', '#faad14', '#f5222d']}
-            />
-          ) : (
-            <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
-              No drug volume data available
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Drug Distribution Pie Chart */}
-    </div>
-
-    {/* Shipments Over Time Line Chart */}
-     <div className="card">
-      <div className="card-header">
-        <h2 className="card-title">Shipments Timeline</h2>
-        <div className="card-actions">
-          <select 
-            className="form-control" 
-            style={{ width: 'auto', display: 'inline-block' }}
-            onChange={(e) => handleTimeRangeChange('shipments', e.target.value)}
-          >
-            <option value="30">Last 30 Days</option>
-            <option value="90">Last 90 Days</option>
-            <option value="365">This Year</option>
-          </select>
-        </div>
-      </div>
-      <div className="chart-container" style={{ padding: '1.5rem' }}>
-        {dashboardStats.shipmentsOverTime?.length > 0 ? (
-          <div className="timeline-container">
-            {dashboardStats.shipmentsOverTime.map((item, index) => (
-              <div key={index} className="timeline-item">
-                <div className="timeline-date">{item.date}</div>
-                <div className="timeline-bar">
-                  <div 
-                    className="timeline-progress" 
-                    style={{ width: `${Math.min(100, (item.count / Math.max(...dashboardStats.shipmentsOverTime.map(i => i.count))) * 100)}%` }}
-                  ></div>
-                </div>
-                <div className="timeline-count">{item.count} shipments</div>
+                </select>
               </div>
-            ))}
-          </div>
-        ) : (
-          <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
-            No shipment data available
-          </p>
-        )}
-      </div>
-      {/* Upcoming Expirations */}
-    <div className="card">
-      <div className="card-header">
-        <h2 className="card-title">Upcoming Expirations</h2>
-      </div>
-      <div className="chart-container" style={{ padding: '1.5rem' }}>
-        {dashboardStats.upcomingExpirations?.length > 0 ? (
-          <div className="expiration-grid">
-            {dashboardStats.upcomingExpirations.map((drug, index) => (
-              <div key={index} className="expiration-card">
-                <div className="expiration-header">
-                  <h4>{drug.name}</h4>
-                  <span className="batch-tag">{drug.batch}</span>
-                </div>
-                <div className="expiration-details">
-                  <div className="expiration-meta">
-                    <span>Expires: {drug.expiryDate}</span>
-                    <span>Quantity: {drug.quantity} units</span>
-                  </div>
-                  <div className="days-remaining">
-                    <div 
-                      className="days-progress" 
-                      style={{ 
-                        width: `${100 - (Math.min(30, drug.daysLeft) / 30) * 100}%`,
-                        backgroundColor: drug.daysLeft <= 7 ? '#f5222d' : drug.daysLeft <= 14 ? '#faad14' : '#52c41a'
-                      }}
-                    ></div>
-                    <span>{drug.daysLeft} days remaining</span>
-                  </div>
-                </div>
+              <div className="manufacturer-form-group">
+                <label className="manufacturer-form-label">Estimated Delivery Date</label>
+                <input
+                  type="date"
+                  className="manufacturer-form-control"
+                  name="deliveryDate"
+                  value={shipmentForm.deliveryDate}
+                  onChange={handleShipmentInputChange}
+                  min={new Date().toISOString().split('T')[0]}
+                />
               </div>
-            ))}
+            </div>
+            <div className="manufacturer-form-group">
+              <label className="manufacturer-form-label">Shipping Notes</label>
+              <textarea
+                className="manufacturer-form-control"
+                rows="3"
+                placeholder="Any special instructions..."
+                name="notes"
+                value={shipmentForm.notes}
+                onChange={handleShipmentInputChange}
+              ></textarea>
+            </div>
+            <div className="manufacturer-card" style={{ backgroundColor: '#f8f9ff', marginTop: '1.5rem' }}>
+              <div className="manufacturer-card-header">
+                <h3 className="manufacturer-card-title">Shipment Summary</h3>
+              </div>
+              <div style={{ padding: '1rem' }}>
+                <p><strong>Selected Drugs:</strong> {selectedDrugs.length}</p>
+                <p><strong>Total Units:</strong> {
+                  shipmentDrugs
+                    .filter(drug => selectedDrugs.includes(drug._id))
+                    .reduce((sum, drug) => sum + drug.quantity, 0)
+                }</p>
+                <p><strong>Distributor:</strong> {
+                  shipmentForm.distributor
+                    ? distributors.find(d => d._id === shipmentForm.distributor)?.organization
+                    : 'Not selected'
+                }</p>
+              </div>
+            </div>
+            <button type="submit" className="manufacturer-btn manufacturer-btn-primary" style={{ marginTop: '1.5rem' }}>
+              <FaPaperPlane /> Create Shipment
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Shipment History Tab */}
+      {activeTab === 'history' && (
+        <div className="manufacturer-card">
+          <div className="manufacturer-card-header">
+            <h2 className="manufacturer-card-title">Shipment History</h2>
+            <div className="manufacturer-card-actions">
+              <button className="manufacturer-btn manufacturer-btn-outline">
+                <FaFilter /> Filters
+              </button>
+              <button className="manufacturer-btn manufacturer-btn-outline">
+                <FaDownload /> Export
+              </button>
+            </div>
           </div>
-        ) : (
-          <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
-            No upcoming expirations
-          </p>
-        )}
-      </div>
-    </div>
-    </div>
-    
-    
-  </>
-)}
-
-
-{/* // Add this modal component near the end of your JSX, before the closing </div>: */}
-{showShipmentsModal && (
-  <div className="modal-overlay">
-    <div className="modal">
-      <div className="modal-header">
-        <h2>Your Shipments</h2>
-        <button 
-          className="btn btn-close" 
-          onClick={() => setShowShipmentsModal(false)}
-        >
-          &times;
-        </button>
-      </div>
-      <div className="modal-body">
-        {isLoadingShipments ? (
-          <p>Loading shipments...</p>
-        ) : manufacturerShipments.length > 0 ? (
-          <div className="table-responsive">
+          <div className="manufacturer-search-bar">
+            <input type="text" placeholder="Search shipments..." />
+            <button><FaSearch /></button>
+          </div>
+          <div className="manufacturer-table-responsive">
             <table>
               <thead>
                 <tr>
                   <th>Shipment ID</th>
-                  <th>Drugs Count</th>
+                  <th>Drugs Included</th>
                   <th>Distributor</th>
                   <th>Status</th>
-                  <th>Created At</th>
-                  <th>Estimated Delivery</th>
+                  <th>Date Created</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-               {manufacturerShipments.map(shipment => (
-  <tr key={shipment._id}>
-    <td>{shipment.trackingNumber}</td>
-    <td>{shipment.drugs.length} drugs</td>
-    <td>
-      {shipment.participants.find(p => p.type === 'distributor')?.participantId?.name || 
-       'Unknown distributor'}
-    </td>
-    <td><StatusBadge status={shipment.status} /></td>
-    <td>{new Date(shipment.createdAt).toLocaleDateString()}</td>
-    <td>
-      {shipment.estimatedDelivery 
-        ? new Date(shipment.estimatedDelivery).toLocaleDateString() 
-        : 'Not specified'}
-    </td>
-  </tr>
-))}
+                {shipmentsData.map(shipment => (
+                  <tr key={shipment.id}>
+                    <td>{shipment.id}</td>
+                    <td>{shipment.drugs}</td>
+                    <td>{shipment.distributor}</td>
+                    <td><StatusBadge status={shipment.status} /></td>
+                    <td>{shipment.date}</td>
+                    <td>
+                      <button className="manufacturer-btn manufacturer-btn-outline" style={{ padding: '0.25rem 0.5rem' }}>
+                        <FaEye />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-        ) : (
-          <p>No shipments found</p>
-        )}
-      </div>
-      <div className="modal-footer">
-        <button 
-          className="btn btn-primary"
-          onClick={() => setShowShipmentsModal(false)}
-        >
-          Close
-        </button>
-      </div>
+          <div className="manufacturer-pagination">
+            <button><FaChevronLeft /></button>
+            <button className="manufacturer-active">1</button>
+            <button>2</button>
+            <button>3</button>
+            <button><FaChevronRight /></button>
+          </div>
+        </div>
+      )}
+
+      {/* Analytics Tab */}
+      {/* Analytics Tab */}
+      {activeTab === 'analytics' && (
+        <>
+          {/* Stats Cards */}
+          <div className="manufacturer-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div className="manufacturer-stats-card">
+              <div className="manufacturer-icon manufacturer-primary">
+                <FaCapsules />
+              </div>
+              <h3>{isLoadingStats ? '...' : dashboardStats.totalDrugs?.toLocaleString() || 0}</h3>
+              <p>Total Drugs</p>
+            </div>
+            <div className="manufacturer-stats-card">
+              <div className="manufacturer-icon manufacturer-success">
+                <FaTruck />
+              </div>
+              <h3>{isLoadingStats ? '...' : dashboardStats.activeShipments || 0}</h3>
+              <p>Active Shipments</p>
+            </div>
+            <div className="manufacturer-stats-card">
+              <div className="manufacturer-icon manufacturer-warning">
+                <FaBell />
+              </div>
+              <h3>{isLoadingStats ? '...' : dashboardStats.nearExpiry || 0}</h3>
+              <p>Near Expiry</p>
+            </div>
+            <div className="manufacturer-stats-card">
+              <div className="manufacturer-icon manufacturer-danger">
+                <FaBell />
+              </div>
+              <h3>{isLoadingStats ? '...' : dashboardStats.recalledBatches || 0}</h3>
+              <p>Recalled Batches</p>
+            </div>
+          </div>
+
+          {/* Main Charts */}
+          <div className="manufacturer-grid" style={{ gridTemplateColumns: '2fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            {/* Drug Volume Chart */}
+            <div className="manufacturer-card">
+              <div className="manufacturer-card-header">
+                <h2 className="manufacturer-card-title">Drug Volume by Batch</h2>
+                <div className="manufacturer-card-actions">
+                  <select
+                    className="manufacturer-form-control"
+                    style={{ width: 'auto', display: 'inline-block' }}
+                    onChange={(e) => handleTimeRangeChange('drugVolume', e.target.value)}
+                  >
+                    <option value="30">Last 30 Days</option>
+                    <option value="90">Last 90 Days</option>
+                    <option value="365">This Year</option>
+                  </select>
+                </div>
+              </div>
+              <div className="manufacturer-chart-container" style={{ height: '400px' }}>
+                {dashboardStats.drugVolume && dashboardStats.drugVolume?.length > 0 ? (
+                  <Bar
+                    data={dashboardStats.drugVolume}
+                    xField="drugName"
+                    yField="totalQuantity"
+                    seriesField="drugName"
+                    height={400}
+                    legend={{
+                      position: 'top-right',
+                    }}
+                    xAxis={{
+                      label: {
+                        autoRotate: false,
+                      },
+                    }}
+                    yAxis={{
+                      label: {
+                        formatter: (v) => `${v} units`,
+                      },
+                    }}
+                    tooltip={{
+                      formatter: (datum) => {
+                        return { name: datum.drugName, value: `${datum.totalQuantity} units` };
+                      },
+                    }}
+                    color={['#1890ff', '#13c2c2', '#52c41a', '#faad14', '#f5222d']}
+                  />
+                ) : (
+                  <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
+                    No drug volume data available
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Drug Distribution Pie Chart */}
+          </div>
+
+          {/* Shipments Over Time Line Chart */}
+          <div className="manufacturer-card">
+            <div className="manufacturer-card-header">
+              <h2 className="manufacturer-card-title">Shipments Timeline</h2>
+              <div className="manufacturer-card-actions">
+                <select
+                  className="manufacturer-form-control"
+                  style={{ width: 'auto', display: 'inline-block' }}
+                  onChange={(e) => handleTimeRangeChange('shipments', e.target.value)}
+                >
+                  <option value="30">Last 30 Days</option>
+                  <option value="90">Last 90 Days</option>
+                  <option value="365">This Year</option>
+                </select>
+              </div>
+            </div>
+            <div className="manufacturer-chart-container" style={{ padding: '1.5rem' }}>
+              {dashboardStats.shipmentsOverTime?.length > 0 ? (
+                <div className="manufacturer-timeline-container">
+                  {dashboardStats.shipmentsOverTime.map((item, index) => (
+                    <div key={index} className="manufacturer-timeline-item">
+                      <div className="manufacturer-timeline-date">{item.date}</div>
+                      <div className="manufacturer-timeline-bar">
+                        <div
+                          className="manufacturer-timeline-progress"
+                          style={{
+                            width: `${Math.min(100, (item.count / Math.max(...dashboardStats.shipmentsOverTime.map(i => i.count))) * 100)}%`,
+                            backgroundColor: item.count > 0 ? 'var(--primary)' : 'transparent'
+                          }}
+                        ></div>
+                      </div>
+                      <div className="manufacturer-timeline-count">{item.count} shipments</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
+                  No shipment data available
+                </p>
+              )}
+            </div>
+            {/* Upcoming Expirations */}
+            <div className="manufacturer-card">
+              <div className="manufacturer-card-header">
+                <h2 className="manufacturer-card-title">Upcoming Expirations</h2>
+              </div>
+              <div className="manufacturer-chart-container" style={{ padding: '1.5rem' }}>
+                {dashboardStats.upcomingExpirations?.length > 0 ? (
+                  <div className="manufacturer-expiration-grid">
+                    {dashboardStats.upcomingExpirations.map((drug, index) => (
+                      <div key={index} className="manufacturer-expiration-card">
+                        <div className="manufacturer-expiration-header">
+                          <h4>{drug.name}</h4>
+                          <span className="manufacturer-batch-tag">{drug.batch}</span>
+                        </div>
+                        <div className="manufacturer-expiration-details">
+                          <div className="manufacturer-expiration-meta">
+                            <span>Expires: {drug.expiryDate}</span>
+                            <span>Quantity: {drug.quantity} units</span>
+                          </div>
+                          <div className="manufacturer-days-remaining">
+                            <div
+                              className="manufacturer-days-progress"
+                              style={{
+                                width: `${100 - (Math.min(30, drug.daysLeft) / 30) * 100}%`,
+                                backgroundColor: drug.daysLeft <= 7 ? '#f5222d' : drug.daysLeft <= 14 ? '#faad14' : '#52c41a'
+                              }}
+                            ></div>
+                            <span>{drug.daysLeft} days remaining</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
+                    No upcoming expirations
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+
+        </>
+      )}
+
+
+      {/* // Add this modal component near the end of your JSX, before the closing </div>: */}
+      {showShipmentsModal && (
+        <div className="manufacturer-modal-overlay">
+          <div className="manufacturer-modal">
+            <div className="manufacturer-modal-header">
+              <h2>Your Shipments</h2>
+              <button
+                className="manufacturer-btn manufacturer-btn-close"
+                onClick={() => setShowShipmentsModal(false)}
+              >
+                &times;
+              </button>
+            </div>
+            <div className="manufacturer-modal-body">
+              {isLoadingShipments ? (
+                <p>Loading shipments...</p>
+              ) : manufacturerShipments.length > 0 ? (
+                <div className="manufacturer-table-responsive">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Shipment ID</th>
+                        <th>Drugs Count</th>
+                        <th>Distributor</th>
+                        <th>Status</th>
+                        <th>Created At</th>
+                        <th>Estimated Delivery</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {manufacturerShipments.map(shipment => (
+                        <tr key={shipment._id}>
+                          <td>{shipment.trackingNumber}</td>
+                          <td>{shipment.drugs.length} drugs</td>
+                          <td>
+                            {shipment.participants.find(p => p.type === 'distributor')?.participantId?.name ||
+                              'Unknown distributor'}
+                          </td>
+                          <td><StatusBadge status={shipment.status} /></td>
+                          <td>{new Date(shipment.createdAt).toLocaleDateString()}</td>
+                          <td>
+                            {shipment.estimatedDelivery
+                              ? new Date(shipment.estimatedDelivery).toLocaleDateString()
+                              : 'Not specified'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p>No shipments found</p>
+              )}
+            </div>
+            <div className="manufacturer-modal-footer">
+              <button
+                className="manufacturer-btn manufacturer-btn-primary"
+                onClick={() => setShowShipmentsModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+
     </div>
+
   </div>
-)}
 
-
-
-      </div>
-      
-    </div>
-    
-  );
+);
 };
 
 export default ManufacturerDashboard;
