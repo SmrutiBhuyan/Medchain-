@@ -1063,6 +1063,8 @@ const ObjectId = mongoose.Types.ObjectId;
 
 export const acceptPharmacyShipment = async (req, res) => {
   try {
+    console.log(req.user._id);
+    
     // Find shipment with pharmacy participant matching current user
     const shipment = await Shipment.findOne({
       _id: req.params.shipmentId,

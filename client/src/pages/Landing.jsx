@@ -162,7 +162,7 @@ export default function Landing() {
                     Verify Drug
                     <span className="button-hover-effect"></span>
                   </Link>
-                  <Link to="/emergency-locator" className="hero-button secondary">
+                  <Link to="/find-medicines" className="hero-button secondary">
                     <MapPin className="button-icon" />
                     Find Medicines
                     <span className="button-hover-effect"></span>

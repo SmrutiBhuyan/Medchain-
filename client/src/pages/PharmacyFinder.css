@@ -1,0 +1,253 @@
+
+/* Base container styling */
+.medicine-finder-container {
+    font-family: 'Inter', sans-serif; /* Using Inter font as per instructions */
+    max-width: 900px; /* Increased max-width for better layout */
+    margin: 2rem auto; /* Center the container with some top/bottom margin */
+    padding: 2rem;
+    background-color: #ffffff;
+    border-radius: 12px; /* More rounded corners */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); /* Softer, larger shadow */
+    color: #333;
+    animation: fadeIn 0.5s ease-out; /* Simple fade-in animation */
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Headings */
+.medicine-finder-text-2xl {
+    font-size: 2.25rem; /* Larger heading */
+    font-weight: 700;
+    color: #2c3e50; /* Darker blue-grey for headings */
+    text-align: center;
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.medicine-finder-text-2xl::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 4px;
+    background: linear-gradient(to right, #4a90e2, #7b68ee); /* Gradient underline */
+    margin: 0.75rem auto 0;
+    border-radius: 2px;
+}
+
+.medicine-finder-text-xl {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #34495e;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.5rem;
+}
+
+/* Form Styling */
+.medicine-finder-mb-4 {
+    margin-bottom: 1.5rem; /* Increased spacing */
+}
+
+.medicine-finder-block {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+.medicine-finder-w-full {
+    width: 100%;
+}
+
+.medicine-finder-p-2 {
+    padding: 0.75rem 1rem; /* More padding for inputs */
+}
+
+.medicine-finder-border {
+    border: 1px solid #dcdcdc; /* Lighter border */
+}
+
+.medicine-finder-rounded {
+    border-radius: 8px; /* Slightly more rounded inputs */
+}
+
+.medicine-finder-w-full:focus {
+    outline: none;
+    border-color: #4a90e2; /* Blue focus border */
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2); /* Soft blue glow on focus */
+}
+
+/* Checkbox styling */
+.medicine-finder-inline-flex {
+    display: inline-flex;
+    align-items: center;
+}
+
+.medicine-finder-form-checkbox {
+    appearance: none; /* Hide default checkbox */
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease-in-out;
+}
+
+.medicine-finder-form-checkbox:checked {
+    background-color: #4a90e2;
+    border-color: #4a90e2;
+}
+
+.medicine-finder-form-checkbox:checked::after {
+    content: '✔'; /* Checkmark */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 14px;
+}
+
+.medicine-finder-ml-2 {
+    margin-left: 0.5rem;
+    color: #555;
+}
+
+/* Button Styling */
+.medicine-finder-bg-blue-500 {
+    background-color: #4a90e2; /* Primary blue */
+    color: white;
+    padding: 0.75rem 1.5rem; /* More padding for buttons */
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease; /* Smooth transitions for hover */
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); /* Soft shadow */
+}
+
+.medicine-finder-bg-blue-500:hover {
+    background-color: #357bd8; /* Slightly darker blue on hover */
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4); /* Enhanced shadow on hover */
+    transform: translateY(-2px); /* Slight lift effect */
+}
+
+.medicine-finder-bg-blue-500:disabled {
+    background-color: #a0c4f2; /* Lighter blue for disabled state */
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Error Message */
+.medicine-finder-text-red-500 {
+    color: #e74c3c; /* Red for errors */
+    font-weight: 500;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    background-color: #fcecec;
+    border: 1px solid #e74c3c;
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* Map Section */
+.medicine-finder-h-96 {
+    height: 450px; /* Slightly taller map */
+}
+
+.medicine-finder-rounded-lg {
+    border-radius: 12px; /* Consistent rounded corners */
+}
+
+.medicine-finder-overflow-hidden {
+    overflow: hidden;
+}
+
+.medicine-finder-border-gray-300 {
+    border-color: #e0e0e0;
+}
+
+/* Leaflet Map Overrides (ensure map tiles and markers look good) */
+.leaflet-container {
+    border-radius: 12px; /* Apply border-radius to the map container itself */
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05); /* Subtle shadow for the map */
+}
+
+/* Pharmacy List */
+.medicine-finder-space-y-4 > div {
+    margin-bottom: 1rem; /* Spacing between list items */
+}
+
+.medicine-finder-p-4 {
+    padding: 1.25rem;
+}
+
+.medicine-finder-shadow {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); /* Soft shadow for list items */
+}
+
+.medicine-finder-border {
+    border: 1px solid #f0f0f0; /* Very light border for list items */
+}
+
+.medicine-finder-font-bold {
+    font-weight: 700;
+    color: #34495e;
+    margin-bottom: 0.25rem;
+}
+
+.medicine-finder-text-gray-600 {
+    color: #666;
+    font-size: 0.95rem;
+    margin-top: 0.25rem;
+}
+
+.medicine-finder-text-sm {
+    font-size: 0.85rem;
+}
+
+.medicine-finder-text-gray-500 {
+    color: #888;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .medicine-finder-container {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+
+    .medicine-finder-text-2xl {
+        font-size: 1.75rem;
+    }
+
+    .medicine-finder-text-xl {
+        font-size: 1.5rem;
+    }
+
+    .medicine-finder-bg-blue-500 {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .medicine-finder-container {
+        padding: 1rem;
+    }
+
+    .medicine-finder-text-2xl {
+        font-size: 1.5rem;
+    }
+}
