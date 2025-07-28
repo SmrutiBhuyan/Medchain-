@@ -889,7 +889,7 @@ useEffect(() => {
     <div className="manufacturer-sidebar">
       <div className="manufacturer-logo">
         <FaPills />
-        <h1>PharmaTrack</h1>
+        <h1>Medchain</h1>
       </div>
       <div className="manufacturer-nav-menu">
         <a href="#" className={`manufacturer-nav-item ${activeTab === 'dashboard' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('dashboard')}>
