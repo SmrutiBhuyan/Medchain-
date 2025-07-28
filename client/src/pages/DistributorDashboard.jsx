@@ -379,77 +379,77 @@ const handleShipToRecipient = async () => {
     );
   }
 
-  return (
-    <div className="dashboard-container">
+ return (
+    <div className="distributor-dashboard-container">
       
       {/* Sidebar */}
-      <div className="sidebar" >
-        <div className="sidebar-header">
+      <div className="distributor-sidebar" >
+        <div className="distributor-sidebar-header">
           <h2>Distributor Dashboard</h2>
           {user && (
-            <div className="user-info">
-              <div className="user-avatar">
+            <div className="distributor-user-info">
+              <div className="distributor-user-avatar">
                 {user.name?.charAt(0).toUpperCase()}
               </div>
               <span>{user.name}</span>
-              <button className="logout-btn" onClick={logout}>
+              <button className="distributor-logout-btn" onClick={logout}>
                 <FaSignOutAlt />
               </button>
             </div>
           )}
         </div>
         
-        <nav className="sidebar-nav">
+        <nav className="distributor-sidebar-nav">
           <button 
-            className={`nav-btn ${activeTab === 'shipments' ? 'active' : ''}`}
+            className={`distributor-nav-btn ${activeTab === 'shipments' ? 'active' : ''}`}
             onClick={() => setActiveTab('shipments')}
           >
-            <FaReceipt className="nav-icon" />
+            <FaReceipt className="distributor-nav-icon" />
             <span>Incoming Shipments</span>
           </button>
           
           <button 
-            className={`nav-btn ${activeTab === 'inventory' ? 'active' : ''}`}
+            className={`distributor-nav-btn ${activeTab === 'inventory' ? 'active' : ''}`}
             onClick={() => setActiveTab('inventory')}
           >
-            <FaBoxes className="nav-icon" />
+            <FaBoxes className="distributor-nav-icon" />
             <span>My Inventory</span>
           </button>
           
           <button 
-            className={`nav-btn ${activeTab === 'ship' ? 'active' : ''}`}
+            className={`distributor-nav-btn ${activeTab === 'ship' ? 'active' : ''}`}
             onClick={() => setActiveTab('ship')}
           >
-            <FaTruck className="nav-icon" />
+            <FaTruck className="distributor-nav-icon" />
             <span>Ship Products</span>
           </button>
           
           <button 
-            className={`nav-btn ${activeTab === 'verify' ? 'active' : ''}`}
+            className={`distributor-nav-btn ${activeTab === 'verify' ? 'active' : ''}`}
             onClick={() => setActiveTab('verify')}
           >
-            <FaQrcode className="nav-icon" />
+            <FaQrcode className="distributor-nav-icon" />
             <span>Verify Drug</span>
           </button>
           
           <button 
-            className={`nav-btn ${activeTab === 'analytics' ? 'active' : ''}`}
+            className={`distributor-nav-btn ${activeTab === 'analytics' ? 'active' : ''}`}
             onClick={() => setActiveTab('analytics')}
           >
-            <FaChartLine className="nav-icon" />
+            <FaChartLine className="distributor-nav-icon" />
             <span>Analytics</span>
           </button>
         </nav>
       </div>
 
       {/* Main Content */}
-      <div className="main-content">
+      <div className="distributor-main-content">
        {activeTab === 'shipments' && (
-  <div className="tab-content">
+  <div className="distributor-tab-content">
     <h3>Pending Shipments ({pendingShipments.length})</h3>
     
     {pendingShipments.length > 0 ? (
-      <div className="table-container">
+      <div className="distributor-table-container">
         <table>
           <thead>
             <tr>
@@ -477,7 +477,7 @@ const handleShipToRecipient = async () => {
                 <td><StatusChip label={shipment.status} status={shipment.status} /></td>
                 <td>
                   <button 
-                    className="view-btn"
+                    className="distributor-view-btn"
                     onClick={() => setSelectedShipment(shipment)}
                   >
                     View Details
@@ -489,7 +489,7 @@ const handleShipToRecipient = async () => {
         </table>
       </div>
     ) : (
-      <div className="empty-state">
+      <div className="distributor-empty-state">
         No pending shipments at this time
       </div>
     )}
@@ -497,7 +497,7 @@ const handleShipToRecipient = async () => {
     <h3>Received Shipments ({receivedShipments.length})</h3>
     
     {receivedShipments.length > 0 ? (
-      <div className="table-container">
+      <div className="distributor-table-container">
         <table>
           <thead>
             <tr>
@@ -523,7 +523,7 @@ const handleShipToRecipient = async () => {
                 <td><StatusChip label={shipment.status} status={shipment.status} /></td>
                 <td>
                   <button 
-                    className="view-btn"
+                    className="distributor-view-btn"
                     onClick={() => setSelectedShipment(shipment)}
                   >
                     View Details
@@ -535,18 +535,18 @@ const handleShipToRecipient = async () => {
         </table>
       </div>
     ) : (
-      <div className="empty-state">
+      <div className="distributor-empty-state">
         No received shipments to display
       </div>
     )}
   </div>
 )}
 {activeTab === 'inventory' && (
-  <div className="tab-content">
-    <div className="inventory-header">
+  <div className="distributor-tab-content">
+    <div className="distributor-inventory-header">
       <h3>Current Inventory ({inventory.length} units)</h3>
-      <div className="search-box">
-        <FaSearch className="search-icon" />
+      <div className="distributor-search-box">
+        <FaSearch className="distributor-search-icon" />
         <input
           type="text"
           placeholder="Search drugs..."
@@ -557,7 +557,7 @@ const handleShipToRecipient = async () => {
     </div>
     
     {filteredInventory.length > 0 ? (
-      <div className="table-container">
+      <div className="distributor-table-container">
         <table>
           <thead>
             <tr>
@@ -586,52 +586,52 @@ const handleShipToRecipient = async () => {
         </table>
       </div>
     ) : (
-      <div className="empty-state">
+      <div className="distributor-empty-state">
         {inventory.length === 0 ? 'No inventory available' : 'No drugs found matching your search'}
       </div>
     )}
   </div>
 )}
         {activeTab === 'ship' && (
-          <div className="tab-content">
+          <div className="distributor-tab-content">
             <h3>Ship Products to Recipients</h3>
             
-            <div className="recipient-tabs">
+            <div className="distributor-recipient-tabs">
               <button 
-                className={`tab-btn ${recipientType === 'retailer' ? 'active' : ''}`}
+                className={`distributor-tab-btn ${recipientType === 'retailer' ? 'active' : ''}`}
                 onClick={() => {
                   setRecipientType('retailer');
                   setSelectedRecipient('');
                 }}
               >
-                <FaStore className="tab-icon" /> Retailers
+                <FaStore className="distributor-tab-icon" /> Retailers
               </button>
               <button 
-                className={`tab-btn ${recipientType === 'wholesaler' ? 'active' : ''}`}
+                className={`distributor-tab-btn ${recipientType === 'wholesaler' ? 'active' : ''}`}
                 onClick={() => {
                   setRecipientType('wholesaler');
                   setSelectedRecipient('');
                 }}
               >
-                <FaPills className="tab-icon" /> Wholesalers
+                <FaPills className="distributor-tab-icon" /> Wholesalers
               </button>
               <button 
-                className={`tab-btn ${recipientType === 'pharmacy' ? 'active' : ''}`}
+                className={`distributor-tab-btn ${recipientType === 'pharmacy' ? 'active' : ''}`}
                 onClick={() => {
                   setRecipientType('pharmacy');
                   setSelectedRecipient('');
                 }}
               >
-                <FaClinicMedical className="tab-icon" /> Pharmacies
+                <FaClinicMedical className="distributor-tab-icon" /> Pharmacies
               </button>
             </div>
             
-            <div className="ship-grid">
-              <div className="drug-selection">
+            <div className="distributor-ship-grid">
+              <div className="distributor-drug-selection">
                 <h4>Select Units to Ship</h4>
                 
-                <div className="search-box">
-  <FaSearch className="search-icon" />
+                <div className="distributor-search-box">
+  <FaSearch className="distributor-search-icon" />
   <input
     type="text"
     placeholder="Search by name, barcode, batch, or manufacturer..."
@@ -640,7 +640,7 @@ const handleShipToRecipient = async () => {
   />
   {searchTerm && (
     <button 
-      className="clear-search"
+      className="distributor-clear-search"
       onClick={() => setSearchTerm('')}
     >
       <FaTimes />
@@ -648,8 +648,8 @@ const handleShipToRecipient = async () => {
   )}
 </div>
                 
-                <div className="drug-list-container">
-                  <table className="drug-list">
+                <div className="distributor-drug-list-container">
+                  <table className="distributor-drug-list">
                     <thead>
                       <tr>
                         <th></th>
@@ -668,9 +668,9 @@ const handleShipToRecipient = async () => {
                         >
                           <td>
                             {selectedDrugs.includes(drug._id) ? (
-                              <FaCheckCircle className="selected-icon" />
+                              <FaCheckCircle className="distributor-selected-icon" />
                             ) : (
-                              <FaTimes className="unselected-icon" />
+                              <FaTimes className="distributor-unselected-icon" />
                             )}
                           </td>
                           <td>{drug.name}</td>
@@ -684,10 +684,10 @@ const handleShipToRecipient = async () => {
                 </div>
               </div>
               
-              <div className="shipping-details">
+              <div className="distributor-shipping-details">
                 <h4>Shipping Details</h4>
                 
-                <div className="form-group">
+                <div className="distributor-form-group">
                   <label>Select {recipientType.charAt(0).toUpperCase() + recipientType.slice(1)}</label>
                   <select
                     value={selectedRecipient}
@@ -712,22 +712,22 @@ const handleShipToRecipient = async () => {
                   </select>
                 </div>
                 
-                <div className="selection-progress">
+                <div className="distributor-selection-progress">
                   <span>Selected Drugs: {selectedDrugs.length}</span>
-                  <div className="progress-bar">
+                  <div className="distributor-progress-bar">
                     <div 
-                      className="progress" 
+                      className="distributor-progress" 
                       style={{ width: `${Math.min(100, (selectedDrugs.length / inventory.length) * 100)}%` }}
                     ></div>
                   </div>
                 </div>
                 
                 <button
-                  className="ship-btn"
+                  className="distributor-ship-btn"
                   disabled={selectedDrugs.length === 0 || !selectedRecipient}
                   onClick={handleShipToRecipient}
                 >
-                  <FaTruck className="btn-icon" />
+                  <FaTruck className="distributor-btn-icon" />
                   Confirm Shipment to {recipientType.charAt(0).toUpperCase() + recipientType.slice(1)}
                 </button>
               </div>
@@ -744,18 +744,18 @@ const handleShipToRecipient = async () => {
 
     
 {activeTab === 'analytics' && (
-  <div className="analytics-content">
-    <div className="analytics-grid">
+  <div className="distributor-analytics-content">
+    <div className="distributor-analytics-grid">
       {/* Summary Cards */}
-      <div className="analytics-card">
+      <div className="distributor-analytics-card">
         <h4>Total Inventory</h4>
-        <div className="analytics-value primary">{inventory.length}</div>
+        <div className="distributor-analytics-value primary">{inventory.length}</div>
         <small>units in stock</small>
       </div>
       
-      <div className="analytics-card">
+      <div className="distributor-analytics-card">
         <h4>Near-Expiry Drugs</h4>
-        <div className="analytics-value warning">
+        <div className="distributor-analytics-value warning">
           {inventory.filter(d => {
             const expiry = new Date(d.expiryDate);
             const today = new Date();
@@ -766,17 +766,17 @@ const handleShipToRecipient = async () => {
         <small>expiring in 30 days</small>
       </div>
       
-      <div className="analytics-card">
+      <div className="distributor-analytics-card">
         <h4>Active Partners</h4>
-        <div className="analytics-value info">
+        <div className="distributor-analytics-value info">
           {[...retailers, ...wholesalers, ...pharmacies].length}
         </div>
         <small>business connections</small>
       </div>
       
-      <div className="analytics-card">
+      <div className="distributor-analytics-card">
         <h4>Monthly Shipments</h4>
-        <div className="analytics-value secondary">
+        <div className="distributor-analytics-value secondary">
           {shipments.filter(s => {
             const shipDate = new Date(s.createdAt);
             const now = new Date();
@@ -789,11 +789,11 @@ const handleShipToRecipient = async () => {
     </div>
 
     {/* Main Charts Section */}
-    <div className="charts-container">
+    <div className="distributor-charts-container">
       {/* Inventory by Status */}
-      <div className="chart-card">
+      <div className="distributor-chart-card">
         <h4>Inventory Status Distribution</h4>
-        <div className="chart-wrapper">
+        <div className="distributor-chart-wrapper">
           <Doughnut 
             data={{
               labels: ['In Stock', 'Shipped', 'Delivered', 'Recalled', 'Expired'],
@@ -829,9 +829,9 @@ const handleShipToRecipient = async () => {
       </div>
 
       {/* Monthly Shipment Trends */}
-      <div className="chart-card">
+      <div className="distributor-chart-card">
         <h4>Monthly Shipment Trends</h4>
-        <div className="chart-wrapper">
+        <div className="distributor-chart-wrapper">
           <Line 
             data={{
               labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
@@ -882,23 +882,23 @@ const handleShipToRecipient = async () => {
       </div>
 
       {/* Inventory by Manufacturer */}
-<div className="chart-card">
+<div className="distributor-chart-card">
   <h4>Inventory by Manufacturer</h4>
-  <div className="chart-wrapper">
+  <div className="distributor-chart-wrapper">
     <Bar 
       data={{
         labels: Array.from(new Set(inventory.map(d => 
           typeof d.manufacturer === 'object' ? d.manufacturer.name : 'Unknown'
-        ))).slice(0, 5),
+          ))).slice(0, 5),
         datasets: [{
           label: 'Units in Stock',
           data: Array.from(new Set(inventory.map(d => 
             typeof d.manufacturer === 'object' ? d.manufacturer.name : 'Unknown'
-          ))).map(manu => 
+            ))).map(manu => 
             inventory.filter(d => 
               (typeof d.manufacturer === 'object' ? d.manufacturer.name : 'Unknown') === manu
             ).length
-          ).slice(0, 5),
+            ).slice(0, 5),
           backgroundColor: '#FF9F40',
           borderColor: '#FF6384',
           borderWidth: 1
@@ -922,9 +922,9 @@ const handleShipToRecipient = async () => {
 </div>
 
       {/* Partner Distribution */}
-      <div className="chart-card">
+      <div className="distributor-chart-card">
         <h4>Partner Distribution</h4>
-        <div className="chart-wrapper">
+        <div className="distributor-chart-wrapper">
           <Pie 
             data={{
               labels: ['Retailers', 'Wholesalers', 'Pharmacies'],
@@ -952,9 +952,9 @@ const handleShipToRecipient = async () => {
       </div>
 
       {/* Expiry Timeline */}
-      <div className="chart-card wide">
+      <div className="distributor-chart-card wide">
         <h4>Drug Expiry Timeline</h4>
-        <div className="chart-wrapper">
+        <div className="distributor-chart-wrapper">
           <Bar 
             data={{
               labels: ['<30 days', '30-60 days', '60-90 days', '90-180 days', '>180 days'],
@@ -1010,9 +1010,9 @@ const handleShipToRecipient = async () => {
       </div>
 
       {/* Shipment Status */}
-      <div className="chart-card">
+      <div className="distributor-chart-card">
         <h4>Shipment Status</h4>
-        <div className="chart-wrapper">
+        <div className="distributor-chart-wrapper">
           <Doughnut 
             data={{
               labels: ['Processing', 'In Transit', 'Delivered', 'Cancelled'],
@@ -1050,12 +1050,12 @@ const handleShipToRecipient = async () => {
 
         {/* Shipment Details Modal */}
         {selectedShipment && (
-  <div className="modal-overlay">
-    <div className="modal">
+  <div className="distributor-modal-overlay">
+    <div className="distributor-modal">
       <h3>Shipment Details: {selectedShipment.trackingNumber}</h3>
       
-      <div className="modal-content">
-        <div className="shipment-info-grid">
+      <div className="distributor-modal-content">
+        <div className="distributor-shipment-info-grid">
           <div>
             <p><strong>Manufacturer:</strong> {selectedShipment.manufacturer?.name || 'Unknown'}</p>
             <p><strong>Date Sent:</strong> {new Date(selectedShipment.createdAt).toLocaleDateString()}</p>
@@ -1078,7 +1078,7 @@ const handleShipToRecipient = async () => {
         
         <h4>Drugs in Shipment ({selectedShipment.drugs?.length || 0})</h4>
         
-        <div className="drug-list-modal">
+        <div className="distributor-drug-list-modal">
           <table>
             <thead>
               <tr>
@@ -1102,22 +1102,22 @@ const handleShipToRecipient = async () => {
         </div>
         
         {selectedShipment.notes && (
-          <div className="shipment-notes">
+          <div className="distributor-shipment-notes">
             <h4>Notes</h4>
             <p>{selectedShipment.notes}</p>
           </div>
         )}
         
         {(selectedShipment.status === 'processing' || selectedShipment.status === 'in-transit') && (
-          <div className="modal-actions">
+          <div className="distributor-modal-actions">
             <button 
-              className="reject-btn"
+              className="distributor-reject-btn"
               onClick={() => handleRejectShipment(selectedShipment._id)}
             >
               Reject Shipment
             </button>
             <button 
-              className="accept-btn"
+              className="distributor-accept-btn"
               onClick={() => handleReceiveShipment(selectedShipment._id)}
             >
               Accept Shipment
@@ -1127,7 +1127,7 @@ const handleShipToRecipient = async () => {
       </div>
       
       <button 
-        className="close-modal"
+        className="distributor-close-modal"
         onClick={() => setSelectedShipment(null)}
       >
         &times;
@@ -1138,25 +1138,25 @@ const handleShipToRecipient = async () => {
 
         {/* Verification Result Modal */}
         {openModal && (
-          <div className="modal-overlay">
-            <div className="modal">
+          <div className="distributor-modal-overlay">
+            <div className="distributor-modal">
               <h3>Drug Verification Result</h3>
               
-              <div className="modal-content">
+              <div className="distributor-modal-content">
                 {verificationResult?.error ? (
-                  <div className="verification-error">
-                    <FaTimes className="error-icon" />
+                  <div className="distributor-verification-error">
+                    <FaTimes className="distributor-error-icon" />
                     <h4>{verificationResult.error}</h4>
                     <p>This drug may be counterfeit or not registered in our system.</p>
                   </div>
                 ) : verificationResult ? (
                   <>
-                    <div className="verification-success">
-                      <FaCheckCircle className="success-icon" />
+                    <div className="distributor-verification-success">
+                      <FaCheckCircle className="distributor-success-icon" />
                       <h4>Valid Drug Found</h4>
                     </div>
                     
-                    <div className="verification-details">
+                    <div className="distributor-verification-details">
                       <p><strong>Name:</strong> {verificationResult.name}</p>
                       <p><strong>Barcode:</strong> {verificationResult.barcode}</p>
                       <p><strong>Batch:</strong> {verificationResult.batch}</p>
@@ -1171,7 +1171,7 @@ const handleShipToRecipient = async () => {
               </div>
               
               <button
-                className="close-btn"
+                className="distributor-close-btn"
                 onClick={() => {
                   setOpenModal(false);
                   setVerificationResult(null);
