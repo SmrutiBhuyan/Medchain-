@@ -24,6 +24,16 @@ const userSchema = new mongoose.Schema({
   }],
   organization: String,
   location: String,
+  pincode: {
+    type: String,
+    validate: {
+      validator: function(v) {
+        // Validate Indian pincode (6 digits)
+        return /^\d{6}$/.test(v);
+      },
+      message: props => `${props.value} is not a valid Indian pincode!`
+    }
+  },
   status: { 
     type: String, 
     enum: ['pending', 'approved', 'rejected'], 

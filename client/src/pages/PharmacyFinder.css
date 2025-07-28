@@ -1,253 +1,396 @@
+/* PharmacyFinder.css */
 
-/* Base container styling */
+/* Importing a modern font for a sleek look */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+/* Defining CSS Variables for easy theme management */
+:root {
+  --primary-color: #4CAF50; /* A vibrant green for main actions and highlights */
+  --primary-dark-color: #388E3C; /* Darker shade for hover states */
+  --secondary-color: #2196F3; /* A bright blue for secondary headings/elements */
+  --accent-color: #FFC107; /* An amber for subtle accents (not used widely here, but good to have) */
+  --background-light: #f4f6f8; /* Light grey background for the overall page */
+  --background-dark: #e0e4e8; /* Slightly darker grey for textured elements/scroll tracks */
+  --text-color: #333; /* Dark grey for primary text, ensuring readability */
+  --text-light-color: #666; /* Lighter grey for secondary text (e.g., descriptions) */
+  --border-color: #ddd; /* Light grey for borders, keeping things subtle */
+  --card-background: #ffffff; /* Pure white for cards and main containers */
+  --shadow-light: rgba(0, 0, 0, 0.1); /* Light shadow for subtle depth */
+  --shadow-medium: rgba(0, 0, 0, 0.15); /* Medium shadow for more pronounced depth on hover/focus */
+  --error-color: #d32f2f; /* Red for error messages */
+  --error-background: #ffebee; /* Light red for error message backgrounds */
+}
+
+/* Base Body Styling */
+body {
+  font-family: 'Poppins', sans-serif; /* Applying the Poppins font */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Ensures padding and border are included in the element's total width and height */
+  background-color: var(--background-light); /* Page background color */
+  color: var(--text-color); /* Default text color */
+  line-height: 1.6; /* Improved readability for text */
+}
+
+/* Main Container for the Pharmacy Finder Application */
 .medicine-finder-container {
-    font-family: 'Inter', sans-serif; /* Using Inter font as per instructions */
-    max-width: 900px; /* Increased max-width for better layout */
-    margin: 2rem auto; /* Center the container with some top/bottom margin */
-    padding: 2rem;
-    background-color: #ffffff;
-    border-radius: 12px; /* More rounded corners */
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); /* Softer, larger shadow */
-    color: #333;
-    animation: fadeIn 0.5s ease-out; /* Simple fade-in animation */
+  max-width: 1300px; /* Increased max-width to allow for comfortable side-by-side layout */
+  margin: 40px auto; /* Centers the container horizontally with vertical margin */
+  padding: 30px; /* Inner spacing */
+  background-color: var(--card-background); /* White background for the main app area */
+  border-radius: 12px; /* Softly rounded corners */
+  box-shadow: 0 10px 30px var(--shadow-medium); /* Prominent shadow for a floating effect */
+  text-align: center; /* Centers the heading and form elements */
+  overflow: hidden; /* Ensures any internal overflow is clipped, especially important for rounded corners */
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* Heading Styling */
+h1 {
+  font-size: 2.5em; /* Large, prominent heading */
+  color: var(--primary-dark-color); /* Matches primary theme color */
+  margin-bottom: 30px; /* Space below heading */
+  font-weight: 700; /* Bold font weight */
+  position: relative; /* Needed for the pseudo-element underline */
+  display: inline-block; /* Allows auto-sizing for the underline */
 }
 
-/* Headings */
-.medicine-finder-text-2xl {
-    font-size: 2.25rem; /* Larger heading */
-    font-weight: 700;
-    color: #2c3e50; /* Darker blue-grey for headings */
-    text-align: center;
-    margin-bottom: 1.5rem;
-    position: relative;
+h1::after {
+  content: ''; /* Creates a decorative underline */
+  position: absolute;
+  left: 50%; /* Centers the underline */
+  bottom: -10px; /* Positions it below the text */
+  transform: translateX(-50%); /* Ensures perfect centering */
+  width: 60px; /* Width of the underline */
+  height: 4px; /* Thickness of the underline */
+  background-color: var(--primary-color); /* Color of the underline */
+  border-radius: 2px; /* Rounded ends for the underline */
 }
 
-.medicine-finder-text-2xl::after {
-    content: '';
-    display: block;
-    width: 60px;
-    height: 4px;
-    background: linear-gradient(to right, #4a90e2, #7b68ee); /* Gradient underline */
-    margin: 0.75rem auto 0;
-    border-radius: 2px;
+/* Form Layout */
+form {
+  display: flex;
+  flex-direction: column; /* Stacks form elements vertically */
+  gap: 20px; /* Space between form input groups */
+  margin-bottom: 40px; /* Space below the form */
+  padding: 0 20px; /* Horizontal padding for form content */
 }
 
-.medicine-finder-text-xl {
-    font-size: 1.75rem;
-    font-weight: 600;
-    color: #34495e;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 0.5rem;
+/* Input Group Styling (Label + Input) */
+.input-group {
+  text-align: left; /* Aligns labels and inputs to the left */
 }
 
-/* Form Styling */
-.medicine-finder-mb-4 {
-    margin-bottom: 1.5rem; /* Increased spacing */
+.input-group label {
+  display: block; /* Makes label take full width and puts input on new line */
+  margin-bottom: 8px; /* Space between label and input */
+  font-weight: 600; /* Semi-bold label text */
+  color: var(--text-color);
+  font-size: 1.1em;
 }
 
-.medicine-finder-block {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #555;
+.input-group input[type="text"] {
+  width: calc(100% - 20px); /* Full width minus padding */
+  padding: 12px 10px; /* Inner padding */
+  border: 1px solid var(--border-color); /* Subtle border */
+  border-radius: 8px; /* Rounded input fields */
+  font-size: 1em;
+  color: var(--text-color);
+  background-color: var(--background-light); /* Light background for inputs */
+  transition: all 0.3s ease; /* Smooth transitions for focus states */
 }
 
-.medicine-finder-w-full {
-    width: 100%;
+.input-group input[type="text"]:focus {
+  border-color: var(--primary-color); /* Highlight border on focus */
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2); /* Soft glow effect on focus */
+  outline: none; /* Removes default outline */
+  background-color: var(--card-background); /* White background on focus */
 }
 
-.medicine-finder-p-2 {
-    padding: 0.75rem 1rem; /* More padding for inputs */
+/* Submit Button Styling */
+button[type="submit"] {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 14px 25px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth hover effects */
+  width: fit-content; /* Button width adjusts to its content */
+  margin: 0 auto; /* Centers the button */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Subtle shadow for button */
 }
 
-.medicine-finder-border {
-    border: 1px solid #dcdcdc; /* Lighter border */
+button[type="submit"]:hover {
+  background-color: var(--primary-dark-color); /* Darker green on hover */
+  transform: translateY(-2px); /* Slight lift effect */
 }
 
-.medicine-finder-rounded {
-    border-radius: 8px; /* Slightly more rounded inputs */
+button[type="submit"]:disabled {
+  background-color: #cccccc; /* Greyed out when disabled */
+  cursor: not-allowed;
+  transform: none; /* No lift when disabled */
+  box-shadow: none; /* No shadow when disabled */
 }
 
-.medicine-finder-w-full:focus {
-    outline: none;
-    border-color: #4a90e2; /* Blue focus border */
-    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2); /* Soft blue glow on focus */
+/* Error Message Styling */
+.error-message {
+  color: var(--error-color); /* Red text */
+  background-color: var(--error-background); /* Light red background */
+  padding: 12px 20px;
+  border-radius: 8px;
+  margin-top: 20px;
+  border: 1px solid #ef9a9a; /* Red border */
+  font-size: 0.95em;
+  font-weight: 500;
 }
 
-/* Checkbox styling */
-.medicine-finder-inline-flex {
-    display: inline-flex;
-    align-items: center;
+/* NEW: Container for Map and Pharmacy List (Side-by-Side Layout) */
+.map-and-list-container {
+  display: flex; /* Enables Flexbox layout */
+  flex-wrap: wrap; /* Allows items to wrap to the next line on smaller screens */
+  justify-content: center; /* Centers items horizontally if there's extra space or when wrapped */
+  gap: 30px; /* Creates space between the map and the list */
+  margin-top: 40px;
+  align-items: flex-start; /* Aligns items to the top of the container */
 }
 
-.medicine-finder-form-checkbox {
-    appearance: none; /* Hide default checkbox */
-    width: 20px;
-    height: 20px;
-    border: 2px solid #ccc;
-    border-radius: 4px;
-    cursor: pointer;
-    position: relative;
-    transition: all 0.2s ease-in-out;
+/* Map Container Styling */
+.map-container {
+  flex: 2; /* Map takes up 2 parts of the available space, e.g., 2/3 ratio */
+  min-width: 500px; /* Minimum width the map will take before wrapping to the next line */
+  height: 500px; /* Fixed height for the map */
+  border-radius: 12px;
+  overflow: hidden; /* Ensures map content stays within rounded corners */
+  box-shadow: 0 5px 20px var(--shadow-light); /* Subtle shadow for map */
 }
 
-.medicine-finder-form-checkbox:checked {
-    background-color: #4a90e2;
-    border-color: #4a90e2;
-}
-
-.medicine-finder-form-checkbox:checked::after {
-    content: '✔'; /* Checkmark */
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 14px;
-}
-
-.medicine-finder-ml-2 {
-    margin-left: 0.5rem;
-    color: #555;
-}
-
-/* Button Styling */
-.medicine-finder-bg-blue-500 {
-    background-color: #4a90e2; /* Primary blue */
-    color: white;
-    padding: 0.75rem 1.5rem; /* More padding for buttons */
-    border-radius: 8px;
-    font-weight: 600;
-    transition: all 0.3s ease; /* Smooth transitions for hover */
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); /* Soft shadow */
-}
-
-.medicine-finder-bg-blue-500:hover {
-    background-color: #357bd8; /* Slightly darker blue on hover */
-    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4); /* Enhanced shadow on hover */
-    transform: translateY(-2px); /* Slight lift effect */
-}
-
-.medicine-finder-bg-blue-500:disabled {
-    background-color: #a0c4f2; /* Lighter blue for disabled state */
-    cursor: not-allowed;
-    box-shadow: none;
-    transform: none;
-}
-
-/* Error Message */
-.medicine-finder-text-red-500 {
-    color: #e74c3c; /* Red for errors */
-    font-weight: 500;
-    margin-bottom: 1rem;
-    padding: 0.75rem 1rem;
-    background-color: #fcecec;
-    border: 1px solid #e74c3c;
-    border-radius: 8px;
-    text-align: center;
-}
-
-/* Map Section */
-.medicine-finder-h-96 {
-    height: 450px; /* Slightly taller map */
-}
-
-.medicine-finder-rounded-lg {
-    border-radius: 12px; /* Consistent rounded corners */
-}
-
-.medicine-finder-overflow-hidden {
-    overflow: hidden;
-}
-
-.medicine-finder-border-gray-300 {
-    border-color: #e0e0e0;
-}
-
-/* Leaflet Map Overrides (ensure map tiles and markers look good) */
 .leaflet-container {
-    border-radius: 12px; /* Apply border-radius to the map container itself */
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05); /* Subtle shadow for the map */
+  border-radius: 12px; /* Ensures the actual Leaflet map also has rounded corners */
 }
 
-/* Pharmacy List */
-.medicine-finder-space-y-4 > div {
-    margin-bottom: 1rem; /* Spacing between list items */
+/* Customizing Leaflet Popups for a modern look */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px; /* Rounded corners for popups */
+  padding: 15px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2); /* Shadow for popups */
 }
 
-.medicine-finder-p-4 {
-    padding: 1.25rem;
+.leaflet-popup-content h3 {
+  color: var(--primary-dark-color);
+  font-size: 1.2em;
+  margin-bottom: 8px;
+  font-weight: 600;
 }
 
-.medicine-finder-shadow {
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); /* Soft shadow for list items */
+.leaflet-popup-content p {
+  margin: 4px 0;
+  color: var(--text-light-color);
+  font-size: 0.9em;
 }
 
-.medicine-finder-border {
-    border: 1px solid #f0f0f0; /* Very light border for list items */
+/* Pharmacy List Container Styling */
+.pharmacy-list {
+  flex: 1; /* Pharmacy list takes up 1 part of the available space, e.g., 1/3 ratio */
+  min-width: 350px; /* Minimum width the list will take before wrapping */
+  text-align: left;
+  max-height: 500px; /* Limits the height to match the map, enabling scrolling if needed */
+  overflow-y: auto; /* Enables vertical scrolling for the list if content overflows */
+  padding-right: 15px; /* Adds space for the scrollbar and keeps content from touching the edge */
+  padding-top: 5px; /* Slight adjustment for visual alignment with the map */
 }
 
-.medicine-finder-font-bold {
-    font-weight: 700;
-    color: #34495e;
-    margin-bottom: 0.25rem;
+.pharmacy-list h2 {
+  font-size: 2em;
+  color: var(--secondary-color); /* Blue color for list heading */
+  margin-top: 0; /* Ensures it aligns nicely with the map container */
+  margin-bottom: 25px;
+  font-weight: 600;
+  text-align: center;
 }
 
-.medicine-finder-text-gray-600 {
-    color: #666;
-    font-size: 0.95rem;
-    margin-top: 0.25rem;
+.pharmacy-cards {
+  display: flex;
+  flex-direction: column; /* Stacks pharmacy cards vertically */
+  gap: 15px; /* Space between individual pharmacy cards */
 }
 
-.medicine-finder-text-sm {
-    font-size: 0.85rem;
+/* Individual Pharmacy Card Styling */
+.pharmacy-card {
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 18px; /* Inner spacing for card content */
+  box-shadow: 0 4px 15px var(--shadow-light);
+  transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth hover effects */
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Distributes space between elements */
 }
 
-.medicine-finder-text-gray-500 {
-    color: #888;
+.pharmacy-card:hover {
+  transform: translateY(-5px); /* Lifts the card on hover */
+  box-shadow: 0 8px 25px var(--shadow-medium); /* More pronounced shadow on hover */
 }
 
-/* Responsive adjustments */
+.pharmacy-card h3 {
+  font-size: 1.3em;
+  color: var(--primary-color);
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.pharmacy-card p {
+  font-size: 0.9em;
+  color: var(--text-light-color);
+  margin-bottom: 6px;
+}
+
+.pharmacy-card p:last-child {
+  margin-bottom: 0; /* No bottom margin for the last paragraph */
+}
+
+/* Custom Scrollbar Styling for Pharmacy List */
+.pharmacy-list::-webkit-scrollbar {
+  width: 8px; /* Width of the scrollbar */
+}
+
+.pharmacy-list::-webkit-scrollbar-track {
+  background: var(--background-dark); /* Color of the scrollbar track */
+  border-radius: 10px;
+}
+
+.pharmacy-list::-webkit-scrollbar-thumb {
+  background: var(--primary-color); /* Color of the scrollbar thumb */
+  border-radius: 10px;
+}
+
+.pharmacy-list::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark-color); /* Darker color on hover */
+}
+
+
+/* Responsive Adjustments */
+
+/* For medium to large screens (e.g., tablets in landscape, smaller desktops) */
+@media (max-width: 1200px) {
+  .medicine-finder-container {
+    max-width: 90%; /* Allows the container to take up more width */
+  }
+
+  .map-container {
+    min-width: 400px; /* Adjust min-width to prevent map from becoming too small */
+    height: 450px; /* Slightly reduced map height */
+  }
+
+  .pharmacy-list {
+    min-width: 300px; /* Adjust min-width for the list */
+    max-height: 450px; /* Match map height */
+  }
+}
+
+/* For tablets and smaller desktops (when side-by-side might be too cramped) */
+@media (max-width: 992px) {
+  .map-and-list-container {
+    flex-direction: column; /* Stacks map and list vertically */
+    align-items: center; /* Centers them horizontally when stacked */
+    gap: 30px; /* Space between stacked elements */
+  }
+
+  .map-container {
+    width: 100%; /* Map takes full width when stacked */
+    min-width: unset; /* Removes min-width constraint */
+    height: 400px; /* Adjusted height for stacked layout */
+  }
+
+  .pharmacy-list {
+    width: 100%; /* List takes full width when stacked */
+    min-width: unset; /* Removes min-width constraint */
+    max-height: unset; /* Allows list to expand based on content, scrollbar will appear naturally if needed */
+    overflow-y: visible; /* Removes forced scrollbar if not needed when full width */
+    padding-right: 0; /* Remove padding when full width */
+    margin-top: 0; /* Remove top margin as `gap` handles spacing */
+  }
+
+  .pharmacy-list h2 {
+    margin-top: 20px; /* Add some top margin for the heading when stacked */
+  }
+}
+
+/* For smaller tablets and large smartphones */
 @media (max-width: 768px) {
-    .medicine-finder-container {
-        margin: 1rem;
-        padding: 1.5rem;
-    }
+  .medicine-finder-container {
+    margin: 20px auto;
+    padding: 20px;
+  }
 
-    .medicine-finder-text-2xl {
-        font-size: 1.75rem;
-    }
+  h1 {
+    font-size: 2em;
+    margin-bottom: 25px;
+  }
 
-    .medicine-finder-text-xl {
-        font-size: 1.5rem;
-    }
+  form {
+    padding: 0; /* Remove horizontal padding from form to use full width */
+  }
 
-    .medicine-finder-bg-blue-500 {
-        width: 100%;
-        text-align: center;
-    }
+  button[type="submit"] {
+    width: 100%; /* Button takes full width */
+    padding: 12px 20px;
+  }
+
+  .map-container {
+    height: 350px; /* Further adjust map height for smaller screens */
+  }
+
+  .pharmacy-list h2 {
+    font-size: 1.8em;
+  }
+
+  .pharmacy-cards {
+    gap: 10px; /* Reduce gap between cards */
+  }
+
+  .pharmacy-card {
+    padding: 15px; /* Slightly less padding for more compact cards */
+  }
+
+  .pharmacy-card h3 {
+    font-size: 1.2em;
+  }
+
+  .pharmacy-card p {
+    font-size: 0.85em;
+  }
 }
 
+/* For very small screens (e.g., standard smartphones) */
 @media (max-width: 480px) {
-    .medicine-finder-container {
-        padding: 1rem;
-    }
+  .medicine-finder-container {
+    padding: 15px;
+  }
 
-    .medicine-finder-text-2xl {
-        font-size: 1.5rem;
-    }
+  h1 {
+    font-size: 1.6em; /* Even smaller heading */
+  }
+
+  .input-group label {
+    font-size: 1em;
+  }
+
+  .input-group input[type="text"] {
+    padding: 10px;
+    font-size: 0.9em;
+  }
+
+  .error-message {
+    padding: 10px 15px;
+    font-size: 0.9em;
+  }
+
+  .map-container {
+    height: 280px; /* Even smaller map height for very small screens */
+  }
 }

@@ -116,7 +116,7 @@ const DrugSchema = new mongoose.Schema({
   },
   currentHolder: {
     type: String,
-    enum: ['manufacturer', 'distributor', 'wholesaler', 'retailer', 'pharmacy','in-transit'],
+    enum: ['manufacturer', 'distributor', 'wholesaler', 'retailer', 'pharmacy','in-transit', 'processing'],
     default: 'manufacturer'
   },
   createdAt: {
