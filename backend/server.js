@@ -10,6 +10,7 @@ import drugRoutes from './routes/drugRoutes.js';
 import bodyParser from "body-parser";
 import dashboardRoutes from "./routes/dashboard.js";
 import pharmacyRoutes from './routes/pharmacyRoutes.js';
+import predictionRoutes from './routes/predictions.js';
 
 
 
@@ -34,6 +35,7 @@ app.use('/api/drugs', drugRoutes);
 app.use('/api/shipments', shipmentRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/pharmacies', pharmacyRoutes);
+app.use('/api/predictions', predictionRoutes);
 
 
 app.use(notFound);

@@ -1,0 +1,333 @@
+/* Base Styles */
+.pharma-predictions-tab {
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  padding: 2rem;
+  background-color: #f8f9fa; /* Light gray background */
+  min-height: calc(100vh - 60px); /* Adjust based on your header/footer height */
+}
+
+/* Card Styling */
+.pharma-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.pharma-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  background-color: #e9ecef; /* Slightly darker header background */
+  border-bottom: 1px solid #dee2e6;
+}
+
+.pharma-card-header h5 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #343a40;
+  font-weight: 600;
+}
+
+.pharma-card-body {
+  padding: 2rem;
+}
+
+/* Filter Controls */
+.pharma-filter-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.pharma-select {
+  padding: 0.75rem 1.25rem;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  background-color: #fff;
+  font-size: 1rem;
+  color: #495057;
+  appearance: none; /* Remove default select arrow */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 0.8em;
+  cursor: pointer;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.pharma-select:focus {
+  border-color: #80bdff;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Buttons */
+.pharma-btn-outline {
+  padding: 0.75rem 1.5rem;
+  border: 1px solid #007bff;
+  border-radius: 8px;
+  background-color: transparent;
+  color: #007bff;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.pharma-btn-outline:hover {
+  background-color: #007bff;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+}
+
+/* Loading State */
+.pharma-loading {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: #6c757d;
+}
+
+/* No Alerts State */
+.pharma-no-alerts {
+  text-align: center;
+  padding: 3rem;
+  color: #6c757d;
+}
+
+.pharma-no-alerts .pharma-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  color: #28a745; /* Green for success */
+}
+
+.pharma-no-alerts h5 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+  color: #495057;
+}
+
+.pharma-no-alerts p {
+  font-size: 1.1rem;
+}
+
+/* Predictions List */
+.pharma-predictions-list {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Responsive grid */
+}
+
+.pharma-prediction-item {
+  display: flex;
+  background-color: #fefefe;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  padding: 1.5rem;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.pharma-prediction-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.pharma-prediction-icon {
+  margin-right: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pharma-prediction-icon .pharma-icon {
+  font-size: 2.5rem;
+}
+
+.pharma-prediction-details {
+  flex-grow: 1;
+}
+
+.pharma-prediction-details h6 {
+  font-size: 1.3rem;
+  margin-bottom: 0.75rem;
+  color: #343a40;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pharma-prediction-details p {
+  font-size: 0.95rem;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.pharma-prediction-details p strong {
+  color: #495057;
+}
+
+/* Badges */
+.pharma-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3em 0.7em;
+  font-size: 0.75em;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 0.375rem;
+  margin-left: 0.5rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.pharma-danger {
+  color: #fff;
+  background-color: #dc3545; /* Red */
+}
+
+.pharma-warning {
+  color: #212529;
+  background-color: #ffc107; /* Yellow */
+}
+
+.pharma-info {
+  color: #fff;
+  background-color: #17a2b8; /* Cyan */
+}
+
+.pharma-secondary {
+  color: #fff;
+  background-color: #6c757d; /* Gray */
+}
+
+.pharma-light {
+  color: #212529;
+  background-color: #f8f9fa; /* Light Gray */
+  border: 1px solid #dee2e6;
+}
+
+/* Severity Icons */
+.pharma-icon.pharma-critical {
+  color: #dc3545; /* Red */
+}
+
+.pharma-icon.pharma-high {
+  color: #fd7e14; /* Orange */
+}
+
+.pharma-icon.pharma-medium {
+  color: #ffc107; /* Yellow */
+}
+
+.pharma-icon.pharma-low {
+  color: #17a2b8; /* Cyan */
+}
+
+/* Alert Boxes (Expiring Soon) */
+.pharma-alert {
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  gap: 0.75rem;
+}
+
+.pharma-alert.pharma-warning {
+  color: #856404;
+  background-color: #fff3cd;
+  border-color: #ffeeba;
+}
+
+.pharma-alert .pharma-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+/* Prediction Actions */
+.pharma-prediction-actions {
+  margin-top: 1.25rem;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+}
+
+.pharma-prediction-actions .pharma-btn-outline {
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  flex-shrink: 0; /* Prevent buttons from shrinking */
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .pharma-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .pharma-filter-controls {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  .pharma-select,
+  .pharma-btn-outline {
+    width: 100%;
+  }
+
+  .pharma-prediction-item {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .pharma-prediction-icon {
+    margin: 0 auto 1rem auto;
+  }
+
+  .pharma-prediction-details h6 {
+    justify-content: center;
+  }
+
+  .pharma-prediction-actions {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .pharma-predictions-tab {
+    padding: 1rem;
+  }
+
+  .pharma-card-header {
+    padding: 1rem;
+  }
+
+  .pharma-card-header h5 {
+    font-size: 1.25rem;
+  }
+
+  .pharma-card-body {
+    padding: 1.5rem;
+  }
+
+  .pharma-prediction-item {
+    padding: 1rem;
+  }
+}

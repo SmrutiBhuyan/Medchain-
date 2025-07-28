@@ -38,6 +38,7 @@ import axios from 'axios';
 import { Modal, Button, Toast, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import Webcam from 'react-webcam';
 import DrugVerification from './DrugVerification'
+import DrugShortagePrediction from './DrugPredictionShortage';
 
 const PharmacyDashboard = () => {
   const { user, logout } = useAuth();
@@ -62,15 +63,6 @@ const PharmacyDashboard = () => {
   const recallData = [
     { id: 1, drug: 'Lipitor 20mg', batch: 'LIP2023-03', barcode: '7890123456', issued: '2023-05-15', by: 'FDA', severity: 'high' },
     { id: 2, drug: 'Ventolin Inhaler', batch: 'VEN2023-01', barcode: '1234567890', issued: '2023-04-28', by: 'Manufacturer', severity: 'medium' }
-  ];
-
-  const supplyChainData = [
-    { id: 1, batch: 'AMX2023-05', events: [
-      { date: '2023-01-15', location: 'Mumbai', event: 'Manufactured', by: 'Sun Pharma' },
-      { date: '2023-01-20', location: 'Pune', event: 'Quality Check', by: 'QC Team' },
-      { date: '2023-01-25', location: 'Delhi', event: 'Distributed', by: 'MedDistributors' },
-      { date: '2023-02-10', location: 'Your Pharmacy', event: 'Received', by: 'You' }
-    ]}
   ];
   // Fetch inventory and shipments when their tabs are active
   useEffect(() => {
@@ -500,25 +492,7 @@ const handleRejectShipment = async (shipmentId) => {
                   </div>
                 </div>
                 <div className="pharma-side-panel">
-                  <div className="pharma-card">
-                    <div className="pharma-card-header">
-                      <h5>Critical Alerts</h5>
-                    </div>
-                    <div className="pharma-card-body pharma-alerts">
-                      {recallData.map(alert => (
-                        <div key={alert.id} className={`pharma-alert-card pharma-${alert.severity}`}>
-                          <div className="pharma-alert-content">
-                            <ExclamationTriangleFill className="pharma-icon" />
-                            <div>
-                              <h6>Drug Recall: {alert.drug}</h6>
-                              <p>Batch {alert.batch} | Issued by {alert.by}</p>
-                              <small>{alert.issued}</small>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <DrugShortagePrediction/>
                 </div>
               </div>
             </div>
@@ -898,51 +872,7 @@ const handleRejectShipment = async (shipmentId) => {
 )}
 
           {activeTab === 'alerts' && (
-            <div className="pharma-alerts-tab">
-              <div className="pharma-card">
-                <div className="pharma-card-header">
-                  <h5>Active Alerts</h5>
-                  <div className="pharma-filter-controls">
-                    <button className="pharma-btn-outline active">All</button>
-                    <button className="pharma-btn-outline">Recalls</button>
-                    <button className="pharma-btn-outline">Expiry</button>
-                    <button className="pharma-btn-outline">Stock</button>
-                  </div>
-                </div>
-                <div className="pharma-card-body">
-                  {recallData.length > 0 ? (
-                    <div className="pharma-alerts-list">
-                      {recallData.map(alert => (
-                        <div key={alert.id} className="pharma-alert-item">
-                          <div className="pharma-alert-icon">
-                            <ExclamationTriangleFill className={`pharma-icon pharma-${alert.severity}`} />
-                          </div>
-                          <div className="pharma-alert-details">
-                            <h6>Recall Notice: {alert.drug}</h6>
-                            <p>Batch: {alert.batch} • Barcode: {alert.barcode}</p>
-                            <p>Issued by {alert.by} on {alert.issued}</p>
-                            <div className="pharma-alert-actions">
-                              <button className="pharma-btn-outline">
-                                <Link45deg className="pharma-icon" /> Trace Batch
-                              </button>
-                              <button className="pharma-btn-outline">
-                                <Printer className="pharma-icon" /> Print Notice
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="pharma-no-alerts">
-                      <CheckCircleFill className="pharma-icon pharma-success" />
-                      <h5>No Active Alerts</h5>
-                      <p>Your inventory has no current recalls or warnings</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+           <DrugShortagePrediction/>
           )}
            {/* Shipment Details Modal */}
           {showShipmentModal && (
