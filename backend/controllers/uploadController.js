@@ -2,6 +2,17 @@ import Drug from '../models/Drug.js';
 import { generateBarcode } from '../utils/barcodeGenerator.js';
 import fs from 'fs';
 import csvParser from 'csv-parser';
+import { readFileSync } from 'fs';
+const DrugTrackingABI = JSON.parse(readFileSync('./contracts/DrugTrackingABI.json', 'utf-8'));
+
+// / Initialize blockchain connection
+const provider = new ethers.providers.JsonRpcProvider(process.env.SEPOLIA_URL);
+const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+const drugTrackingContract = new ethers.Contract(
+  process.env.CONTRACT_ADDRESS,
+  DrugTrackingABI.abi,
+  wallet
+);
 
 export const uploadCSV = async (req, res) => {
   try {
@@ -11,6 +22,7 @@ export const uploadCSV = async (req, res) => {
 
     const results = [];
     const errors = [];
+     const blockchainErrors = [];
     
     fs.createReadStream(req.file.path)
       .pipe(csvParser())
