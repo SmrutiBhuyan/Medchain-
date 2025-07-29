@@ -232,7 +232,13 @@ export const uploadCSV = async (req, res) => {
             barcode,
             status: 'in-stock',
             manufacturer: req.body.manufacturerId,
-            currentHolder: 'manufacturer'
+            currentHolder: 'manufacturer',
+             history: [{
+            holderType: 'manufacturer',
+            holderId: req.body.manufacturerId,
+            date: new Date(),
+            status: 'in-stock',
+          }]
           }));
         } else {
           for (let i = 1; i <= quantity; i++) {
@@ -240,7 +246,13 @@ export const uploadCSV = async (req, res) => {
               barcode: generateBarcode(drugData.name, drugData.batch, i),
               status: 'in-stock',
               manufacturer: req.body.manufacturerId,
-              currentHolder: 'manufacturer'
+              currentHolder: 'manufacturer',
+               history: [{
+            holderType: 'manufacturer',
+            holderId: req.body.manufacturerId,
+            date: new Date(),
+            status: 'in-stock'
+          }]
             });
           }
         }

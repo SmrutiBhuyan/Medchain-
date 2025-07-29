@@ -100,7 +100,13 @@ export const createDrug = async (req, res) => {
           barcode: cleanedUnitBarcodes[i] || generateBarcode(name, batch, i+1),
           status: 'in-stock',
           currentHolder: 'manufacturer',
-          manufacturer: manufacturerId
+          manufacturer: manufacturerId,
+           history: [{
+            holderType: 'manufacturer',
+            holderId: manufacturerId,
+            date: new Date(),
+            status: 'in-stock',
+          }]
         });
       }
     } else {
@@ -110,7 +116,14 @@ export const createDrug = async (req, res) => {
           barcode: generateBarcode(name, batch, i),
           status: 'in-stock',
           manufacturer: manufacturerId,
-          currentHolder: 'manufacturer'
+          currentHolder: 'manufacturer',
+            history: [{
+            holderType: 'manufacturer',
+            holderId: manufacturerId,
+            date: new Date(),
+            status: 'in-stock',
+      
+          }]
         });
       }
     }
