@@ -185,15 +185,9 @@ export const acceptShipment = async (req, res) => {
         $set: { 
           status: 'in-stock with distributor',
           currentHolder: 'distributor',
-          distributor: req.user._id
-        },
-        $push: {
-          'unitBarcodes.$[].history': {
-            holderType: 'distributor',
-            holderId: req.user._id,
-            status: 'in-stock',
-            date: new Date()
-          }
+          distributor: req.user._id,
+          'unitBarcodes.$[].status': 'in-stock',
+      'unitBarcodes.$[].currentHolder': 'distributor'
         }
       }
     );
