@@ -1,3 +1,7 @@
+# CONTRACT_ADDRESS=0x60D233212bdEdeB5D9f8b67a95f224A889019B86
+
+
+
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
