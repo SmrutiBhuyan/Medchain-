@@ -1,14 +1,19 @@
-const { ethers } = require("hardhat");
+const hre = require("hardhat");
 
 async function main() {
-  const MedicineTracking = await ethers.getContractFactory("MedicineTracking");
-  const medicineTracking = await MedicineTracking.deploy();
-  
-  await medicineTracking.deployed();
-  console.log("Contract deployed to:", medicineTracking.address);
+    const [deployer] = await hre.ethers.getSigners();
+    console.log("Deploying contracts with the account:", deployer.address);
+
+    const DrugTracking = await hre.ethers.getContractFactory("DrugTracking");
+    
+    // Deploy with the deployer's address as `initialOwner`
+    const drugTracking = await DrugTracking.deploy(deployer.address); 
+    
+    await drugTracking.waitForDeployment();
+    console.log("DrugTracking deployed to:", await drugTracking.getAddress());
 }
 
 main().catch((error) => {
-  console.error(error);
-  process.exit(1);
+    console.error(error);
+    process.exitCode = 1;
 });
