@@ -49,7 +49,33 @@ router.put('/:id/reject', async (req, res) => {
   }
 });
 
+// In your user routes file (e.g., routes/userRoutes.js)
+router.patch('/wallet', protect, async (req, res) => {
+  try {
+    // Validate wallet address format
+    if (req.body.walletAddress && !/^0x[a-fA-F0-9]{40}$/.test(req.body.walletAddress)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid Ethereum wallet address format' 
+      });
+    }
 
+    const user = await User.findByIdAndUpdate(
+      req.user._id, // Make sure authMiddleware is setting req.user
+      { walletAddress: req.body.walletAddress || null },
+      { new: true, runValidators: true }
+    ).select('-password'); // Don't return the password
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('Wallet update error:', error);
+    res.status(500).json({ success: false, error: 'Server error while updating wallet' });
+  }
+});
 
 export const getDistributors = async (req, res) => {
   try {

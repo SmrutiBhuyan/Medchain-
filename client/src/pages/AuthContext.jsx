@@ -65,6 +65,8 @@ const redirectUser = (userData) => {
       
       localStorage.setItem("token", response.data.token);
       setUser(response.data.user);
+      console.log(response.data.user);
+      
       redirectUser(response.data.user);
       
       return response.data;

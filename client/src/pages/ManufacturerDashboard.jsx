@@ -11,8 +11,6 @@ const ManufacturerDashboard = () => {
   const { user, logout } = useAuth();  
   const [activeTab, setActiveTab] = useState('drug-creation');
   const [activeSubTab, setActiveSubTab] = useState('bulk');
-  const [walletAddress, setWalletAddress] = useState(null);
-  const [isConnectingWallet, setIsConnectingWallet] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [inventoryDrugs, setInventoryDrugs] = useState([]);
   const [isLoadingInventory, setIsLoadingInventory] = useState(false);
@@ -49,6 +47,107 @@ const [dashboardStats, setDashboardStats] = useState({
 });
 const [isLoadingStats, setIsLoadingStats] = useState(false);
 
+ const [walletAddress, setWalletAddress] = useState(null);
+  const [isConnectingWallet, setIsConnectingWallet] = useState(false);
+  const [walletError, setWalletError] = useState(null);
+
+
+  // Function to check if MetaMask is installed
+const checkMetaMask = () => {
+  if (!window.ethereum) {
+    setWalletError('MetaMask is not installed');
+    return false;
+  }
+  return true;
+};
+
+  // Function to connect wallet (simulated)
+  const connectWallet = async () => {
+    if (!checkMetaMask()) return;
+     setIsConnectingWallet(true);
+    try {
+    // Request account access
+    const accounts = await window.ethereum.request({ 
+      method: 'eth_requestAccounts' 
+    });
+     if (accounts.length > 0) {
+      const address = accounts[0];
+      setWalletAddress(address);
+      // Optionally update the user's wallet address in your backend
+      try {
+        const token = localStorage.getItem('token');
+        await axios.patch(
+          'http://localhost:5000/api/users/wallet',
+          { walletAddress: address },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+      } catch (error) {
+        console.error('Error updating wallet address:', error);
+      }
+    }
+
+    
+
+    } catch (error) {
+      console.error('Wallet connection error:', error);
+        setWalletError(error.message);
+    } finally {
+      setIsConnectingWallet(false);
+    }
+  };
+
+// Function to disconnect wallet
+const disconnectWallet = async () => {
+  try {
+    // Optionally update the backend to remove wallet address
+    const token = localStorage.getItem('token');
+    await axios.patch(
+      'http://localhost:5000/api/users/wallet',
+      { walletAddress: null },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+    
+    setWalletAddress(null);
+  } catch (error) {
+    console.error('Error disconnecting wallet:', error);
+  }
+};
+  
+  // Check for wallet connection on component mount
+useEffect(() => {
+  const checkWalletConnection = async () => {
+    if (checkMetaMask() && window.ethereum.selectedAddress) {
+      setWalletAddress(window.ethereum.selectedAddress);
+    }
+  };
+  
+  checkWalletConnection();
+  
+  // Listen for account changes
+  if (window.ethereum) {
+    window.ethereum.on('accountsChanged', (accounts) => {
+      if (accounts.length > 0) {
+        setWalletAddress(accounts[0]);
+      } else {
+        setWalletAddress(null);
+      }
+    });
+  }
+  
+  return () => {
+    if (window.ethereum) {
+      window.ethereum.removeListener('accountsChanged', () => {});
+    }
+  };
+}, []);
 // / Add this useEffect for blockchain initialization
 useEffect(() => {
   const initBlockchain = async () => {
@@ -590,28 +689,6 @@ const handleScan = (barcode) => {
   title="Only letters, numbers and hyphens allowed"
 />
 
-  // Function to connect wallet (simulated)
-  const connectWallet = async () => {
-    setIsConnectingWallet(true);
-    try {
-      // In a real app, this would connect to MetaMask or another wallet provider
-      // For simulation, we'll use a timeout and mock address
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const mockAddress = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
-      setWalletAddress(mockAddress);
-    } catch (error) {
-      console.error('Wallet connection error:', error);
-    } finally {
-      setIsConnectingWallet(false);
-    }
-  };
-
-  const disconnectWallet = () => {
-    setWalletAddress(null);
-  };
-
- 
-
   const handleDragOver = (e) => {
     e.preventDefault();
     setFileUploadState(prev => ({ ...prev, isDragging: true }));
@@ -985,7 +1062,7 @@ useEffect(() => {
           {walletAddress ? (
             <div className="manufacturer-wallet-connected">
               <span className="manufacturer-wallet-address">
-                {`${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}`}
+                {walletAddress}
               </span>
               <button
                 onClick={disconnectWallet}
@@ -1009,6 +1086,11 @@ useEffect(() => {
               )}
             </button>
           )}
+           {walletError && (
+    <div className="manufacturer-wallet-error">
+      {walletError}
+    </div>
+  )}
           <button
             onClick={() => logout()}
             className="manufacturer-btn manufacturer-btn-small manufacturer-btn-danger"

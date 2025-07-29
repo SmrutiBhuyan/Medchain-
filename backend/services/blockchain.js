@@ -21,6 +21,8 @@ async function createDrugOnBlockchain(drugData) {
         );
         
         await tx.wait();
+        console.log("hash:", tx.hash);
+        
         return { success: true, txHash: tx.hash };
     } catch (error) {
         console.error("Blockchain error:", error);
