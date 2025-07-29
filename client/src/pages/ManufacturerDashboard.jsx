@@ -839,53 +839,101 @@ const handleManualSubmit = async (e) => {
     
     // First record on blockchain
     if (isBlockchainReady && contract) {
+      // Convert dates to Unix timestamps (seconds since epoch)
+      const mfgTimestamp = Math.floor(new Date(drugForm.mfgDate).getTime() / 1000);
+      const expiryTimestamp = Math.floor(new Date(drugForm.expiryDate).getTime() / 1000);
+      
+      // Determine final batch barcode
+      const finalBatchBarcode = drugForm.batchBarcode.trim() || generateBarcode(drugForm.name, drugForm.batch);
+      
+      console.log('Creating drug on blockchain with params:', {
+        name: drugForm.name.trim(),
+        batch: drugForm.batch.trim(),
+        quantity: quantityInt,
+        mfgDate: mfgTimestamp,
+        expiryDate: expiryTimestamp,
+        batchBarcode: finalBatchBarcode
+      });
+
+      // Call the blockchain contract
       const tx = await contract.createDrug(
         drugForm.name.trim(),
         drugForm.batch.trim(),
         quantityInt,
-        Math.floor(new Date(drugForm.mfgDate).getTime() / 1000),
-        Math.floor(new Date(drugForm.expiryDate).getTime() / 1000),
-        drugForm.batchBarcode.trim() || generateBarcode(drugForm.name, drugForm.batch)
+        mfgTimestamp,
+        expiryTimestamp,
+        finalBatchBarcode
       );
+      
+      console.log('Transaction sent, waiting for confirmation...');
       
       // Wait for the transaction to be mined
       const receipt = await tx.wait();
       console.log('Transaction receipt:', receipt);
       
-       // Check if the transaction was successful
+      // Check if the transaction was successful
       if (receipt.status === 1) {
         console.log('Drug successfully recorded on blockchain');
+        
+        // Now save to database
+        const response = await axios.post('http://localhost:5000/api/drugs/create', {
+          name: drugForm.name.trim(),
+          batch: drugForm.batch.trim(),
+          quantity: quantityInt,
+          mfgDate: drugForm.mfgDate,
+          expiryDate: drugForm.expiryDate,
+          batchBarcode: finalBatchBarcode,
+          unitBarcodes: unitBarcodesData.map(u => u.barcode),
+          manufacturerId: user._id,
+          txHash: receipt.transactionHash // Save transaction hash for reference
+        });
+
+        if (response.data.success) {
+          alert(`Drug ${response.data.drug.name} created successfully on blockchain and database`);
+          setDrugForm({
+            name: '',
+            batch: '',
+            quantity: '',
+            mfgDate: '',
+            expiryDate: '',
+            batchBarcode: '',
+            unitBarcodes: []
+          });
+          if (activeTab === 'inventory') {
+            fetchManufacturerDrugs();
+          }
+        }
       } else {
         console.warn('Transaction failed');
         throw new Error('Blockchain transaction failed');
       }
-    }
-
-
-    const response = await axios.post('http://localhost:5000/api/drugs/create', {
-      name: drugForm.name.trim(),
-      batch: drugForm.batch.trim(),
-      quantity: quantityInt,
-      mfgDate: drugForm.mfgDate,
-      expiryDate: drugForm.expiryDate,
-      batchBarcode: drugForm.batchBarcode.trim() || generateBarcode(drugForm.name, drugForm.batch),
-      unitBarcodes: unitBarcodesData.map(u => u.barcode), // Send only barcode strings
-      manufacturerId: user._id
-    });
-
-    if (response.data.success) {
-      alert(`Drug ${response.data.drug.name} created successfully with ${response.data.drug.quantity} units`);
-      setDrugForm({
-        name: '',
-        batch: '',
-        quantity: '',
-        mfgDate: '',
-        expiryDate: '',
-        batchBarcode: '',
-        unitBarcodes: []
+    } else {
+      // If blockchain not ready, just save to database
+      const response = await axios.post('http://localhost:5000/api/drugs/create', {
+        name: drugForm.name.trim(),
+        batch: drugForm.batch.trim(),
+        quantity: quantityInt,
+        mfgDate: drugForm.mfgDate,
+        expiryDate: drugForm.expiryDate,
+        batchBarcode: drugForm.batchBarcode.trim() || generateBarcode(drugForm.name, drugForm.batch),
+        unitBarcodes: unitBarcodesData.map(u => u.barcode),
+        manufacturerId: user._id
       });
-      if (activeTab === 'inventory') {
-        fetchManufacturerDrugs();
+
+      if (response.data.success) {
+        alert(`Drug ${response.data.drug.name} created successfully (database only - blockchain not connected)`);
+        setDrugForm({
+          name: '',
+          batch: '',
+          quantity: '',
+          mfgDate: '',
+          expiryDate: '',
+          batchBarcode: '',
+          unitBarcodes: []
+        });
+        if (activeTab === 'inventory') {
+          fetchManufacturerDrugs();
+        }
       }
     }
   } catch (error) {
@@ -893,7 +941,7 @@ const handleManualSubmit = async (e) => {
     if (error.response?.data?.error) {
       alert(`Error: ${error.response.data.error}`);
     } else {
-      alert('Failed to create drug. Please check the console for details.');
+      alert(`Failed to create drug: ${error.message}`);
     }
   }
 };
