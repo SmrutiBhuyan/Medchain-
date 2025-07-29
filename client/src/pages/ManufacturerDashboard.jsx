@@ -5,9 +5,14 @@ import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeSupportedFormats, Html5Qrco
 import { useAuth } from './AuthContext';
 import axios from 'axios';
 import './ManufacturerDashboard.css';
-import {ethers} from 'ethers'
+import {ethers} from 'ethers';
+  // Import ABI correctly
+        import DrugTrackingABI from '../abi/DrugTrackingABI.json' with { type: 'json' };
+
+
 
 const ManufacturerDashboard = () => {
+
   const { user, logout } = useAuth();  
   const [activeTab, setActiveTab] = useState('drug-creation');
   const [activeSubTab, setActiveSubTab] = useState('bulk');
@@ -155,13 +160,21 @@ useEffect(() => {
       try {
         // Request account access
         await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
         
-        // Replace with your actual contract ABI and address
+      
+        
+        // Handle cases where ABI might be nested
+        const contractABI = Array.isArray(DrugTrackingABI) ? DrugTrackingABI : DrugTrackingABI.abi;
+        
+        if (!Array.isArray(contractABI)) {
+          throw new Error('ABI must be an array');
+        }
+
         const drugTrackingContract = new ethers.Contract(
-          'YOUR_CONTRACT_ADDRESS',
-          DrugTrackingABI,
+          import.meta.env.VITE_CONTRACT_ADDRESS,
+          contractABI,
           signer
         );
         
@@ -169,7 +182,10 @@ useEffect(() => {
         setIsBlockchainReady(true);
       } catch (error) {
         console.error('Error connecting to blockchain:', error);
+        setWalletError('Failed to connect to blockchain: ' + error.message);
       }
+    } else {
+      setWalletError('Please install MetaMask');
     }
   };
 
@@ -832,8 +848,17 @@ const handleManualSubmit = async (e) => {
         drugForm.batchBarcode.trim() || generateBarcode(drugForm.name, drugForm.batch)
       );
       
-      await tx.wait();
-      console.log('Drug recorded on blockchain');
+      // Wait for the transaction to be mined
+      const receipt = await tx.wait();
+      console.log('Transaction receipt:', receipt);
+      
+       // Check if the transaction was successful
+      if (receipt.status === 1) {
+        console.log('Drug successfully recorded on blockchain');
+      } else {
+        console.warn('Transaction failed');
+        throw new Error('Blockchain transaction failed');
+      }
     }
 
 

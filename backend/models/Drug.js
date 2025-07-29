@@ -122,7 +122,17 @@ const DrugSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+    blockchainTxHash: {
+    type: String,
+    trim: true
+  },
+  blockchainStatus: {
+    type: String,
+    enum: ['pending', 'confirmed', 'failed'],
+    default: 'pending'
+  },
+ 
 });
 
 // Indexes
