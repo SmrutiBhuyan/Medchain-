@@ -5,6 +5,7 @@ import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeSupportedFormats, Html5Qrco
 import { useAuth } from './AuthContext';
 import axios from 'axios';
 import './ManufacturerDashboard.css';
+import {ethers} from 'ethers'
 
 const ManufacturerDashboard = () => {
   const { user, logout } = useAuth();  
@@ -21,7 +22,8 @@ const ManufacturerDashboard = () => {
   const [showShipmentsModal, setShowShipmentsModal] = useState(false);
 const [manufacturerShipments, setManufacturerShipments] = useState([]);
 const [isLoadingShipments, setIsLoadingShipments] = useState(false);
-
+const [contract, setContract] = useState(null);
+const [isBlockchainReady, setIsBlockchainReady] = useState(false);
 
   const [previewData, setPreviewData] = useState([]);
   const [shipmentDrugs, setShipmentDrugs] = useState([]);
@@ -46,6 +48,37 @@ const [dashboardStats, setDashboardStats] = useState({
   topDistributors: []
 });
 const [isLoadingStats, setIsLoadingStats] = useState(false);
+
+// / Add this useEffect for blockchain initialization
+useEffect(() => {
+  const initBlockchain = async () => {
+    if (window.ethereum) {
+      try {
+        // Request account access
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        
+        // Replace with your actual contract ABI and address
+        const drugTrackingContract = new ethers.Contract(
+          'YOUR_CONTRACT_ADDRESS',
+          DrugTrackingABI,
+          signer
+        );
+        
+        setContract(drugTrackingContract);
+        setIsBlockchainReady(true);
+      } catch (error) {
+        console.error('Error connecting to blockchain:', error);
+      }
+    }
+  };
+
+  initBlockchain();
+}, []);
+
+
+
 
 const UnitBarcodeInput = ({ quantity, barcodes = [], onBarcodesChange }) => {
   const [localBarcodes, setLocalBarcodes] = useState(Array(quantity).fill(''));
@@ -710,6 +743,22 @@ const handleManualSubmit = async (e) => {
         currentHolder: 'manufacturer'
       });
     }
+    
+    // First record on blockchain
+    if (isBlockchainReady && contract) {
+      const tx = await contract.createDrug(
+        drugForm.name.trim(),
+        drugForm.batch.trim(),
+        quantityInt,
+        Math.floor(new Date(drugForm.mfgDate).getTime() / 1000),
+        Math.floor(new Date(drugForm.expiryDate).getTime() / 1000),
+        drugForm.batchBarcode.trim() || generateBarcode(drugForm.name, drugForm.batch)
+      );
+      
+      await tx.wait();
+      console.log('Drug recorded on blockchain');
+    }
+
 
     const response = await axios.post('http://localhost:5000/api/drugs/create', {
       name: drugForm.name.trim(),
