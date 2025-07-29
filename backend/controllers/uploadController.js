@@ -2,11 +2,15 @@ import Drug from '../models/Drug.js';
 import { generateBarcode } from '../utils/barcodeGenerator.js';
 import fs from 'fs';
 import csvParser from 'csv-parser';
+import { ethers } from 'ethers'
 import { readFileSync } from 'fs';
-const DrugTrackingABI = JSON.parse(readFileSync('./contracts/DrugTrackingABI.json', 'utf-8'));
+import DrugTrackingABI from '../contracts/DrugTrackingABI.json' assert { type: 'json' };
+import { config } from "dotenv";
+config();
+
 
 // / Initialize blockchain connection
-const provider = new ethers.providers.JsonRpcProvider(process.env.SEPOLIA_URL);
+const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_URL);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 const drugTrackingContract = new ethers.Contract(
   process.env.CONTRACT_ADDRESS,
@@ -105,6 +109,28 @@ export const uploadCSV = async (req, res) => {
               currentHolder: 'manufacturer'
             });
 
+            // Save to blockchain
+            try {
+              const tx = await drugTrackingContract.createDrug(
+                drugData.name,
+                drugData.batch,
+                quantity,
+                Math.floor(new Date(drugData.mfgDate).getTime() / 1000), // Convert to Unix timestamp
+                Math.floor(new Date(drugData.expiryDate).getTime() / 1000), // Convert to Unix timestamp
+                batchBarcode
+              );
+              
+              await tx.wait();
+              console.log(`Drug ${batchBarcode} recorded on blockchain`);
+            } catch (blockchainError) {
+              console.error('Blockchain error:', blockchainError);
+              blockchainErrors.push({
+                row: drugData,
+                error: 'Failed to record on blockchain: ' + blockchainError.message
+              });
+            }
+
+
             processedDrugs.push(drug);
           } catch (err) {
             errors.push({
@@ -121,7 +147,9 @@ export const uploadCSV = async (req, res) => {
           success: true,
           importedCount: processedDrugs.length,
           errorCount: errors.length,
-          errors: errors
+          blockchainErrorCount: blockchainErrors.length,
+          errors: errors,
+          blockchainErrors: blockchainErrors
         });
       });
   } catch (err) {
