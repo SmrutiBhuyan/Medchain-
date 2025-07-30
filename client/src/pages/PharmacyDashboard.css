@@ -1044,3 +1044,49 @@ html, body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Existing styles */
+
+/* ... (your existing CSS) ... */
+
+/* Styles for the Stock Planner Tab container */
+.pharma-stock-planner-tab {
+  /* Set a maximum width for the container */
+  max-width: 1200px; /* Adjust as needed */
+  margin: 0 auto; /* Center the container */
+  padding: 20px; /* Add some padding around the component */
+  background-color: #ffffff; /* White background for the planner */
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  height: calc(100vh - 180px); /* Calculate height based on viewport, adjust 180px as needed for header/footer space */
+  overflow-y: auto; /* Enable vertical scrolling */
+  overflow-x: hidden; /* Hide horizontal overflow */
+  display: flex; /* Use flexbox to ensure content stretches/fills */
+  flex-direction: column; /* Stack children vertically */
+}
+
+/* Optional: Styles for the DiseaseInventoryChecker itself if you need to override internal padding/margin */
+.pharma-stock-planner-tab .epidemic-preparedness-container {
+  padding: 0; /* Remove default padding if set by the component's internal CSS */
+  margin: 0; /* Remove default margin */
+  flex-grow: 1; /* Allow the component to grow and fill available space */
+}
+
+/* Add a scrollbar styling (optional, for custom scrollbar look) */
+.pharma-stock-planner-tab::-webkit-scrollbar {
+  width: 10px;
+}
+
+.pharma-stock-planner-tab::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.pharma-stock-planner-tab::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.pharma-stock-planner-tab::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

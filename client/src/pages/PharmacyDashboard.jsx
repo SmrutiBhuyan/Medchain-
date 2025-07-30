@@ -1339,7 +1339,7 @@ const handleRejectShipment = async (shipmentId) => {
 {activeTab === 'stockPlanner' && (
   <div className="pharma-stock-planner-tab">
     <DiseaseInventoryChecker 
-      inventory={inventory} 
+      className="disease-inventory-component" inventory={inventory} 
       onClose={() => setActiveTab('dashboard')} 
     />
   </div>

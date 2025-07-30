@@ -1,367 +1,485 @@
-/* DiseaseInventoryChecker.css */
-
 /* General Body and Container Styles */
-html, body {
-  height: 100%; /* Ensure html and body take full height */
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden; /* Prevent horizontal scrolling */
-  /* overflow-y: auto; is usually default, but can be explicitly set if needed */
-}
-
 body {
-  background-color: #f0f2f5; /* Light gray background for the whole page */
+  background-color: #f0f2f5; /* Light gray background */
   font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: #333;
+  line-height: 1.6;
 }
 
 .epidemic-preparedness-container {
-  padding-top: 30px;
-  padding-bottom: 30px;
+  padding-top: 40px;
+  padding-bottom: 60px;
   max-width: 1400px; /* Max width for content */
-  margin: auto; /* Center the container */
-  /* If you want this container itself to scroll within a fixed parent,
-     you would give it a height and overflow-y: auto; */
+  margin: 0 auto; /* Center the container */
 }
 
-/* --- (rest of your existing CSS code) --- */
-
-/* Heading Styles */
-h2 {
-  color: #2c3e50; /* Darker text for main headings */
-  margin-bottom: 25px;
-  display: flex;
-  align-items: center;
-  font-weight: 600;
-}
-
-h2 .bi-geo-alt-fill { /* Icon next to the main heading */
-  color: #007bff; /* Primary blue color for the location icon */
-  margin-right: 10px;
-}
-
-h4 {
-  color: #34495e; /* Slightly lighter dark for subheadings */
-  font-weight: 600;
-}
-
-h5 {
-  color: #ffffff; /* White text for card headers */
-  font-weight: 500;
-  margin-bottom: 0;
-}
-
-/* Card Styles */
+/* --- Global Card Styles --- */
 .card {
-  border: none; /* Remove default card borders */
-  border-radius: 12px; /* Rounded corners for cards */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Soft shadow for depth */
-  overflow: hidden; /* Ensures content respects border-radius */
+  border: none;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); /* Soft shadow */
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); /* Slightly larger shadow on hover */
 }
 
 .card-header {
-  background-color: #007bff; /* Primary blue for general headers */
+  background: linear-gradient 135deg, var(--bs-primary) 0%, darken(var(--bs-primary), 10%) 100%;
   color: white;
-  padding: 15px 20px;
-  font-size: 1.15rem;
+  padding: 1rem 1.5rem;
+  border-bottom: none;
+  font-weight: 600;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.125); /* Subtle separator */
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
 
-.card-header.bg-warning {
-  background-color: #ffc107 !important; /* Bootstrap warning yellow */
-  color: #343a40 !important; /* Dark text on warning background */
-}
-
-.card-header.bg-info {
-  background-color: #17a2b8 !important; /* Bootstrap info blue */
-  color: white !important;
-}
-
-.card-header.bg-primary {
-  background-color: #007bff !important; /* Bootstrap primary blue */
-  color: white !important;
+.card-header h5 {
+  margin-bottom: 0;
+  font-size: 1.25rem;
 }
 
 .card-body {
-  padding: 25px;
+  padding: 1.5rem;
 }
 
-/* Form Styles within Cards */
-.form-group label {
-  font-weight: 500;
-  color: #34495e;
-  margin-bottom: 8px;
-}
-
-.form-control,
-.form-select {
-  border-radius: 8px; /* Slightly rounded form elements */
-  border: 1px solid #ced4da;
-  padding: 10px 15px;
-  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-
-.form-control:focus,
-.form-select:focus {
-  border-color: #80bdff;
-  box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
-}
-
-.form-check-inline {
-  margin-right: 1rem;
-}
-
-/* Button Styles */
-.btn-primary {
-  background-color: #007bff;
-  border-color: #007bff;
-  padding: 10px 25px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.btn-primary:hover {
-  background-color: #0056b3;
-  border-color: #0056b3;
-}
-
-.btn-primary:disabled {
-  background-color: #a0cfee;
-  border-color: #a0cfee;
-  cursor: not-allowed;
-}
-
-/* List Group Styles */
-.list-group-item {
-  border: none; /* Remove borders between list items */
-  padding: 12px 0;
-  border-bottom: 1px solid #e9ecef; /* Add a subtle divider */
-  display: flex; /* For alignment of content and badges */
-  justify-content: space-between;
-  align-items: center;
-  background-color: transparent; /* Inherit background from parent card */
-}
-
-.list-group-item:last-child {
-  border-bottom: none; /* No border for the last item */
-}
-
-/* Badge Styles for Inventory Assessment */
-.badge {
-  padding: 0.6em 0.9em;
-  border-radius: 15px; /* Pill-shaped badges */
-  font-size: 0.85em;
-  font-weight: 600;
-  min-width: 90px; /* Ensure consistent width */
+/* --- Dashboard Title --- */
+.dashboard-title {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #2c3e50; /* Dark blue-gray */
+  margin-bottom: 40px;
   text-align: center;
+  position: relative;
+  letter-spacing: -0.5px;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.badge.bg-success {
-  background-color: #28a745 !important; /* Green for sufficient stock */
-  color: white;
-}
-
-.badge.bg-danger {
-  background-color: #dc3545 !important; /* Red for low stock */
-  color: white;
-}
-
-/* Table Styles */
-.table {
-  width: 100%;
-  margin-bottom: 1rem;
-  color: #212529;
-  border-collapse: separate; /* Required for rounded borders on cells */
-  border-spacing: 0; /* Remove default spacing */
-}
-
-.table thead th {
-  background-color: #e9ecef; /* Light background for table headers */
-  border-bottom: 2px solid #dee2e6;
-  padding: 12px 15px;
-  font-weight: 600;
-  color: #495057;
-  text-align: left;
-}
-
-.table tbody td {
-  padding: 12px 15px;
+.dashboard-title .bi-geo-alt {
+  font-size: 2.5rem;
   vertical-align: middle;
-  border-top: 1px solid #dee2e6;
+  color: #007bff; /* Bootstrap primary color */
+  animation: pulse 2s infinite; /* Icon animation */
 }
 
-.table-striped tbody tr:nth-of-type(odd) {
-  background-color: rgba(0, 0, 0, 0.03); /* Subtle stripe effect */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
-/* Alert Styles */
-.alert {
-  border-radius: 8px;
-  padding: 20px;
-  font-size: 1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+/* --- Guide Card (Accordion) --- */
+.guide-card {
+  background: linear-gradient(120deg, #e0f7fa, #bbdefb); /* Light blue gradient */
+  border: 1px solid #b3e5fc;
+  margin-bottom: 40px;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
 }
 
-.alert h4 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  color: inherit; /* Inherit color from alert variant */
+.guide-card .card-body {
+  padding: 2rem;
 }
 
-.alert-danger {
-  background-color: #f8d7da;
-  color: #721c24;
-  border-color: #f5c6cb;
+.guide-card h4 {
+  color: #01579b; /* Darker blue for headings */
+  font-weight: 700;
+  font-size: 1.8rem;
 }
 
-.alert-warning {
-  background-color: #fff3cd;
-  color: #856404;
-  border-color: #ffeeba;
+.guide-card .bi-info-circle {
+  color: #0277bd; /* Info icon color */
+  font-size: 2rem;
 }
 
-.alert-info {
-  background-color: #d1ecf1;
-  color: #0c5460;
-  border-color: #bee5eb;
+.accordion-wrapper {
+  margin-top: 25px;
 }
 
-/* Spinner Styles */
-.spinner-border {
-  width: 3rem;
-  height: 3rem;
-  color: #007bff;
-}
-
-.visually-hidden {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  padding: 0 !important;
-  margin: -1px !important;
-  overflow: hidden !important;
-  clip: rect(0, 0, 0, 0) !important;
-  white-space: nowrap !important;
-  border: 0 !important;
-}
-
-/* Accordion Styles (for the guide section) */
 .accordion-item {
-  border: 1px solid #e0e0e0;
-  margin-bottom: 10px;
-  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #cceeff;
+  border-radius: 10px;
+  margin-bottom: 12px;
   overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+}
+
+.accordion-item:last-child {
+  margin-bottom: 0;
+}
+
+.accordion-item.active {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-color: #90caf9;
 }
 
 .accordion-header {
-  background-color: #f8f9fa; /* Light background for headers */
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.accordion-button {
-  color: #34495e;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
   font-weight: 600;
-  padding: 15px 20px;
-  background-color: transparent;
-  border: none;
-  border-radius: 8px;
-  text-align: left;
-  width: 100%;
-  transition: background-color 0.2s ease;
+  color: #3f51b5; /* Indigo color */
+  position: relative;
 }
 
-.accordion-button:not(.collapsed) {
-  background-color: #e9ecef; /* Slightly darker when open */
-  color: #007bff;
-  box-shadow: none;
-}
-
-.accordion-button:focus {
-  box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
-  border-color: #80bdff;
-}
-
-.accordion-body {
-  padding: 20px;
-  background-color: #ffffff;
-  border-top: 1px solid #e9ecef;
-  color: #495057;
-}
-
-.accordion-body ol,
-.accordion-body ul {
+.accordion-header h5 {
   margin-bottom: 0;
-  padding-left: 20px; /* Indent lists */
+  font-size: 1.15rem;
 }
 
-.accordion-body li {
+.accordion-header svg {
+  transition: transform 0.3s ease;
+  color: #0d47a1;
+}
+
+.accordion-item.active .accordion-header svg {
+  transform: rotate(180deg);
+}
+
+.accordion-content {
+  padding: 0 1.5rem 1.5rem;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+}
+
+.accordion-item.active .accordion-content {
+  max-height: 200px; /* Adjust as needed */
+  padding-top: 0.5rem;
+}
+
+.accordion-content ol {
+  padding-left: 20px;
+  margin-bottom: 0;
+}
+
+.accordion-content li {
+  margin-bottom: 8px;
+  color: #555;
+}
+
+.accordion-content strong {
+  color: #212121;
+}
+
+/* --- Location Settings Card --- */
+.location-card .card-header {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); /* Primary blue gradient */
+}
+
+.location-card .form-label {
+  font-weight: 600;
+  color: #495057;
   margin-bottom: 8px;
 }
 
-.accordion-body li strong {
-  color: #2c3e50;
+.location-card .form-control,
+.location-card .form-select {
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  padding: 0.75rem 1rem;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.accordion-body p.mb-0 {
-  font-style: italic;
-  font-size: 0.95em;
-  color: #6c757d;
-  margin-top: 15px;
+.location-card .form-control:focus,
+.location-card .form-select:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
 }
 
-/* Utility Classes */
-.mb-4 {
-  margin-bottom: 1.5rem !important;
+.location-card .form-check-label {
+  font-weight: normal;
+  color: #333;
 }
 
-.my-4 {
-  margin-top: 1.5rem !important;
-  margin-bottom: 1.5rem !important;
+.location-card .btn-primary {
+  background: linear-gradient(90deg, #28a745 0%, #218838 100%); /* Green gradient for action */
+  border: none;
+  border-radius: 8px;
+  padding: 0.8rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2);
 }
 
-.my-5 {
-  margin-top: 3rem !important;
-  margin-bottom: 3rem !important;
+.location-card .btn-primary:hover {
+  background: linear-gradient(90deg, #218838 0%, #1e7e34 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
 }
 
+.location-card .btn-primary:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* --- Active Outbreaks Table Card --- */
+.card .bg-danger {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important; /* Red gradient */
+}
+
+.table-responsive {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table thead.table-dark {
+  background-color: #343a40;
+  color: white;
+}
+
+.table th, .table td {
+  padding: 1rem;
+  vertical-align: middle;
+}
+
+.table tbody tr {
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background-color: #f8f9fa;
+  transform: scale(1.005);
+}
+
+.table .badge {
+  font-size: 0.85em;
+  padding: 0.5em 0.8em;
+  border-radius: 50rem;
+  font-weight: 600;
+}
+
+.table .bi-thermometer {
+  color: #dc3545; /* Red icon for disease */
+  font-size: 1.1em;
+}
+
+/* --- Critical Medications Needed Card --- */
+.card .bg-info {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important; /* Teal gradient */
+}
+
+.list-group-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1.25rem;
+  border: none;
+  border-bottom: 1px solid #eee;
+  background-color: rgba(255, 255, 255, 0.95);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.list-group-item:last-child {
+  border-bottom: none;
+}
+
+.list-group-item:hover {
+  background-color: #e9f5fd;
+  transform: translateX(5px);
+}
+
+.list-group-item .bi-clipboard2-pulse,
+.list-group-item .bi-capsule {
+  color: #17a2b8; /* Teal icon for meds */
+  font-size: 1.1em;
+}
+
+.list-group-item .badge {
+  min-width: 80px; /* Ensure badges have similar width */
+  text-align: center;
+}
+
+.list-group-item .badge.bg-success {
+  background-color: #28a745 !important;
+}
+
+.list-group-item .badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #333 !important; /* Ensure good contrast */
+}
+
+.list-group-item .badge.bg-danger {
+  background-color: #dc3545 !important;
+}
+
+/* --- Inventory Status Card --- */
+.card .bg-warning.text-dark {
+  background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%) !important; /* Yellow gradient */
+  color: #333 !important;
+}
+
+.inventory-status-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.inventory-status-cards .card {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  border-left: 5px solid; /* For colored border */
+}
+
+.inventory-status-cards .card.border-danger {
+  border-color: #dc3545 !important;
+}
+
+.inventory-status-cards .card.border-warning {
+  border-color: #ffc107 !important;
+}
+
+.inventory-status-cards .card.border-success {
+  border-color: #28a745 !important;
+}
+
+.inventory-status-cards .card-body {
+  padding: 1rem 1.25rem;
+}
+
+.inventory-status-cards h6 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #212529;
+}
+
+.inventory-status-cards h4 {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.inventory-status-cards small {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
+
+.inventory-status-cards small svg {
+  margin-right: 5px;
+  font-size: 0.9em;
+}
+
+.inventory-status-cards .alert {
+  padding: 0.5rem 1rem;
+  font-size: 0.9em;
+  margin-top: 10px;
+  border-radius: 8px;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+}
+
+.inventory-status-cards .alert svg {
+  font-size: 1em;
+}
+
+/* --- No Outbreaks/Loading States --- */
 .text-center {
-  text-align: center !important;
+  text-align: center;
 }
 
-.me-2 {
-  margin-right: 0.5rem !important;
+.spinner-border {
+  color: #007bff;
 }
 
-.mt-3 {
-  margin-top: 1rem !important;
+.alert-danger h4 {
+  color: #721c24; /* Dark red for error heading */
 }
 
-/* Responsive Adjustments */
+.alert-danger p {
+  color: #721c24;
+}
+
+.alert-info {
+  background-color: #e0f7fa;
+  border-color: #b2ebf2;
+  color: #006064;
+}
+
+.alert-info svg {
+  color: #00bcd4;
+}
+
+/* --- General Icons & Badges --- */
+.bi-exclamation-triangle-fill {
+  color: #ffc107; /* Warning yellow */
+}
+
+.bi-check-circle-fill {
+  color: #28a745; /* Success green */
+}
+
+.bi-clipboard2-pulse, .bi-capsule, .bi-thermometer {
+  vertical-align: middle;
+}
+
+/* --- Responsiveness --- */
 @media (max-width: 991.98px) {
-  .epidemic-preparedness-container {
-    padding-left: 15px;
-    padding-right: 15px;
+  .dashboard-title {
+    font-size: 2.2rem;
+  }
+  
+  .guide-card .card-body {
+    padding: 1.5rem;
+  }
+  
+  .guide-card h4 {
+    font-size: 1.5rem;
+  }
+
+  .location-card,
+  .active-outbreaks-card,
+  .critical-meds-card,
+  .inventory-card {
+    margin-bottom: 25px;
   }
 }
 
 @media (max-width: 767.98px) {
+  .dashboard-title {
+    font-size: 1.8rem;
+    margin-bottom: 30px;
+  }
+
+  .dashboard-title .bi-geo-alt {
+    font-size: 2rem;
+  }
+  
   .card-body {
-    padding: 20px;
+    padding: 1rem;
   }
 
-  .table-responsive {
-    border: 1px solid #dee2e6; /* Add border for responsiveness */
-    border-radius: 8px;
-    overflow-x: auto; /* Enable horizontal scrolling */
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  .accordion-header {
+    padding: 0.8rem 1rem;
   }
 
-  .table thead th,
-  .table tbody td {
-    white-space: nowrap; /* Prevent text wrapping in small screens */
+  .accordion-header h5 {
+    font-size: 1rem;
+  }
+
+  .accordion-content {
+    padding: 0 1rem 1rem;
+  }
+
+  .table th, .table td {
+    padding: 0.8rem;
+  }
+
+  .list-group-item {
+    padding: 0.7rem 1rem;
   }
 }

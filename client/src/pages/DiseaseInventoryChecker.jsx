@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Container, Row, Col, Form, Button, Card, 
-  ListGroup, Alert, Spinner, Table, Breadcrumb, Accordion
+  ListGroup, Alert, Spinner, Table, Badge
 } from 'react-bootstrap';
 import axios from 'axios';
-import { GeoAlt as LocationIcon, InfoCircle } from 'react-bootstrap-icons';
+import { 
+  GeoAlt as LocationIcon, 
+  InfoCircle, 
+  ChevronDown, 
+  ChevronUp,
+  ExclamationTriangleFill,
+  CheckCircleFill,
+  Clipboard2Pulse,
+  Capsule,
+  Thermometer
+} from 'react-bootstrap-icons';
 import { useNavigate } from 'react-router-dom';
 import './DiseaseInventoryChecker.css';
 
@@ -21,6 +31,13 @@ const DiseaseInventoryChecker = ({ inventory }) => {
   const [localOutbreaks, setLocalOutbreaks] = useState([]);
   const [requiredMedications, setRequiredMedications] = useState([]);
   const [inventoryAssessment, setInventoryAssessment] = useState({});
+  const [activeAccordion, setActiveAccordion] = useState(['0']);
+
+  const toggleAccordion = (key) => {
+    setActiveAccordion(prev => 
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    );
+  };
 
   // Fetch disease and outbreak data
   useEffect(() => {
@@ -34,15 +51,8 @@ const DiseaseInventoryChecker = ({ inventory }) => {
           axios.get('http://localhost:5000/api/outbreaks')
         ]);
         
-        if (!Array.isArray(diseasesResponse?.data)) {
-          throw new Error('Invalid disease data format from API');
-        }
-        if (!Array.isArray(outbreaksResponse?.data)) {
-          throw new Error('Invalid outbreak data format from API');
-        }
-        
-        setDiseaseData(diseasesResponse.data);
-        setOutbreakReports(outbreaksResponse.data);
+        setDiseaseData(diseasesResponse.data || []);
+        setOutbreakReports(outbreaksResponse.data || []);
       } catch (err) {
         console.error('Data fetch error:', err);
         setError(err.message || 'Failed to load epidemic data');
@@ -66,22 +76,18 @@ const DiseaseInventoryChecker = ({ inventory }) => {
       let outbreaks = [];
       
       if (locationMethod === 'state') {
-        if (!selectedState) {
-          throw new Error('Please select a state');
-        }
+        if (!selectedState) throw new Error('Please select a state');
         outbreaks = outbreakReports.filter(report => 
           report.state?.toLowerCase() === selectedState.toLowerCase()
         );
       } else {
-        if (!latitude || !longitude) {
-          throw new Error('Please enter both latitude and longitude');
-        }
+        if (!latitude || !longitude) throw new Error('Please enter both latitude and longitude');
         const response = await axios.post('/api/outbreaks/nearby', {
           latitude,
           longitude,
           radius: 20
         });
-        outbreaks = Array.isArray(response?.data) ? response.data : [];
+        outbreaks = response?.data || [];
       }
       
       setLocalOutbreaks(outbreaks);
@@ -127,8 +133,9 @@ const DiseaseInventoryChecker = ({ inventory }) => {
             i.name && i.name.toLowerCase() === med.toLowerCase()
           );
           assessment[med] = {
-            sufficient: item && item.quantity > 20,
-            stock: item?.quantity || 0
+            sufficient: item && item.quantity >= 10, // Changed threshold to 10
+            stock: item?.quantity || 0,
+            critical: item && item.quantity < 5 // Critical if less than 5
           };
         });
         
@@ -169,58 +176,62 @@ const DiseaseInventoryChecker = ({ inventory }) => {
 
   return (
     <Container fluid className="epidemic-preparedness-container">
- <Card className="mb-4 bg-light">
+      <Card className="mb-4 guide-card shadow-sm">
         <Card.Body>
           <div className="d-flex align-items-center mb-3">
             <InfoCircle size={24} className="me-2 text-primary" />
             <h4 className="mb-0">Pharmacist's Outbreak Preparedness Guide</h4>
           </div>
           
-          <Accordion defaultActiveKey="0">
-            <Accordion.Item eventKey="0">
-              <Accordion.Header>How to Use This Tool</Accordion.Header>
-              <Accordion.Body>
-                <ol>
-                  <li><strong>Set Your Location</strong> - Select your state or enter GPS coordinates to analyze local disease outbreaks</li>
-                  <li><strong>Click "Analyze Local Situation"</strong> - The system will check for active outbreaks in your area</li>
-                  <li><strong>Review Results</strong>:
-                    <ul>
-                      <li>Active Outbreaks table shows current disease threats</li>
-                      <li>Critical Medications list identifies drugs you may need</li>
-                      <li>Inventory Assessment highlights stock levels (green = sufficient, red = low)</li>
-                    </ul>
-                  </li>
-                  <li><strong>Take Action</strong> - Adjust orders for medications marked in red to prepare for potential increased demand</li>
-                </ol>
-              </Accordion.Body>
-            </Accordion.Item>
+          <div className="accordion-wrapper">
+            <div 
+              className={`accordion-item ${activeAccordion.includes('0') ? 'active' : ''}`}
+              onClick={() => toggleAccordion('0')}
+            >
+              <div className="accordion-header">
+                <h5>How to Use This Tool</h5>
+                {activeAccordion.includes('0') ? <ChevronUp /> : <ChevronDown />}
+              </div>
+              {activeAccordion.includes('0') && (
+                <div className="accordion-content">
+                  <ol>
+                    <li><strong>Set Your Location</strong> - Select your state or enter GPS coordinates</li>
+                    <li><strong>Click "Analyze Local Situation"</strong> - Check for active outbreaks</li>
+                    <li><strong>Review Results</strong> - See critical medications and inventory status</li>
+                    <li><strong>Take Action</strong> - Adjust orders for medications with low stock</li>
+                  </ol>
+                </div>
+              )}
+            </div>
             
-            <Accordion.Item eventKey="1">
-              <Accordion.Header>Why This Matters</Accordion.Header>
-              <Accordion.Body>
-                <p>This tool helps you:</p>
-                <ul>
-                  <li>Stay ahead of medication demand during outbreaks</li>
-                  <li>Prevent stockouts of critical treatments</li>
-                  <li>Support community health during epidemics</li>
-                  <li>Make data-driven inventory decisions</li>
-                </ul>
-                <p className="mb-0"><strong>Recommended:</strong> Check weekly for updates and before placing large orders.</p>
-              </Accordion.Body>
-            </Accordion.Item>
-          </Accordion>
+            <div 
+              className={`accordion-item ${activeAccordion.includes('1') ? 'active' : ''}`}
+              onClick={() => toggleAccordion('1')}
+            >
+              <div className="accordion-header">
+                <h5>Why This Matters</h5>
+                {activeAccordion.includes('1') ? <ChevronUp /> : <ChevronDown />}
+              </div>
+              {activeAccordion.includes('1') && (
+                <div className="accordion-content">
+                  <p>This tool helps you stay ahead of medication demand during outbreaks and prevent stockouts.</p>
+                </div>
+              )}
+            </div>
+          </div>
         </Card.Body>
       </Card>
-      <h2 className="my-4">
+
+      <h2 className="my-4 dashboard-title">
         <LocationIcon className="me-2" />
         Epidemic Preparedness Dashboard
       </h2>
 
       <Row>
         <Col lg={4}>
-          <Card className="mb-4">
-            <Card.Header>
-              <h5>📍 Location Settings</h5>
+          <Card className="mb-4 location-card shadow-sm">
+            <Card.Header className="bg-primary text-white">
+              <h5><LocationIcon className="me-2" /> Location Settings</h5>
             </Card.Header>
             <Card.Body>
               <Form onSubmit={analyzeLocalEpidemic}>
@@ -239,7 +250,7 @@ const DiseaseInventoryChecker = ({ inventory }) => {
                     <Form.Check
                       inline
                       type="radio"
-                      label="By GPS Coordinates"
+                      label="By GPS"
                       name="locationMethod"
                       id="gps-method"
                       checked={locationMethod === 'gps'}
@@ -258,12 +269,8 @@ const DiseaseInventoryChecker = ({ inventory }) => {
                       disabled={!outbreakReports.length}
                     >
                       <option value="">Select a state</option>
-                      {outbreakReports.map((report, index) => (
-                        report.state && (
-                          <option key={`${report.state}-${index}`} value={report.state}>
-                            {report.state}
-                          </option>
-                        )
+                      {[...new Set(outbreakReports.map(report => report.state))].map((state, index) => (
+                        state && <option key={index} value={state}>{state}</option>
                       ))}
                     </Form.Select>
                   </Form.Group>
@@ -294,8 +301,20 @@ const DiseaseInventoryChecker = ({ inventory }) => {
                   </>
                 )}
                 
-                <Button variant="primary" type="submit" disabled={isLoading}>
-                  {isLoading ? 'Analyzing...' : 'Analyze Local Situation'}
+                <Button 
+                  variant="primary" 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="w-100 mt-3"
+                >
+                  {isLoading ? (
+                    <>
+                      <Spinner animation="border" size="sm" className="me-2" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    'Analyze Local Situation'
+                  )}
                 </Button>
               </Form>
             </Card.Body>
@@ -305,30 +324,40 @@ const DiseaseInventoryChecker = ({ inventory }) => {
         <Col lg={8}>
           {localOutbreaks.length > 0 ? (
             <>
-              <Card className="mb-4">
-                <Card.Header className="bg-warning text-dark">
-                  <h5>🦠 Active Outbreaks in Your Area</h5>
+              <Card className="mb-4 shadow-sm">
+                <Card.Header className="bg-danger text-white">
+                  <h5><ExclamationTriangleFill className="me-2" /> Active Outbreaks in Your Area</h5>
                 </Card.Header>
                 <Card.Body>
                   <div className="table-responsive">
-                    <Table striped bordered hover size="sm">
-                      <thead>
+                    <Table striped bordered hover>
+                      <thead className="table-dark">
                         <tr>
-                          <th>State</th>
-                          <th>District</th>
                           <th>Disease</th>
+                          <th>Location</th>
                           <th>Cases</th>
-                          <th>Deaths</th>
+                          <th>Status</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {localOutbreaks.map((outbreak, index) => (
+                        {localOutbreaks.slice(0, 5).map((outbreak, index) => (
                           <tr key={index}>
-                            <td>{outbreak.state || 'N/A'}</td>
-                            <td>{outbreak.district || 'N/A'}</td>
-                            <td>{outbreak.disease || 'N/A'}</td>
-                            <td>{outbreak.cases || '0'}</td>
-                            <td>{outbreak.deaths || '0'}</td>
+                            <td>
+                              <Thermometer className="me-2 text-danger" />
+                              <strong>{outbreak.disease || 'Unknown'}</strong>
+                            </td>
+                            <td>
+                              {outbreak.district ? `${outbreak.district}, ` : ''}
+                              {outbreak.state || 'N/A'}
+                            </td>
+                            <td className="text-center">
+                              <Badge bg="danger">{outbreak.cases || '0'}</Badge>
+                            </td>
+                            <td>
+                              <Badge bg={outbreak.status === 'contained' ? 'success' : 'warning'}>
+                                {outbreak.status || 'active'}
+                              </Badge>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -339,53 +368,105 @@ const DiseaseInventoryChecker = ({ inventory }) => {
 
               <Row>
                 <Col md={6}>
-                  <Card className="mb-4">
-                    <Card.Header className="bg-primary text-white">
-                      <h5>💊 Critical Medications Needed</h5>
+                  <Card className="mb-4 shadow-sm h-100">
+                    <Card.Header className="bg-info text-white">
+                      <h5><Capsule className="me-2" /> Critical Medications Needed</h5>
                     </Card.Header>
                     <Card.Body>
                       {requiredMedications.length > 0 ? (
                         <ListGroup variant="flush">
                           {requiredMedications.map((med, index) => (
-                            <ListGroup.Item key={index}>
-                              {med}
+                            <ListGroup.Item key={index} className="d-flex align-items-center">
+                              <div className="me-auto">
+                                <Clipboard2Pulse className="me-2 text-info" />
+                                {med}
+                              </div>
+                              {inventoryAssessment[med]?.critical ? (
+                                <Badge bg="danger">Critical</Badge>
+                              ) : inventoryAssessment[med]?.sufficient ? (
+                                <Badge bg="success">In Stock</Badge>
+                              ) : (
+                                <Badge bg="warning">Low Stock</Badge>
+                              )}
                             </ListGroup.Item>
                           ))}
                         </ListGroup>
                       ) : (
-                        <Alert variant="info">No critical medications identified</Alert>
+                        <Alert variant="info" className="mb-0">
+                          No critical medications identified
+                        </Alert>
                       )}
                     </Card.Body>
                   </Card>
                 </Col>
 
                 <Col md={6}>
-                  <Card className="mb-4">
-                    <Card.Header className="bg-info text-white">
-                      <h5>📊 Inventory Assessment</h5>
+                  <Card className="mb-4 shadow-sm h-100">
+                    <Card.Header className="bg-warning text-dark">
+                      <h5><Clipboard2Pulse className="me-2" /> Inventory Status</h5>
                     </Card.Header>
                     <Card.Body>
                       {requiredMedications.length > 0 ? (
-                        <ListGroup variant="flush">
-                          {requiredMedications.map((med, index) => (
-                            <ListGroup.Item key={index}>
-                              <div className="d-flex justify-content-between align-items-center">
-                                <span>{med}</span>
-                                {inventoryAssessment[med]?.sufficient ? (
-                                  <span className="badge bg-success">
-                                    Stock: {inventoryAssessment[med].stock}
-                                  </span>
-                                ) : (
-                                  <span className="badge bg-danger">
-                                    {inventoryAssessment[med]?.stock || 0} left
-                                  </span>
-                                )}
-                              </div>
-                            </ListGroup.Item>
-                          ))}
-                        </ListGroup>
+                        <div className="inventory-status-cards">
+                          {requiredMedications.map((med, index) => {
+                            const stock = inventoryAssessment[med]?.stock || 0;
+                            const isCritical = inventoryAssessment[med]?.critical;
+                            const isLow = !inventoryAssessment[med]?.sufficient && !isCritical;
+                            
+                            return (
+                              <Card 
+                                key={index} 
+                                className={`mb-3 ${isCritical ? 'border-danger' : isLow ? 'border-warning' : 'border-success'}`}
+                              >
+                                <Card.Body>
+                                  <div className="d-flex justify-content-between align-items-center">
+                                    <div>
+                                      <h6 className="mb-1">{med}</h6>
+                                      <small className="text-muted">Current stock</small>
+                                    </div>
+                                    <div className="text-end">
+                                      <h4 className={`mb-0 ${isCritical ? 'text-danger' : isLow ? 'text-warning' : 'text-success'}`}>
+                                        {stock}
+                                      </h4>
+                                      {isCritical ? (
+                                        <small className="text-danger">
+                                          <ExclamationTriangleFill className="me-1" />
+                                          Critical level!
+                                        </small>
+                                      ) : isLow ? (
+                                        <small className="text-warning">
+                                          <ExclamationTriangleFill className="me-1" />
+                                          Low stock
+                                        </small>
+                                      ) : (
+                                        <small className="text-success">
+                                          <CheckCircleFill className="me-1" />
+                                          Sufficient
+                                        </small>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {isCritical && (
+                                    <Alert variant="danger" className="mt-2 mb-0 p-2">
+                                      <ExclamationTriangleFill className="me-2" />
+                                      <strong>Urgent restock needed!</strong> Only {stock} units remaining.
+                                    </Alert>
+                                  )}
+                                  {isLow && (
+                                    <Alert variant="warning" className="mt-2 mb-0 p-2">
+                                      <ExclamationTriangleFill className="me-2" />
+                                      Consider restocking soon. Only {stock} units remaining.
+                                    </Alert>
+                                  )}
+                                </Card.Body>
+                              </Card>
+                            );
+                          })}
+                        </div>
                       ) : (
-                        <Alert variant="info">No inventory assessment available</Alert>
+                        <Alert variant="info" className="mb-0">
+                          No inventory assessment available
+                        </Alert>
                       )}
                     </Card.Body>
                   </Card>
@@ -394,11 +475,19 @@ const DiseaseInventoryChecker = ({ inventory }) => {
             </>
           ) : (
             !isLoading && (
-              <Alert variant="warning">
-                {localOutbreaks.length === 0 && outbreakReports.length > 0
-                  ? 'No outbreaks detected in this area. Try another location.'
-                  : 'No outbreak reports available for analysis.'}
-              </Alert>
+              <Card className="shadow-sm">
+                <Card.Body className="text-center py-5">
+                  <ExclamationTriangleFill size={48} className="text-warning mb-3" />
+                  <h4>
+                    {localOutbreaks.length === 0 && outbreakReports.length > 0
+                      ? 'No outbreaks detected in this area'
+                      : 'No outbreak reports available'}
+                  </h4>
+                  <p className="text-muted">
+                    Try adjusting your location settings or check back later for updates.
+                  </p>
+                </Card.Body>
+              </Card>
             )
           )}
         </Col>
