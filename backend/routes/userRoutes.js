@@ -3,6 +3,7 @@ import User from '../models/User.js';
 const router = express.Router();
 import { getRetailers, getWholesalers, getPharmacies } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import mongoose from 'mongoose';
 
 // Get all pending users
 router.get('/pending', async (req, res) => {
@@ -50,6 +51,7 @@ router.put('/:id/reject', async (req, res) => {
 });
 
 // In your user routes file (e.g., routes/userRoutes.js)
+
 router.patch('/wallet', protect, async (req, res) => {
   try {
     // Validate wallet address format
@@ -98,5 +100,54 @@ router.get('/wholesalers', protect, getWholesalers);
 
 // Get all pharmacies
 router.get('/pharmacies', protect, getPharmacies);
+
+// Get current authenticated user
+router.get('/me', protect, async (req, res) => {
+  try {
+    // req.user is set by the authenticate middleware
+    const user = await User.findById(req.user._id)
+      .select('-password -__v') // Exclude sensitive fields
+      .lean(); // Convert to plain JS object
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get user by ID
+router.get('/:id', protect, async (req, res) => {
+  try {
+    // Check if the ID is valid
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    const user = await User.findById(req.params.id)
+      .select('-password -__v') // Exclude sensitive fields
+      .lean();
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Only allow viewing certain user types based on role
+    const allowedRoles = ['distributor', 'wholesaler', 'retailer', 'pharmacy'];
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({ error: 'Access to this user denied' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
 export default router;

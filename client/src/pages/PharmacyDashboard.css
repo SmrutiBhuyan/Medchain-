@@ -1,10 +1,10 @@
 /* --- FUNDAMENTAL LAYOUT --- */
-html, body {
+/* html, body {
   margin: 0;
   padding: 0;
   height: 100%; /* Make html and body fill the viewport */
-  overflow: hidden; /* Prevent scrollbars on html/body if .pharma-dashboard handles it */
-}
+  /* overflow: hidden; Prevent scrollbars on html/body if .pharma-dashboard handles it */
+/* } */ 
 
 .pharma-dashboard {
   display: flex;

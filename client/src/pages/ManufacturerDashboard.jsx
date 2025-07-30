@@ -8,7 +8,7 @@ import './ManufacturerDashboard.css';
 import {ethers} from 'ethers';
   // Import ABI correctly
         import DrugTrackingABI from '../abi/DrugTrackingABI.json' with { type: 'json' };
-
+import RouteOptimizer from './RouteOptimizer';
 
 
 const ManufacturerDashboard = () => {
@@ -55,6 +55,84 @@ const [isLoadingStats, setIsLoadingStats] = useState(false);
  const [walletAddress, setWalletAddress] = useState(null);
   const [isConnectingWallet, setIsConnectingWallet] = useState(false);
   const [walletError, setWalletError] = useState(null);
+
+  // Route Optimization
+  const [showRouteOptimizer, setShowRouteOptimizer] = useState(false);
+const [routeDetails, setRouteDetails] = useState({
+  origin: null,
+  destination: null
+});
+
+
+const handleOptimizeRoute = async () => {
+  if (!shipmentForm.distributor) {
+    alert('Please select a distributor first');
+    return;
+  }
+  
+  try {
+    // Get manufacturer location (current user)
+    const token = localStorage.getItem('token');
+    const manufacturerResponse = await axios.get('http://localhost:5000/api/users/me', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    console.log("Manufacturer Response: ", manufacturerResponse.data);
+    
+    
+    // Get distributor location
+    console.log("distributor id:", shipmentForm.distributor)
+    const distributorResponse = await axios.get(`http://localhost:5000/api/users/${shipmentForm.distributor}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+      console.log("Distributor Response: ", distributorResponse.data);
+    
+    
+    const manufacturer = manufacturerResponse.data;
+    const distributor = distributorResponse.data;
+    
+    if (!manufacturer.pincode || !distributor.pincode) {
+      alert('Location information not available for one or both parties');
+      return;
+    }
+
+    // Construct address strings for geocoding
+    const manufacturerAddress = [
+      manufacturer.location,
+      manufacturer.pincode,
+      'India' // Assuming Indian addresses
+    ].filter(Boolean).join(', ');
+
+    const distributorAddress = [
+      distributor.location,
+      distributor.pincode,
+      'India' // Assuming Indian addresses
+    ].filter(Boolean).join(', ');
+
+    setRouteDetails({
+      origin: {
+        address: manufacturerAddress,
+        lat: null,
+        lng: null
+      },
+      destination: {
+        address: distributorAddress,
+        lat: null,
+        lng: null
+      }
+    });
+    
+    setShowRouteOptimizer(true);
+  } catch (error) {
+    console.error('Error fetching location data:', error);
+    alert('Failed to fetch location information');
+  }
+};
+
+
 
 
   // Function to check if MetaMask is installed
@@ -1661,6 +1739,14 @@ useEffect(() => {
                     </option>
                   ))}
                 </select>
+                 <button 
+    type="button" 
+    className="manufacturer-btn manufacturer-btn-outline" 
+    onClick={handleOptimizeRoute}
+    style={{ marginTop: '10px' }}
+  >
+    Find Best Route
+  </button>
               </div>
               <div className="manufacturer-form-group">
                 <label className="manufacturer-form-label">Estimated Delivery Date</label>
@@ -2014,6 +2100,13 @@ useEffect(() => {
           </div>
         </div>
       )}
+      {showRouteOptimizer && (
+  <RouteOptimizer 
+    origin={routeDetails.origin}
+    destination={routeDetails.destination}
+    onClose={() => setShowRouteOptimizer(false)}
+  />
+)}
 
 
 
