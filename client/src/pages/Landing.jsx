@@ -179,7 +179,7 @@ export default function Landing() {
                       loop
                       muted
                     >
-                      <source src="/videos/medicine-detection-demo.mp4" type="video/mp4" />
+                      <source src="/assets/video.mp4" type="video/mp4" />
                     </video>
                     
                     {!showDemo && (
