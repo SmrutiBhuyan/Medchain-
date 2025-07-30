@@ -19,6 +19,7 @@ import {
   Filler
 } from 'chart.js';
 import { Bar, Pie, Line, Doughnut } from 'react-chartjs-2';
+import { GeoAlt as LocationIcon } from 'react-bootstrap-icons';
 
 // Register ChartJS components
 ChartJS.register(
@@ -33,6 +34,7 @@ ChartJS.register(
   Filler
 );
 import { useAuth } from './AuthContext';
+import DiseaseInventoryChecker from './DiseaseInventoryChecker';
 import './PharmacyDashboard.css';
 import axios from 'axios';
 import { Modal, Button, Toast, OverlayTrigger, Tooltip } from 'react-bootstrap';
@@ -57,6 +59,7 @@ const PharmacyDashboard = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [toastVariant, setToastVariant] = useState('success');
   const webcamRef = useRef(null);
+  const [showDiseaseChecker, setShowDiseaseChecker] = useState(false);
 
   
 
@@ -350,6 +353,13 @@ const handleRejectShipment = async (shipmentId) => {
               <ExclamationTriangle className="pharma-icon" /> Alerts
             </div>
             <div 
+  className={`pharma-tab-item ${activeTab === 'stockPlanner' ? 'pharma-active' : ''}`}
+  onClick={() => setActiveTab('stockPlanner')}
+>
+  <LocationIcon className="pharma-icon" /> Stock Planner
+</div>
+          
+            <div 
               className={`pharma-tab-item ${activeTab === 'analytics' ? 'pharma-active' : ''}`}
               onClick={() => setActiveTab('analytics')}
             >
@@ -440,7 +450,6 @@ const handleRejectShipment = async (shipmentId) => {
       <th>Unit Barcode</th>
       <th>Manufacturer</th>
       <th>Expiry Date</th>
-      <th>Status</th>
       <th>Actions</th>
     </tr>
   </thead>
@@ -464,7 +473,6 @@ const handleRejectShipment = async (shipmentId) => {
         </td>
         <td>{item.manufacturer?.name || 'Unknown'}</td>
         <td>{new Date(item.expiryDate).toLocaleDateString()}</td>
-        <td>{getStatusBadge(item.status)}</td>
         <td className="pharma-actions">
           <button 
             className="pharma-btn-icon"
@@ -1324,6 +1332,16 @@ const handleRejectShipment = async (shipmentId) => {
         </div>
       </div>
     </div>
+  </div>
+)}
+
+
+{activeTab === 'stockPlanner' && (
+  <div className="pharma-stock-planner-tab">
+    <DiseaseInventoryChecker 
+      inventory={inventory} 
+      onClose={() => setActiveTab('dashboard')} 
+    />
   </div>
 )}
         </div>

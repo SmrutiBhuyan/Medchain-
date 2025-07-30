@@ -11,6 +11,8 @@ import bodyParser from "body-parser";
 import dashboardRoutes from "./routes/dashboard.js";
 import pharmacyRoutes from './routes/pharmacyRoutes.js';
 import predictionRoutes from './routes/predictions.js';
+import diseaseRouter from './routes/disease.js';
+import outbreakRouter from './routes/outbreak.js';
 
 
 
@@ -36,6 +38,8 @@ app.use('/api/shipments', shipmentRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/pharmacies', pharmacyRoutes);
 app.use('/api/predictions', predictionRoutes);
+app.use('/api/diseases', diseaseRouter);
+app.use('/api/outbreaks', outbreakRouter);
 
 
 app.use(notFound);
