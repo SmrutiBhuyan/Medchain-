@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { LoadScript, GoogleMap, DirectionsService, DirectionsRenderer } from '@react-google-maps/api';
+import { LoadScript, GoogleMap, DirectionsService, DirectionsRenderer, TrafficLayer } from '@react-google-maps/api';
 import { AdvancedMarker } from '@vis.gl/react-google-maps';
+import axios from 'axios';
 import './RouteOptimizer.css';
 
-// Define libraries array outside component to prevent re-creation
-const LIBRARIES = ['places', 'marker'];
+const LIBRARIES = ['places', 'marker', 'visualization'];
 
 const RouteOptimizer = ({ 
   origin, 
@@ -12,19 +12,43 @@ const RouteOptimizer = ({
   onClose,
 }) => {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  const weatherApiKey = import.meta.env.VITE_WEATHER_API_KEY;
   const [response, setResponse] = useState(null);
-  const [distance, setDistance] = useState('');
-  const [duration, setDuration] = useState('');
+  const [routeInfo, setRouteInfo] = useState({
+    distance: '',
+    duration: '',
+    trafficCondition: '',
+    weather: null
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [originCoords, setOriginCoords] = useState(null);
   const [destCoords, setDestCoords] = useState(null);
-  const [geocodingStatus, setGeocodingStatus] = useState('Geocoding addresses...');
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [showTraffic, setShowTraffic] = useState(true);
+  const [alternateRoutes, setAlternateRoutes] = useState([]);
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
 
   const containerStyle = {
     width: '100%',
-    height: '400px'
+    height: '500px' // Increased height for better visibility
+  };
+
+  // Get weather data for a location
+  const getWeatherData = async (lat, lng) => {
+    try {
+      const response = await axios.get(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${weatherApiKey}&units=metric`
+      );
+      return {
+        temp: response.data.main.temp,
+        condition: response.data.weather[0].main,
+        icon: response.data.weather[0].icon
+      };
+    } catch (err) {
+      console.error('Error fetching weather:', err);
+      return null;
+    }
   };
 
   // Geocode addresses to get coordinates
@@ -54,20 +78,33 @@ const RouteOptimizer = ({
 
     const geocodeBothAddresses = async () => {
       try {
-        setGeocodingStatus('Geocoding origin address...');
-        const originResult = await geocodeAddress(origin.address);
-        setOriginCoords(originResult);
+        setLoading(true);
+        setError(null);
+        
+        // Geocode both addresses
+        const [originResult, destResult] = await Promise.all([
+          geocodeAddress(origin.address),
+          geocodeAddress(destination.address)
+        ]);
 
-        setGeocodingStatus('Geocoding destination address...');
-        const destResult = await geocodeAddress(destination.address);
+        setOriginCoords(originResult);
         setDestCoords(destResult);
 
-        setGeocodingStatus('Geocoding complete');
-        return true;
+        // Get weather for both locations
+        const [originWeather, destWeather] = await Promise.all([
+          getWeatherData(originResult.lat, originResult.lng),
+          getWeatherData(destResult.lat, destResult.lng)
+        ]);
+
+        setRouteInfo(prev => ({
+          ...prev,
+          originWeather,
+          destWeather
+        }));
+
       } catch (error) {
         setError(`Failed to geocode addresses: ${error.message}`);
         setLoading(false);
-        return false;
       }
     };
 
@@ -79,8 +116,28 @@ const RouteOptimizer = ({
   const directionsCallback = (result, status) => {
     if (status === 'OK') {
       setResponse(result);
-      setDistance(result.routes[0].legs[0].distance.text);
-      setDuration(result.routes[0].legs[0].duration.text);
+      setAlternateRoutes(result.routes);
+      
+      // Analyze the primary route
+      const primaryRoute = result.routes[0];
+      const leg = primaryRoute.legs[0];
+      
+      // Determine traffic condition
+      let trafficCondition = 'Normal';
+      if (leg.duration_in_traffic) {
+        const trafficRatio = leg.duration_in_traffic.value / leg.duration.value;
+        if (trafficRatio > 1.5) trafficCondition = 'Heavy';
+        else if (trafficRatio > 1.2) trafficCondition = 'Moderate';
+      }
+
+      setRouteInfo(prev => ({
+        ...prev,
+        distance: leg.distance.text,
+        duration: leg.duration.text,
+        durationInTraffic: leg.duration_in_traffic?.text || leg.duration.text,
+        trafficCondition
+      }));
+
       setLoading(false);
     } else if (status === 'ZERO_RESULTS') {
       setError('No route could be found between the origin and destination');
@@ -91,10 +148,18 @@ const RouteOptimizer = ({
     }
   };
 
+  const handleRouteSelect = (index) => {
+    setSelectedRouteIndex(index);
+    setResponse(prev => ({
+      ...prev,
+      routes: [alternateRoutes[index]]
+    }));
+  };
+
   return (
     <LoadScript
       googleMapsApiKey={apiKey}
-      libraries={LIBRARIES} // Using the constant defined outside component
+      libraries={LIBRARIES}
       onLoad={() => setScriptLoaded(true)}
       onError={() => setError('Failed to load Google Maps API')}
     >
@@ -106,59 +171,139 @@ const RouteOptimizer = ({
           </div>
           
           <div className="route-info">
-            <div>
-              <strong>From:</strong> {originCoords?.formattedAddress || origin.address}
-            </div>
-            <div>
-              <strong>To:</strong> {destCoords?.formattedAddress || destination.address}
+            <div className="route-locations">
+              <div className="location-card">
+                <h4>Origin</h4>
+                <p>{originCoords?.formattedAddress || origin.address}</p>
+                {routeInfo.originWeather && (
+                  <div className="weather-info">
+                    <img 
+                      src={`https://openweathermap.org/img/wn/${routeInfo.originWeather.icon}.png`} 
+                      alt={routeInfo.originWeather.condition}
+                    />
+                    <span>{routeInfo.originWeather.temp}°C, {routeInfo.originWeather.condition}</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="location-card">
+                <h4>Destination</h4>
+                <p>{destCoords?.formattedAddress || destination.address}</p>
+                {routeInfo.destWeather && (
+                  <div className="weather-info">
+                    <img 
+                      src={`https://openweathermap.org/img/wn/${routeInfo.destWeather.icon}.png`} 
+                      alt={routeInfo.destWeather.condition}
+                    />
+                    <span>{routeInfo.destWeather.temp}°C, {routeInfo.destWeather.condition}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {loading && (
             <div className="loading">
-              {geocodingStatus}
-              {originCoords && destCoords && 'Calculating best route...'}
+              <div className="spinner"></div>
+              <p>Calculating optimal route...</p>
             </div>
           )}
           
           {error && (
             <div className="error-message">
+              <span className="error-icon">⚠️</span>
               {error}
             </div>
           )}
 
           {!error && scriptLoaded && originCoords && destCoords && (
-            <div className="route-details">
-              {distance && duration && (
+            <>
+              <div className="route-details">
                 <div className="route-stats">
-                  <div><strong>Distance:</strong> {distance}</div>
-                  <div><strong>Estimated Time:</strong> {duration}</div>
+                  <div className="stat-card">
+                    <span className="stat-label">Distance</span>
+                    <span className="stat-value">{routeInfo.distance}</span>
+                  </div>
+                  <div className="stat-card">
+                    <span className="stat-label">Duration</span>
+                    <span className="stat-value">{routeInfo.durationInTraffic}</span>
+                  </div>
+                  <div className="stat-card">
+                    <span className="stat-label">Traffic</span>
+                    <span className={`stat-value traffic-${routeInfo.trafficCondition.toLowerCase()}`}>
+                      {routeInfo.trafficCondition}
+                    </span>
+                  </div>
                 </div>
-              )}
+
+                {alternateRoutes.length > 1 && (
+                  <div className="alternate-routes">
+                    <h4>Alternate Routes:</h4>
+                    <div className="route-options">
+                      {alternateRoutes.map((route, index) => (
+                        <button
+                          key={index}
+                          className={`route-option ${selectedRouteIndex === index ? 'active' : ''}`}
+                          onClick={() => handleRouteSelect(index)}
+                        >
+                          <span>{route.legs[0].distance.text}</span>
+                          <span>{route.legs[0].duration.text}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="map-controls">
+                  <button 
+                    className={`control-btn ${showTraffic ? 'active' : ''}`}
+                    onClick={() => setShowTraffic(!showTraffic)}
+                  >
+                    {showTraffic ? 'Hide Traffic' : 'Show Traffic'}
+                  </button>
+                </div>
+              </div>
               
               <div className="map-container">
                 <GoogleMap
                   mapContainerStyle={containerStyle}
                   center={originCoords}
-                  zoom={7}
+                  zoom={12}
+                  options={{
+                    streetViewControl: true,
+                    mapTypeControl: true,
+                    fullscreenControl: false,
+                    styles: [
+                      {
+                        featureType: "poi",
+                        elementType: "labels",
+                        stylers: [{ visibility: "off" }]
+                      }
+                    ]
+                  }}
                 >
                   <>
                     <AdvancedMarker position={originCoords} title="Origin">
-                      <div style={{ color: 'white', background: 'blue', padding: '4px 8px', borderRadius: '50%' }}>
-                        O
+                      <div className="marker origin-marker">
+                        <span>O</span>
                       </div>
                     </AdvancedMarker>
                     <AdvancedMarker position={destCoords} title="Destination">
-                      <div style={{ color: 'white', background: 'red', padding: '4px 8px', borderRadius: '50%' }}>
-                        D
+                      <div className="marker dest-marker">
+                        <span>D</span>
                       </div>
                     </AdvancedMarker>
+                    
                     <DirectionsService
                       options={{
                         destination: destCoords,
                         origin: originCoords,
                         travelMode: 'DRIVING',
-                        provideRouteAlternatives: true
+                        provideRouteAlternatives: true,
+                        drivingOptions: {
+                          departureTime: new Date(),
+                          trafficModel: 'bestguess'
+                        }
                       }}
                       callback={directionsCallback}
                     />
@@ -167,14 +312,21 @@ const RouteOptimizer = ({
                       <DirectionsRenderer
                         options={{
                           directions: response,
-                          suppressMarkers: true
+                          suppressMarkers: true,
+                          polylineOptions: {
+                            strokeColor: '#4285F4',
+                            strokeWeight: 6,
+                            strokeOpacity: 0.8
+                          }
                         }}
                       />
                     )}
+                    
+                    {showTraffic && <TrafficLayer />}
                   </>
                 </GoogleMap>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>
