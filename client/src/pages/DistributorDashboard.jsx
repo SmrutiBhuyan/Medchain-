@@ -8,9 +8,11 @@ import './DistributorDashboard.css';
 import { 
   FaCheckCircle, FaTimes, FaSearch, FaQrcode, 
   FaBoxes, FaTruck, FaChartLine, FaReceipt, FaSignOutAlt,
-  FaStore, FaClinicMedical, FaPills, FaSpinner
+  FaStore, FaClinicMedical, FaPills, FaSpinner, FaRoute
+
 } from 'react-icons/fa';
 import DrugVerification from './DrugVerification';
+import RouteOptimizer from './RouteOptimizer';
 
 function StatusChip({ label, status }) {
   let className = 'status-chip';
@@ -54,6 +56,91 @@ const DistributorDashboard = () => {
   const [wholesalers, setWholesalers] = useState([]);
   const [pharmacies, setPharmacies] = useState([]);
   const navigate = useNavigate();
+
+  // Route Optimization
+const [showRouteOptimizer, setShowRouteOptimizer] = useState(false);
+const [routeDetails, setRouteDetails] = useState({
+  origin: null,
+  destination: null
+});
+
+// Add this function to handle route optimization
+const handleOptimizeRoute = async () => {
+  if (!selectedRecipient) {
+    alert('Please select a recipient first');
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem('token');
+    
+    // Get distributor location (current user)
+    const distributorResponse = await axios.get('http://localhost:5000/api/users/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    // Get recipient location
+    let recipientResponse;
+    switch (recipientType) {
+      case 'retailer':
+        recipientResponse = await axios.get(`http://localhost:5000/api/users/${selectedRecipient}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        break;
+      case 'wholesaler':
+        recipientResponse = await axios.get(`http://localhost:5000/api/users/${selectedRecipient}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        break;
+      case 'pharmacy':
+        recipientResponse = await axios.get(`http://localhost:5000/api/users/${selectedRecipient}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        break;
+      default:
+        throw new Error('Invalid recipient type');
+    }
+
+    const distributor = distributorResponse.data;
+    const recipient = recipientResponse.data;
+    
+    if (!distributor.pincode || !recipient.pincode) {
+      alert('Location information not available for one or both parties');
+      return;
+    }
+
+    // Construct address strings for geocoding
+    const distributorAddress = [
+      distributor.location,
+      distributor.pincode,
+      'India'
+    ].filter(Boolean).join(', ');
+
+    const recipientAddress = [
+      recipient.location,
+      recipient.pincode,
+      'India'
+    ].filter(Boolean).join(', ');
+
+    setRouteDetails({
+      origin: {
+        address: distributorAddress,
+        lat: null,
+        lng: null
+      },
+      destination: {
+        address: recipientAddress,
+        lat: null,
+        lng: null
+      }
+    });
+    
+    setShowRouteOptimizer(true);
+  } catch (error) {
+    console.error('Error fetching location data:', error);
+    alert('Failed to fetch location information');
+  }
+};
 
 useEffect(() => {
   const fetchData = async () => {
@@ -711,6 +798,14 @@ const handleShipToRecipient = async () => {
                     ))}
                   </select>
                 </div>
+                  <button
+    className="distributor-route-btn"
+    onClick={handleOptimizeRoute}
+    disabled={!selectedRecipient}
+  >
+    <FaRoute className="distributor-btn-icon" />
+    Find Best Route
+  </button>
                 
                 <div className="distributor-selection-progress">
                   <span>Selected Drugs: {selectedDrugs.length}</span>
@@ -1183,6 +1278,14 @@ const handleShipToRecipient = async () => {
             </div>
           </div>
         )}
+
+        {showRouteOptimizer && (
+  <RouteOptimizer 
+    origin={routeDetails.origin}
+    destination={routeDetails.destination}
+    onClose={() => setShowRouteOptimizer(false)}
+  />
+)}
         
       </div>
     </div>

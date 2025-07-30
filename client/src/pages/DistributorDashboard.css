@@ -939,3 +939,33 @@ select:focus {
     width: 100%;
   }
 }
+
+.distributor-route-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  transition: background-color 0.3s;
+}
+
+.distributor-route-btn:hover {
+  background-color: #45a049;
+}
+
+.distributor-route-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.distributor-route-btn .distributor-btn-icon {
+  font-size: 16px;
+}
