@@ -39,7 +39,7 @@ import './PharmacyDashboard.css';
 import axios from 'axios';
 import { Modal, Button, Toast, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import Webcam from 'react-webcam';
-import DrugVerification from './DrugVerification'
+import DrugVerificationGlobal from './DrugVerificationGlobal'
 import DrugShortagePrediction from './DrugPredictionShortage';
 
 const PharmacyDashboard = () => {
@@ -869,8 +869,8 @@ const handleRejectShipment = async (shipmentId) => {
             </div>
           )}
          {activeTab === 'verify' && (
-  <DrugVerification 
-    onVerify
+  <DrugVerificationGlobal 
+    
     getManufacturerName={(manufacturerId) => {
       // You might want to implement this function to get manufacturer names
       // For now returning the ID as a fallback
