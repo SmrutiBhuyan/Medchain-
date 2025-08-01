@@ -646,16 +646,36 @@ const handleTimeRangeChange = async (chartType, days) => {
   });
 
   // Barcode Scanner Component
- const BarcodeScanner = ({ onScan, onClose, onError }) => {
+const BarcodeScanner = ({ onScan, onClose, onError }) => {
   const scannerRef = useRef(null);
   const fileInputRef = useRef(null);
+  const [isScannerActive, setIsScannerActive] = useState(false);
+
+  // Clean up scanner completely
+  const cleanUpScanner = async () => {
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.clear();
+        const scannerElement = document.getElementById('barcode-scanner');
+        if (scannerElement) {
+          scannerElement.innerHTML = ''; // Clear the DOM element
+        }
+      } catch (error) {
+        console.error('Error cleaning up scanner:', error);
+        if (onError) onError('Scanner cleanup failed');
+      } finally {
+        scannerRef.current = null;
+      }
+    }
+  };
 
   const handleBarcodeFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    const html5QrCode = new Html5Qrcode('barcode-scanner');
-    html5QrCode.scanFile(file, false)
+    // Use a temporary scanner instance for file scanning
+    const fileScanner = new Html5Qrcode('barcode-scanner-file');
+    fileScanner.scanFile(file, false)
       .then(decodedText => {
         if (/^[A-Za-z0-9-]+$/.test(decodedText)) {
           onScan(decodedText);
@@ -668,71 +688,94 @@ const handleTimeRangeChange = async (chartType, days) => {
         console.error('File scan error:', err);
         if (onError) onError(err.message);
         alert('Failed to scan the file. Please try another image.');
+      })
+      .finally(() => {
+        fileScanner.clear().catch(console.error);
       });
   };
 
   useEffect(() => {
-    const config = {
-      fps: 10,
-      qrbox: 250,
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.CODE_93,
-        Html5QrcodeSupportedFormats.ITF
-      ],
-      rememberLastUsedCamera: true,
-      supportedScanTypes: [
-        Html5QrcodeScanType.SCAN_TYPE_CAMERA,
-        Html5QrcodeScanType.SCAN_TYPE_FILE
-      ]
-    };
+    if (isScannerActive) {
+      const initializeScanner = async () => {
+        // First clean up any existing scanner
+        await cleanUpScanner();
 
-    const scanner = new Html5QrcodeScanner('barcode-scanner', config, false);
-    scannerRef.current = scanner;
+        const config = {
+          fps: 10,
+          qrbox: 250,
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.CODE_93,
+            Html5QrcodeSupportedFormats.ITF
+          ],
+          rememberLastUsedCamera: true,
+          supportedScanTypes: [
+            Html5QrcodeScanType.SCAN_TYPE_CAMERA,
+            Html5QrcodeScanType.SCAN_TYPE_FILE
+          ]
+        };
 
-    const successCallback = (decodedText) => {
-      if (/^[A-Za-z0-9-]+$/.test(decodedText)) {
-        scanner.clear().then(() => {
-          onScan(decodedText);
-          if (onClose) onClose();
-        }).catch(err => {
-          console.error('Failed to clear scanner', err);
-          if (onError) onError('Scanner cleanup failed');
-        });
-      } else {
-        if (onError) onError('Invalid format');
-        alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
-      }
-    };
+        const scanner = new Html5QrcodeScanner('barcode-scanner', config, false);
+        scannerRef.current = scanner;
 
-    const errorCallback = (error) => {
-      if (!error.message.includes('No MultiFormat Readers')) {
-        console.warn('QR code scan error', error);
-        if (onError) onError(error.message);
-      }
-    };
+        const successCallback = (decodedText) => {
+          if (/^[A-Za-z0-9-]+$/.test(decodedText)) {
+            scanner.clear().then(() => {
+              onScan(decodedText);
+              if (onClose) onClose();
+            }).catch(err => {
+              console.error('Failed to clear scanner', err);
+              if (onError) onError('Scanner cleanup failed');
+            });
+          } else {
+            if (onError) onError('Invalid format');
+            alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
+          }
+        };
 
-    scanner.render(successCallback, errorCallback);
+        const errorCallback = (error) => {
+          if (!error.message.includes('No MultiFormat Readers')) {
+            console.warn('QR code scan error', error);
+            if (onError) onError(error.message);
+          }
+        };
+
+        scanner.render(successCallback, errorCallback);
+      };
+
+      initializeScanner();
+    }
 
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(error => {
-          console.error('Failed to clear scanner', error);
-          if (onError) onError('Scanner cleanup failed');
-        });
-      }
+      // Clean up when component unmounts or when isScannerActive changes
+      cleanUpScanner();
     };
-  }, [onScan, onClose, onError]);
+  }, [isScannerActive, onScan, onClose, onError]);
+
+  useEffect(() => {
+    // Activate scanner when component mounts
+    setIsScannerActive(true);
+
+    return () => {
+      // Deactivate scanner when component unmounts
+      setIsScannerActive(false);
+    };
+  }, []);
 
   return (
     <div className="scanner-container">
-      <div id="barcode-scanner" style={{ width: '100%' }}></div>
+      {/* Main scanner container - ensure this is empty before initialization */}
+      <div id="barcode-scanner" key={Date.now()} style={{ width: '100%' }}></div>
+      
+      {/* Hidden container for file scanning */}
+      <div id="barcode-scanner-file" style={{ display: 'none' }}></div>
+      
       <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '10px' }}>
         <button 
           className="btn btn-primary"
@@ -750,9 +793,7 @@ const handleTimeRangeChange = async (chartType, days) => {
         <button 
           className="btn btn-danger" 
           onClick={() => {
-            if (scannerRef.current) {
-              scannerRef.current.clear().catch(console.error);
-            }
+            cleanUpScanner();
             if (onClose) onClose();
           }}
         >
