@@ -40,6 +40,7 @@
     font-weight: 700;
     line-height: 1.2;
     margin-bottom: 1rem;
+    letter-spacing: -0.025em; /* Added for tighter kerning */
   }
   
   h1 {
@@ -71,13 +72,25 @@
     0% { background-position: 0% 0%; }
     100% { background-position: 100% 100%; }
   }
+
+  /* Added for subtle background pattern animation */
+  @keyframes patternPan {
+    from { background-position: 0% 0%; }
+    to { background-position: 100% 100%; }
+  }
+
+  @keyframes pulseGlow {
+    0% { box-shadow: 0 0 0px var(--primary-light); }
+    50% { box-shadow: 0 0 15px var(--primary-light); }
+    100% { box-shadow: 0 0 0px var(--primary-light); }
+  }
   
   /* Hero Section */
   .hero-section {
     position: relative;
     background: linear-gradient(135deg, var(--darker), var(--primary));
     color: white;
-    padding: 6rem 1rem;
+    padding: 2rem 1rem; /* Reduced height further */
     overflow: hidden;
   }
   
@@ -90,6 +103,7 @@
     background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
     background-size: 40px 40px;
     opacity: 0.5;
+    animation: patternPan 60s linear infinite; /* Subtle continuous movement */
   }
   
   .hero-container {
@@ -141,7 +155,7 @@
     font-weight: 600;
     font-size: 1rem;
     text-decoration: none;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smoother transition */
     overflow: hidden;
     z-index: 1;
   }
@@ -160,26 +174,26 @@
   .hero-button.primary {
     background-color: white;
     color: var(--darker);
-    box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+    box-shadow: 0 6px 20px rgba(67, 97, 238, 0.2); /* Enhanced shadow */
   }
   
   .hero-button.primary:hover {
     background-color: var(--primary-light);
     color: white;
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(67, 97, 238, 0.4);
+    transform: translateY(-5px); /* Slightly more pronounced lift */
+    box-shadow: 0 10px 30px rgba(67, 97, 238, 0.4); /* Enhanced shadow on hover */
   }
   
   .hero-button.secondary {
     background-color: var(--primary-light);
     color: white;
-    box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+    box-shadow: 0 6px 20px rgba(67, 97, 238, 0.2); /* Enhanced shadow */
   }
   
   .hero-button.secondary:hover {
     background-color: var(--secondary);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(63, 55, 201, 0.4);
+    transform: translateY(-5px); /* Slightly more pronounced lift */
+    box-shadow: 0 10px 30px rgba(63, 55, 201, 0.4); /* Enhanced shadow on hover */
   }
   
   .button-hover-effect {
@@ -201,20 +215,25 @@
   /* Demo Video Container */
   .demo-container {
     position: relative;
-    width: 280px;
-    height: 500px;
+    width: 500px; /* Increased width */
+    height: 300px; /* Height maintained from previous step */
     border-radius: 40px;
     background: var(--darker);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(255, 255, 255, 0.05); /* Enhanced shadow and inner glow */
     padding: 15px;
     transform: perspective(1000px) rotateY(-15deg) rotateX(5deg);
     border: 8px solid var(--dark);
     overflow: hidden;
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
   }
   
   .demo-container:hover {
-    transform: perspective(1000px) rotateY(-5deg) rotateX(5deg) scale(1.03);
+    transform: perspective(1000px) rotateY(-8deg) rotateX(8deg) scale(1.04); /* More pronounced 3D effect */
+  }
+
+  /* Added class for when video is playing */
+  .demo-container.playing {
+    transform: perspective(1000px) rotateY(-5deg) rotateX(2deg); /* Smoother tilt when playing */
   }
   
   .demo-screen {
@@ -223,6 +242,19 @@
     border-radius: 25px;
     overflow: hidden;
     position: relative;
+    background-color: black; /* Ensure background for scan line */
+  }
+
+  .demo-screen::before { /* Scan line effect */
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--primary-light), transparent);
+    animation: scanAnimation 4s infinite linear;
+    opacity: 0.5;
   }
   
   .demo-video {
@@ -239,39 +271,41 @@
     height: 100%;
     background: linear-gradient(
       to bottom,
-      rgba(15, 23, 42, 0.8) 0%,
+      rgba(15, 23, 42, 0.85) 0%, /* Slightly more opaque */
       rgba(15, 23, 42, 0) 20%,
       rgba(15, 23, 42, 0) 80%,
-      rgba(15, 23, 42, 0.8) 100%
+      rgba(15, 23, 42, 0.85) 100% /* Slightly more opaque */
     );
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    transition: opacity 0.3s ease;
   }
   
   .demo-play-button {
-    width: 60px;
-    height: 60px;
+    width: 70px; /* Slightly larger */
+    height: 70px; /* Slightly larger */
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(5px);
+    background: rgba(255, 255, 255, 0.25); /* Slightly more visible background */
+    backdrop-filter: blur(8px); /* More blur */
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
     transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2); /* Added shadow for depth */
   }
   
   .demo-play-button:hover {
-    transform: scale(1.1);
-    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.15); /* More pronounced scale */
+    background: rgba(255, 255, 255, 0.4); /* More visible on hover */
   }
   
   .demo-play-icon {
     color: white;
-    width: 24px;
-    height: 24px;
+    width: 28px; /* Slightly larger */
+    height: 28px; /* Slightly larger */
   }
   
   .demo-preview {
@@ -279,24 +313,39 @@
     bottom: 20px;
     left: 20px;
     right: 20px;
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 12px;
-    padding: 15px;
+    background: rgba(255, 255, 255, 0.95); /* Slightly less transparent */
+    border-radius: 16px; /* Slightly larger border-radius */
+    padding: 18px; /* Slightly more padding */
     animation: fadeIn 0.8s ease-out;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); /* Enhanced shadow */
   }
   
   .demo-preview-title {
-    font-weight: 600;
+    font-weight: 700; /* Bolder */
     color: var(--dark);
     margin-bottom: 5px;
-    font-size: 1rem;
+    font-size: 1.05rem; /* Slightly larger */
   }
   
   .demo-preview-text {
-    font-size: 0.85rem;
+    font-size: 0.88rem; /* Slightly larger */
     color: var(--gray);
     line-height: 1.5;
+  }
+
+  .demo-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 5px; /* Slightly thicker */
+    background: rgba(255,255,255,0.2);
+  }
+  
+  .demo-progress-bar {
+    height: 100%;
+    background: var(--primary);
+    transition: width 0.1s linear;
   }
   
   /* Features Section */
@@ -324,6 +373,7 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     display: inline-block;
+    padding-bottom: 0.1em; /* For better gradient display */
   }
   
   .features-subtitle {
@@ -342,15 +392,16 @@
     background-color: white;
     border-radius: 1rem;
     padding: 2.5rem 2rem;
-    transition: all 0.4s ease;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smoother transition */
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.07); /* Enhanced shadow */
     overflow: hidden;
     z-index: 1;
+    border: 1px solid var(--gray-light); /* Subtle border for definition */
   }
   
   .feature-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+    transform: translateY(-12px) scale(1.01); /* Slightly more pronounced lift and scale */
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15); /* Enhanced shadow on hover */
   }
   
   .feature-card::before {
@@ -359,7 +410,7 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 4px;
+    height: 5px; /* Slightly thicker */
     background: linear-gradient(90deg, var(--primary), var(--primary-light));
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -371,19 +422,20 @@
   
   .feature-icon {
     position: relative;
-    width: 4rem;
-    height: 4rem;
-    border-radius: 1rem;
+    width: 4.5rem; /* Slightly larger */
+    height: 4.5rem; /* Slightly larger */
+    border-radius: 1.25rem; /* Slightly larger border-radius */
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 1.5rem;
     z-index: 1;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1); /* Shadow for icon */
   }
   
   .feature-icon .icon {
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 2rem; /* Slightly larger */
+    height: 2rem; /* Slightly larger */
     color: white;
     z-index: 2;
   }
@@ -398,6 +450,7 @@
     opacity: 0.2;
     border-radius: inherit;
     z-index: -1;
+    background: radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 70%); /* Subtle radial gradient */
   }
   
   .feature-icon.primary {
@@ -438,7 +491,7 @@
     bottom: -5px;
     left: 0;
     right: 0;
-    height: 10px;
+    height: 12px; /* Slightly taller */
     background: url("data:image/svg+xml,%3Csvg viewBox='0 0 500 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,10 C150,20 350,0 500,10 L500,20 L0,20 Z' fill='%23f9fafb'/%3E%3C/svg%3E");
     background-size: cover;
     opacity: 0;
@@ -465,28 +518,29 @@
   .stats-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 3rem;
+    gap: 2.5rem; /* Slightly reduced gap for better fit */
     text-align: center;
   }
   
   .stat-item {
     position: relative;
-    padding: 2rem 1rem;
+    padding: 2.2rem 1.2rem; /* Slightly more padding */
     background-color: white;
     border-radius: 1rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-    transition: transform 0.3s ease;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06); /* Enhanced shadow */
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smoother transition */
     z-index: 1;
+    border: 1px solid var(--gray-light); /* Subtle border for definition */
   }
   
   .stat-item:hover {
-    transform: translateY(-5px);
+    transform: translateY(-8px); /* More pronounced lift */
   }
   
   .stat-number {
-    font-size: 2.5rem;
+    font-size: 2.75rem; /* Slightly larger */
     font-weight: 800;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.6rem; /* Adjusted margin */
     line-height: 1;
   }
   
@@ -508,7 +562,7 @@
   
   .stat-label {
     color: var(--gray-dark);
-    font-size: 1.125rem;
+    font-size: 1.15rem; /* Slightly larger */
     font-weight: 500;
   }
   
@@ -517,7 +571,7 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 4px;
+    height: 5px; /* Slightly thicker */
     background: linear-gradient(90deg, var(--primary), var(--primary-light));
     border-radius: 4px 4px 0 0;
     opacity: 0;
@@ -528,8 +582,119 @@
     opacity: 1;
   }
   
-  /* Responsive Design */
-  @media (min-width: 640px) {
+  /* Role Dashboard Styles */
+.role-dashboard {
+  max-width: 1200px;
+  margin: 3rem auto; /* More vertical space */
+  padding: 2rem;
+}
+
+.role-dashboard-header {
+  text-align: center;
+  margin-bottom: 3.5rem; /* More space below header */
+}
+
+.role-dashboard-header h1 {
+  font-size: 2.75rem; /* Slightly larger */
+  margin-bottom: 1rem;
+  color: var(--dark); /* Use defined dark color */
+  background: linear-gradient(90deg, var(--primary-dark), var(--secondary)); /* Gradient for header */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+.role-dashboard-description {
+  font-size: 1.25rem; /* Slightly larger */
+  color: var(--gray-dark); /* Use defined gray-dark color */
+  max-width: 750px; /* Slightly wider */
+  margin: 0 auto;
+  line-height: 1.7; /* Improved readability */
+}
+
+.role-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2.5rem; /* Slightly increased gap */
+}
+
+.role-feature-card {
+  background: var(--lighter); /* Use defined lighter color */
+  border-radius: 18px; /* Slightly larger border-radius */
+  padding: 2.2rem; /* Slightly more padding */
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08); /* Enhanced shadow */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--gray-light); /* Use defined gray-light */
+}
+
+.role-feature-card:hover {
+  transform: translateY(-8px); /* More pronounced lift */
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15); /* Enhanced shadow on hover */
+}
+
+.role-feature-icon {
+  width: 64px; /* Slightly larger */
+  height: 64px; /* Slightly larger */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.75rem; /* More space below icon */
+  background: linear-gradient(45deg, var(--primary-light), var(--blue)); /* Gradient background for icon */
+  color: var(--lighter); /* Icon color to lighter */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Shadow for icon */
+}
+
+.role-feature-card h3 {
+  font-size: 1.4rem; /* Slightly larger */
+  margin-bottom: 1.2rem; /* More space below heading */
+  color: var(--dark); /* Use defined dark color */
+}
+
+.role-feature-link {
+  display: inline-flex; /* Use flex for alignment */
+  align-items: center;
+  margin-top: 1rem;
+  color: var(--primary); /* Use primary color */
+  font-weight: 600; /* Bolder */
+  text-decoration: none;
+  transition: color 0.2s ease, transform 0.2s ease; /* Added transform for arrow */
+}
+
+.role-feature-link:hover {
+  color: var(--primary-dark); /* Darker primary on hover */
+  transform: translateX(3px); /* Slide effect for arrow */
+}
+
+.role-feature-link::after { /* Add an arrow icon */
+  content: '→';
+  margin-left: 0.5rem;
+  transition: transform 0.2s ease;
+}
+
+.role-feature-link:hover::after {
+  transform: translateX(3px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .role-dashboard {
+    padding: 1.5rem;
+  }
+  
+  .role-dashboard-header h1 {
+    font-size: 2.25rem;
+  }
+  
+  .role-features-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Responsive Design */
+@media (min-width: 640px) {
     .hero-buttons {
       flex-direction: row;
       justify-content: center;
@@ -554,8 +719,8 @@
     }
     
     .demo-container {
-      width: 320px;
-      height: 550px;
+      width: 450px; /* Width maintained */
+      height: 600px; /* Reduced height for tablet */
     }
   }
   
@@ -591,161 +756,4 @@
       font-size: 4rem;
     }
   }
-  /* Add to your existing Landing.css */
-
-.demo-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(15, 23, 42, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: opacity 0.3s ease;
-  }
   
-  .demo-play-button {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(5px);
-    border: none;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-  
-  .demo-play-button:hover {
-    transform: scale(1.1);
-    background: rgba(255, 255, 255, 0.3);
-  }
-  
-  .demo-play-icon {
-    color: white;
-    width: 32px;
-    height: 32px;
-  }
-  
-  .demo-progress {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: rgba(255,255,255,0.2);
-  }
-  
-  .demo-progress-bar {
-    height: 100%;
-    background: var(--primary);
-    transition: width 0.1s linear;
-  }
-  
-  /* Update the demo-preview text styles */
-  .demo-preview-title {
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
-  }
-  
-  .demo-preview-text {
-    font-size: 0.9rem;
-  }
-  
-  /* Role Dashboard Styles */
-.role-dashboard {
-  max-width: 1200px;
-  margin: 2rem auto;
-  padding: 2rem;
-}
-
-.role-dashboard-header {
-  text-align: center;
-  margin-bottom: 3rem;
-}
-
-.role-dashboard-header h1 {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-  color: #1a1a1a;
-}
-
-.role-dashboard-description {
-  font-size: 1.2rem;
-  color: #555;
-  max-width: 700px;
-  margin: 0 auto;
-}
-
-.role-features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-}
-
-.role-feature-card {
-  background: white;
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.role-feature-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-}
-
-.role-feature-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1.5rem;
-  background: rgba(67, 97, 238, 0.1);
-  color: #4361ee;
-}
-
-.role-feature-card h3 {
-  font-size: 1.3rem;
-  margin-bottom: 1rem;
-  color: #1a1a1a;
-}
-
-.role-feature-link {
-  display: inline-block;
-  margin-top: 1rem;
-  color: #4361ee;
-  font-weight: 500;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.role-feature-link:hover {
-  color: #3a0ca3;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .role-dashboard {
-    padding: 1.5rem;
-  }
-  
-  .role-dashboard-header h1 {
-    font-size: 2rem;
-  }
-  
-  .role-features-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
