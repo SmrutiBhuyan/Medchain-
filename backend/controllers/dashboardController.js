@@ -2,7 +2,6 @@ import Drug from '../models/Drug.js';
 import Shipment from '../models/Shipment.js';
 import User from '../models/User.js';
 
-// Update the status distribution aggregation
 export const getDashboardStats = async (req, res) => {
   try {
     if (!req.user) {
@@ -19,21 +18,73 @@ export const getDashboardStats = async (req, res) => {
     const expiryThreshold = new Date();
     expiryThreshold.setDate(expiryThreshold.getDate() + 30);
 
+    // Drug volume aggregation
+    const drugVolume = await Drug.aggregate([
+      { 
+        $match: { 
+          manufacturer: manufacturerId,
+          status: 'in-stock',
+          currentHolder: 'manufacturer',
+          createdAt: { $gte: startDate }
+        }
+      },
+      { 
+        $group: { 
+          _id: "$name", 
+          totalQuantity: { $sum: "$quantity" },
+          drugName: { $first: "$name" },
+          drugs: {
+            $push: {
+              id: "$_id",
+              batch: "$batch",
+              quantity: "$quantity",
+              barcode: "$batchBarcode",
+              expiryDate: "$expiryDate"
+            }
+          }
+        }
+      },
+      { $sort: { totalQuantity: -1 } },
+      { $limit: 10 },
+      { 
+        $project: {
+          drugName: "$_id",
+          totalQuantity: 1,
+          drugs: 1,
+          _id: 0
+        }
+      }
+    ]);
+
+    // Get all distributors from User collection
+    const allDistributors = await User.find(
+      { role: 'distributor' },
+      { 
+        name: 1, 
+        organization: 1, 
+        email: 1, 
+        phone: 1, 
+        status: 1,
+        location: 1,
+        pincode: 1
+      }
+    ).sort({ organization: 1 });
+
+    // Execute all aggregations in parallel
     const [
       totalDrugs,
       activeShipments,
       nearExpiry,
       recalledBatches,
-      drugVolume,
       shipmentsOverTime,
       statusDistribution,
       upcomingExpirations,
-      topDistributors
+      topDistributorsByShipment
     ] = await Promise.all([
       Drug.countDocuments({ manufacturer: manufacturerId }),
       
       Shipment.countDocuments({
-        manufacturer: manufacturerId,
+        'participants.participantId': manufacturerId,
         status: { $in: ['processing', 'in-transit'] }
       }),
       
@@ -51,29 +102,10 @@ export const getDashboardStats = async (req, res) => {
         status: 'recalled'
       }),
       
-      Drug.aggregate([
-        { $match: { 
-          manufacturer: manufacturerId,
-          createdAt: { $gte: startDate }
-        }},
-        { $group: { 
-          _id: "$name", 
-          totalQuantity: { $sum: "$quantity" },
-          drugName: { $first: "$name" }
-        }},
-        { $sort: { totalQuantity: -1 } },
-        { $limit: 10 },
-        { $project: {
-          drugName: "$_id",
-          totalQuantity: 1,
-          _id: 0
-        }}
-      ]),
-      
       Shipment.aggregate([
         { 
           $match: { 
-            manufacturer: manufacturerId,
+            'participants.participantId': manufacturerId,
             createdAt: { $gte: startDate }
           } 
         },
@@ -142,27 +174,42 @@ export const getDashboardStats = async (req, res) => {
         }}
       ]),
       
+      // Top distributors by shipment count
       Shipment.aggregate([
-        { $match: { manufacturer: manufacturerId } },
-        { $group: {
-          _id: "$distributor",
-          count: { $sum: 1 }
-        }},
+        { 
+          $match: { 
+            'participants.participantId': manufacturerId,
+            'participants.type': 'distributor' 
+          } 
+        },
+        { 
+          $group: {
+            _id: "$participants.participantId",
+            count: { $sum: 1 }
+          }
+        },
         { $sort: { count: -1 } },
         { $limit: 5 },
-        { $lookup: {
-          from: "users",
-          localField: "_id",
-          foreignField: "_id",
-          as: "distributorInfo"
-        }},
+        { 
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "distributorInfo"
+          }
+        },
         { $unwind: "$distributorInfo" },
-        { $project: {
-          distributorId: "$_id",
-          distributorName: "$distributorInfo.organization",
-          count: 1,
-          _id: 0
-        }}
+        { 
+          $project: {
+            distributorId: "$_id",
+            distributorName: "$distributorInfo.organization",
+            contactPerson: "$distributorInfo.name",
+            email: "$distributorInfo.email",
+            phone: "$distributorInfo.phone",
+            shipmentCount: "$count",
+            _id: 0
+          }
+        }
       ])
     ]);
 
@@ -177,7 +224,8 @@ export const getDashboardStats = async (req, res) => {
         shipmentsOverTime,
         statusDistribution,
         upcomingExpirations,
-        topDistributors
+        topDistributors: topDistributorsByShipment,
+        allDistributors
       }
     });
     

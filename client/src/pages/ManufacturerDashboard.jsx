@@ -1123,7 +1123,7 @@ const handleManualSubmit = async (e) => {
   setIsLoadingInventory(true);
   try {
     const response = await axios.get(`http://localhost:5000/api/drugs/manufacturer/${user._id}`);
-    console.log(response.data.drugs);
+    console.log("inventory data: ",response.data.drugs);
     
     setInventoryDrugs(response.data.drugs);
   } catch (error) {
@@ -1151,6 +1151,8 @@ const fetchShipmentData = async () => {
     
     // Fetch distributors
     const distributorsResponse = await axios.get('http://localhost:5000/api/users/distributors');
+    console.log("distributor: ",distributorsResponse.data.distributors);
+    
     setDistributors(distributorsResponse.data.distributors);
   } catch (error) {
     console.error('Error fetching shipment data:', error);
@@ -1252,7 +1254,7 @@ useEffect(() => {
         </a>
         <a href="#" className={`manufacturer-nav-item ${activeTab === 'inventory' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('inventory')}>
           <FaCapsules />
-          <span>Your Drugs</span>
+          <span>Inventory</span>
         </a>
         <a href="#" className={`manufacturer-nav-item ${activeTab === 'shipment' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('shipment')}>
           <FaTruck />
@@ -1264,7 +1266,7 @@ useEffect(() => {
         </a>
         <a href="#" className={`manufacturer-nav-item ${activeTab === 'settings' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('settings')}>
           <FaCog />
-          <span>Settings</span>
+          <span>Profile</span>
         </a>
       </div>
     </div>
@@ -1329,7 +1331,7 @@ useEffect(() => {
             <div className="manufacturer-icon manufacturer-primary">
               <FaCapsules />
             </div>
-            <h3>{isLoadingStats ? '...' : dashboardStats.totalDrugs.toLocaleString()}</h3>
+            <h3>{inventoryDrugs.length}</h3>
             <p>Total Drugs</p>
           </div>
           <div className="manufacturer-stats-card manufacturer-clickable"
@@ -1999,7 +2001,7 @@ useEffect(() => {
           <FaChartLine style={{ color: 'white' }} />
         </div>
         <h3 style={{ color: 'white' }}>
-          {isLoadingStats ? '...' : dashboardStats.topDistributors?.length || 0}
+          {10}
         </h3>
         <p>Top Distributors</p>
       </div>

@@ -227,7 +227,11 @@ export const getDrugsByManufacturer = async (req, res) => {
       return res.status(400).json({ error: 'Manufacturer ID is required' });
     }
 
-    const drugs = await Drug.find({ manufacturer: manufacturerId })
+    const drugs = await Drug.find({ manufacturer: manufacturerId,
+      status:'in-stock',
+      currentHolder:'manufacturer'
+     })
+      .select('_id name batch quantity mfgDate expiryDate batchBarcode unitBarcodes status currentHolder')
       .sort({ createdAt: -1 });
     
     res.json({
