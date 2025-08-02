@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaPills, FaTachometerAlt, FaPlusCircle, FaCapsules, FaTruck, FaChartLine, FaBell, FaCog, FaChevronDown, FaUpload, FaDownload, FaFilter, FaSearch, FaEye, FaPaperPlane, FaChevronLeft, FaChevronRight, FaFileCsv, FaWallet } from 'react-icons/fa';
-import { Bar } from '@ant-design/charts';
+import { FaPills, FaTachometerAlt, FaPlusCircle, FaCapsules, FaTruck, FaChartLine, FaBell, FaCog, FaChevronDown, FaUpload, FaDownload, FaFilter, FaSearch, FaEye, FaPaperPlane, FaChevronLeft, FaChevronRight, FaFileCsv, FaWallet,  FaChartPie, FaCalendarTimes } from 'react-icons/fa';
+
+
+// For the charts
+import { Bar, Pie } from '@ant-design/charts';
 import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeSupportedFormats, Html5QrcodeScanType } from 'html5-qrcode';
 import { useAuth } from './AuthContext';
 import axios from 'axios';
@@ -1940,178 +1943,280 @@ useEffect(() => {
 
 
       {/* Analytics Tab */}
-      {/* Analytics Tab */}
-      {activeTab === 'analytics' && (
-        <>
-          {/* Stats Cards */}
-          <div className="manufacturer-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
-            <div className="manufacturer-stats-card">
-              <div className="manufacturer-icon manufacturer-primary">
-                <FaCapsules />
-              </div>
-              <h3>{isLoadingStats ? '...' : dashboardStats.totalDrugs?.toLocaleString() || 0}</h3>
-              <p>Total Drugs</p>
-            </div>
-            <div className="manufacturer-stats-card">
-              <div className="manufacturer-icon manufacturer-success">
-                <FaTruck />
-              </div>
-              <h3>{isLoadingStats ? '...' : dashboardStats.activeShipments || 0}</h3>
-              <p>Active Shipments</p>
-            </div>
-            <div className="manufacturer-stats-card">
-              <div className="manufacturer-icon manufacturer-warning">
-                <FaBell />
-              </div>
-              <h3>{isLoadingStats ? '...' : dashboardStats.nearExpiry || 0}</h3>
-              <p>Near Expiry</p>
-            </div>
-          </div>
+<div className={`manufacturer-main-content ${activeTab === 'analytics' ? 'analytics-active' : ''}`}>
+{activeTab === 'analytics' && (
+  <div className="manufacturer-analytics-container">
+    {/* Stats Cards */}
+    <div className="manufacturer-grid1">
+      <div className="manufacturer-stats-card" style={{ 
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        boxShadow: '0 4px 20px rgba(102, 126, 234, 0.3)'
+      }}>
+        <div className="manufacturer-icon">
+          <FaCapsules style={{ color: 'white' }} />
+        </div>
+        <h3 style={{ color: 'white' }}>
+          {isLoadingStats ? '...' : dashboardStats.totalDrugs?.toLocaleString() || 0}
+        </h3>
+        <p>Total Drugs</p>
+      </div>
+      
+      <div className="manufacturer-stats-card" style={{ 
+        background: 'linear-gradient(135deg, #2af598 0%, #009efd 100%)',
+        color: 'white',
+        boxShadow: '0 4px 20px rgba(42, 245, 152, 0.3)'
+      }}>
+        <div className="manufacturer-icon">
+          <FaTruck style={{ color: 'white' }} />
+        </div>
+        <h3 style={{ color: 'white' }}>
+          {shipmentHistory.length}
+        </h3>
+        <p>Active Shipments</p>
+      </div>
+      
+      <div className="manufacturer-stats-card" style={{ 
+        background: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)',
+        color: 'white',
+        boxShadow: '0 4px 20px rgba(255, 154, 158, 0.3)'
+      }}>
+        <div className="manufacturer-icon">
+          <FaBell style={{ color: 'white' }} />
+        </div>
+        <h3 style={{ color: 'white' }}>
+          {isLoadingStats ? '...' : dashboardStats.nearExpiry || 0}
+        </h3>
+        <p>Near Expiry</p>
+      </div>
+      
+      <div className="manufacturer-stats-card" style={{ 
+        background: 'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)',
+        color: 'white',
+        boxShadow: '0 4px 20px rgba(251, 194, 235, 0.3)'
+      }}>
+        <div className="manufacturer-icon">
+          <FaChartLine style={{ color: 'white' }} />
+        </div>
+        <h3 style={{ color: 'white' }}>
+          {isLoadingStats ? '...' : dashboardStats.topDistributors?.length || 0}
+        </h3>
+        <p>Top Distributors</p>
+      </div>
+    </div>
 
-          {/* Main Charts */}
-          <div className="manufacturer-grid" style={{ gridTemplateColumns: '2fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-            {/* Drug Volume Chart */}
-            <div className="manufacturer-card">
-              <div className="manufacturer-card-header">
-                <h2 className="manufacturer-card-title">Drug Volume by Batch</h2>
-                <div className="manufacturer-card-actions">
-                  <select
-                    className="manufacturer-form-control"
-                    style={{ width: 'auto', display: 'inline-block' }}
-                    onChange={(e) => handleTimeRangeChange('drugVolume', e.target.value)}
-                  >
-                    <option value="30">Last 30 Days</option>
-                    <option value="90">Last 90 Days</option>
-                    <option value="365">This Year</option>
-                  </select>
+    {/* Drug Volume Chart */}
+    <div className="manufacturer-card">
+      <div className="manufacturer-card-header">
+        <h2 className="manufacturer-card-title">Drug Volume by Batch</h2>
+        <div className="manufacturer-card-actions">
+          <select
+            className="manufacturer-form-control"
+            onChange={(e) => handleTimeRangeChange('drugVolume', e.target.value)}
+          >
+            <option value="30">Last 30 Days</option>
+            <option value="90">Last 90 Days</option>
+            <option value="365">This Year</option>
+          </select>
+        </div>
+      </div>
+      <div className="manufacturer-chart-container">
+        {dashboardStats.drugVolume?.length > 0 ? (
+          <Bar
+            data={dashboardStats.drugVolume}
+            xField="drugName"
+            yField="totalQuantity"
+            seriesField="drugName"
+            height={350}
+            legend={{
+              position: 'top-right',
+            }}
+            xAxis={{
+              label: {
+                autoRotate: false,
+                style: {
+                  fill: '#666',
+                  fontSize: 12
+                }
+              },
+              line: {
+                style: {
+                  stroke: '#e0e0e0'
+                }
+              }
+            }}
+            yAxis={{
+              label: {
+                formatter: (v) => `${v} units`,
+                style: {
+                  fill: '#666',
+                  fontSize: 12
+                }
+              },
+              grid: {
+                line: {
+                  style: {
+                    stroke: '#f0f0f0'
+                  }
+                }
+              }
+            }}
+            tooltip={{
+              domStyles: {
+                'g2-tooltip': {
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                  borderRadius: '8px'
+                }
+              },
+              formatter: (datum) => {
+                return { name: datum.drugName, value: `${datum.totalQuantity} units` };
+              },
+            }}
+            color={['#1890ff', '#13c2c2', '#52c41a', '#faad14', '#f5222d', '#722ed1']}
+            barStyle={{
+              radius: [4, 4, 0, 0],
+            }}
+          />
+        ) : (
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            color: '#999'
+          }}>
+            <FaCapsules size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+            <p>No drug volume data available</p>
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* Status Distribution Chart */}
+    <div className="manufacturer-card">
+      <div className="manufacturer-card-header">
+        <h2 className="manufacturer-card-title">Drug Status Distribution</h2>
+      </div>
+      <div className="manufacturer-chart-container">
+        {dashboardStats.statusDistribution?.length > 0 ? (
+          <Pie
+            data={dashboardStats.statusDistribution}
+            angleField="count"
+            colorField="status"
+            radius={0.8}
+            innerRadius={0.5}
+            label={{
+              type: 'inner',
+              offset: '-30%',
+              content: ({ percent }) => `${(percent * 100).toFixed(0)}%`,
+              style: {
+                fontSize: 14,
+                textAlign: 'center',
+              },
+            }}
+            interactions={[{ type: 'element-active' }]}
+            legend={{
+              position: 'right',
+              itemName: {
+                style: {
+                  fill: '#666'
+                }
+              }
+            }}
+            color={['#1890ff', '#52c41a', '#faad14', '#f5222d']}
+            statistic={{
+              title: false,
+              content: {
+                style: {
+                  whiteSpace: 'pre-wrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  fontSize: '18px',
+                  color: '#333',
+                  fontWeight: 'bold'
+                },
+                content: 'Status\nBreakdown',
+              },
+            }}
+          />
+        ) : (
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            color: '#999'
+          }}>
+            <FaChartPie size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+            <p>No status distribution data</p>
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* Upcoming Expirations Section */}
+    <div className="manufacturer-card">
+      <div className="manufacturer-card-header">
+        <h2 className="manufacturer-card-title">Upcoming Expirations</h2>
+      </div>
+      <div className="manufacturer-expiration-grid">
+        {dashboardStats.upcomingExpirations?.length > 0 ? (
+          dashboardStats.upcomingExpirations.map((drug, index) => (
+            <div key={index} className="manufacturer-expiration-card">
+              <div className="manufacturer-expiration-header">
+                <h4>{drug.name}</h4>
+                <span className="manufacturer-batch-tag">
+                  {drug.batch}
+                </span>
+              </div>
+              
+              <div className="manufacturer-expiration-details">
+                <div className="manufacturer-expiration-meta">
+                  <span>Expires: {new Date(drug.expiryDate).toLocaleDateString()}</span>
+                  <span>Quantity: {drug.quantity} units</span>
+                </div>
+                
+                <div className="manufacturer-days-remaining">
+                  <div
+                    className="manufacturer-days-progress"
+                    style={{
+                      width: `${100 - (Math.min(30, drug.daysLeft) / 30 * 100)}%`,
+                      backgroundColor: drug.daysLeft <= 7 ? '#ff4d4f' : 
+                                      drug.daysLeft <= 14 ? '#faad14' : '#52c41a',
+                    }}
+                  ></div>
+                </div>
+                
+                <div>
+                  <span style={{
+                    color: drug.daysLeft <= 7 ? '#ff4d4f' : 
+                          drug.daysLeft <= 14 ? '#faad14' : '#52c41a',
+                    fontWeight: '500'
+                  }}>
+                    {drug.daysLeft <= 0 ? 'Expired' : `${drug.daysLeft} days remaining`}
+                  </span>
+                  {drug.daysLeft <= 14 && (
+                    <button>
+                      Create Alert
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="manufacturer-chart-container" style={{ height: '400px' }}>
-                {dashboardStats.drugVolume && dashboardStats.drugVolume?.length > 0 ? (
-                  <Bar
-                    data={dashboardStats.drugVolume}
-                    xField="drugName"
-                    yField="totalQuantity"
-                    seriesField="drugName"
-                    height={400}
-                    legend={{
-                      position: 'top-right',
-                    }}
-                    xAxis={{
-                      label: {
-                        autoRotate: false,
-                      },
-                    }}
-                    yAxis={{
-                      label: {
-                        formatter: (v) => `${v} units`,
-                      },
-                    }}
-                    tooltip={{
-                      formatter: (datum) => {
-                        return { name: datum.drugName, value: `${datum.totalQuantity} units` };
-                      },
-                    }}
-                    color={['#1890ff', '#13c2c2', '#52c41a', '#faad14', '#f5222d']}
-                  />
-                ) : (
-                  <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
-                    No drug volume data available
-                  </p>
-                )}
-              </div>
             </div>
-
-            {/* Drug Distribution Pie Chart */}
+          ))
+        ) : (
+          <div className="no-expirations-message">
+            <FaCalendarTimes size={48} style={{ opacity: 0.3 }} />
+            <p>No upcoming expirations in the next 30 days</p>
           </div>
-
-          {/* Shipments Over Time Line Chart */}
-          <div className="manufacturer-card">
-            <div className="manufacturer-card-header">
-              <h2 className="manufacturer-card-title">Shipments Timeline</h2>
-              <div className="manufacturer-card-actions">
-                <select
-                  className="manufacturer-form-control"
-                  style={{ width: 'auto', display: 'inline-block' }}
-                  onChange={(e) => handleTimeRangeChange('shipments', e.target.value)}
-                >
-                  <option value="30">Last 30 Days</option>
-                  <option value="90">Last 90 Days</option>
-                  <option value="365">This Year</option>
-                </select>
-              </div>
-            </div>
-            <div className="manufacturer-chart-container" style={{ padding: '1.5rem' }}>
-              {dashboardStats.shipmentsOverTime?.length > 0 ? (
-                <div className="manufacturer-timeline-container">
-                  {dashboardStats.shipmentsOverTime.map((item, index) => (
-                    <div key={index} className="manufacturer-timeline-item">
-                      <div className="manufacturer-timeline-date">{item.date}</div>
-                      <div className="manufacturer-timeline-bar">
-                        <div
-                          className="manufacturer-timeline-progress"
-                          style={{
-                            width: `${Math.min(100, (item.count / Math.max(...dashboardStats.shipmentsOverTime.map(i => i.count))) * 100)}%`,
-                            backgroundColor: item.count > 0 ? 'var(--primary)' : 'transparent'
-                          }}
-                        ></div>
-                      </div>
-                      <div className="manufacturer-timeline-count">{item.count} shipments</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
-                  No shipment data available
-                </p>
-              )}
-            </div>
-            {/* Upcoming Expirations */}
-            <div className="manufacturer-card">
-              <div className="manufacturer-card-header">
-                <h2 className="manufacturer-card-title">Upcoming Expirations</h2>
-              </div>
-              <div className="manufacturer-chart-container" style={{ padding: '1.5rem' }}>
-                {dashboardStats.upcomingExpirations?.length > 0 ? (
-                  <div className="manufacturer-expiration-grid">
-                    {dashboardStats.upcomingExpirations.map((drug, index) => (
-                      <div key={index} className="manufacturer-expiration-card">
-                        <div className="manufacturer-expiration-header">
-                          <h4>{drug.name}</h4>
-                          <span className="manufacturer-batch-tag">{drug.batch}</span>
-                        </div>
-                        <div className="manufacturer-expiration-details">
-                          <div className="manufacturer-expiration-meta">
-                            <span>Expires: {drug.expiryDate}</span>
-                            <span>Quantity: {drug.quantity} units</span>
-                          </div>
-                          <div className="manufacturer-days-remaining">
-                            <div
-                              className="manufacturer-days-progress"
-                              style={{
-                                width: `${100 - (Math.min(30, drug.daysLeft) / 30) * 100}%`,
-                                backgroundColor: drug.daysLeft <= 7 ? '#f5222d' : drug.daysLeft <= 14 ? '#faad14' : '#52c41a'
-                              }}
-                            ></div>
-                            <span>{drug.daysLeft} days remaining</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p style={{ color: 'var(--gray)', textAlign: 'center', padding: '2rem' }}>
-                    No upcoming expirations
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-
-        </>
-      )}
-
+        )}
+      </div>
+    </div>
+  </div>
+)}
+</div>
 
       {/* // Add this modal component near the end of your JSX, before the closing </div>: */}
       {showShipmentsModal && (

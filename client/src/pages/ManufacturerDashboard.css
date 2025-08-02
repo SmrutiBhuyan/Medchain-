@@ -65,7 +65,9 @@ button {
   position: sticky;
   top: 0;
   height: 100vh; /* Ensure sidebar takes full viewport height */
+  flex-shrink: 0;
 }
+
 
 .manufacturer-logo {
   display: flex;
@@ -370,10 +372,11 @@ button {
   padding: 10px;
   box-shadow: var(--box-shadow);
   gap: 10px;
+   flex-wrap: wrap;
 }
 
 .manufacturer-tab {
-  flex: 1;
+   flex: 1 1 auto;
   padding: 12px 20px;
   text-align: center;
   font-weight: 600;
@@ -1101,7 +1104,7 @@ textarea.manufacturer-form-control {
     flex-wrap: wrap; /* Allow tabs to wrap */
   }
   .manufacturer-tab {
-    flex: none; /* Do not grow */
+    flex: 1 1 auto; /* Do not grow */
     width: 48%; /* Two tabs per row */
   }
   .manufacturer-file-upload {
@@ -1170,4 +1173,107 @@ textarea.manufacturer-form-control {
   color: #f5222d;
   font-size: 0.8rem;
   margin-left: 10px;
+}
+
+/* In ManufacturerDashboard.css */
+
+/* Add overflow and word-wrap properties to the expiration card */
+.manufacturer-expiration-card {
+  background-color: #fefeff;
+  border: 1px solid var(--medium-gray);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden; /* Hide any content that overflows the card */
+}
+
+/* Ensure the text within the details breaks to the next line if it's too long */
+.manufacturer-expiration-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  word-wrap: break-word; /* Prevents long words from overflowing */
+}
+
+/* Apply the same breaking behavior to the batch tag for consistency */
+.manufacturer-batch-tag {
+  background-color: #e0f2ff;
+  color: var(--primary-blue);
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 600;
+  word-wrap: break-word;
+}
+
+.manufacturer-main-content {
+  flex-grow: 1;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  /* Add this line */
+  overflow-x: auto;
+}
+
+.manufacturer-grid1 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 25px;
+  /* Add this line */
+  min-width: 0;
+}
+
+/* Add these styles to your ManufacturerDashboard.css file */
+
+/* Analytics tab specific styles */
+.manufacturer-analytics-container {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  width: 100%;
+}
+
+/* Fix for the upcoming expirations grid */
+.manufacturer-expiration-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+/* Chart container adjustments */
+.manufacturer-chart-container {
+  background-color: var(--white);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  margin-bottom: 20px;
+}
+
+/* Two-column layout for the top charts */
+.manufacturer-chart-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 25px;
+}
+
+@media (min-width: 1024px) {
+  .manufacturer-chart-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Ensure proper spacing for the status distribution chart */
+.status-distribution-container {
+  margin-top: 25px;
+}
+
+/* Fix for the upcoming expirations section */
+.upcoming-expirations-section {
+  width: 100%;
+  margin-top: 25px;
 }
