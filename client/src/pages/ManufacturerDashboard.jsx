@@ -68,6 +68,37 @@ const [routeDetails, setRouteDetails] = useState({
 const [shipmentHistory, setShipmentHistory] = useState([]);
 const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
+const [showProfileModal, setShowProfileModal] = useState(false);
+const [userProfile, setUserProfile] = useState(null);
+const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+
+
+const fetchUserProfile = async () => {
+  setIsLoadingProfile(true);
+  try {
+    console.log("Fetching profile");
+    
+    const token = localStorage.getItem('token');
+      if (!token) {
+      throw new Error('No authentication token found');
+    }
+    const response = await axios.get('http://localhost:5000/api/users/me', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+ 
+      console.log("User:", response.data);
+      
+      setUserProfile(response.data);
+    
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+  } finally {
+    setIsLoadingProfile(false);
+  }
+};
 // Add this function to fetch shipment history
 const fetchShipmentHistory = async () => {
   setIsLoadingHistory(true);
@@ -1264,10 +1295,10 @@ useEffect(() => {
           <FaChartLine />
           <span>Analytics</span>
         </a>
-        <a href="#" className={`manufacturer-nav-item ${activeTab === 'settings' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('settings')}>
+        {/* <a href="#" className={`manufacturer-nav-item ${activeTab === 'settings' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('settings')}>
           <FaCog />
           <span>Profile</span>
-        </a>
+        </a> */}
       </div>
     </div>
 
@@ -1275,11 +1306,16 @@ useEffect(() => {
     <div className="manufacturer-main-content">
       <div className="manufacturer-header">
         <h1 className="manufacturer-page-title">Manufacturer Dashboard</h1>
-        <div className="manufacturer-user-profile">
+        <div className="manufacturer-user-profile" onClick={async () => {
+    setShowProfileModal(true);
+    await fetchUserProfile();
+  }}
+  style={{ cursor: 'pointer' }}>
           <div className="manufacturer-user-avatar">
             {user?.name?.split(' ').map(n => n[0]).join('')}
           </div>
           <span>{user?.name || 'User'}</span>
+            <FaChevronDown />
           {/* Wallet connection status */}
           {walletAddress ? (
             <div className="manufacturer-wallet-connected">
@@ -2292,7 +2328,99 @@ useEffect(() => {
     onClose={() => setShowRouteOptimizer(false)}
   />
 )}
-
+{/* Profile Modal */}
+{showProfileModal && (
+  <div className="manufacturer-modal-overlay">
+    <div className="manufacturer-modal">
+      <div className="manufacturer-modal-header">
+        <h2>User Profile</h2>
+        <button
+          className="manufacturer-btn manufacturer-btn-close"
+          onClick={() => setShowProfileModal(false)}
+        >
+          &times;
+        </button>
+      </div>
+      <div className="manufacturer-modal-body">
+        {isLoadingProfile ? (
+          <p>Loading profile...</p>
+        ) : userProfile ? (
+          <div className="manufacturer-profile-details">
+            <div className="manufacturer-profile-avatar">
+              <div className="manufacturer-profile-avatar-initials">
+                {userProfile.name?.split(' ').map(n => n[0]).join('')}
+              </div>
+            </div>
+            
+            <div className="manufacturer-profile-section">
+              <h3>Basic Information</h3>
+              <div className="manufacturer-profile-row">
+                <span className="manufacturer-profile-label">Name:</span>
+                <span className="manufacturer-profile-value">{userProfile.name}</span>
+              </div>
+              <div className="manufacturer-profile-row">
+                <span className="manufacturer-profile-label">Email:</span>
+                <span className="manufacturer-profile-value">{userProfile.email}</span>
+              </div>
+              <div className="manufacturer-profile-row">
+                <span className="manufacturer-profile-label">Phone:</span>
+                <span className="manufacturer-profile-value">{userProfile.phone}</span>
+              </div>
+              <div className="manufacturer-profile-row">
+                <span className="manufacturer-profile-label">Role:</span>
+                <span className="manufacturer-profile-value">{userProfile.role}</span>
+              </div>
+            </div>
+            
+            {userProfile.organization && (
+              <div className="manufacturer-profile-section">
+                <h3>Organization Details</h3>
+                <div className="manufacturer-profile-row">
+                  <span className="manufacturer-profile-label">Organization:</span>
+                  <span className="manufacturer-profile-value">{userProfile.organization}</span>
+                </div>
+                {userProfile.location && (
+                  <div className="manufacturer-profile-row">
+                    <span className="manufacturer-profile-label">Location:</span>
+                    <span className="manufacturer-profile-value">{userProfile.location}</span>
+                  </div>
+                )}
+                {userProfile.pincode && (
+                  <div className="manufacturer-profile-row">
+                    <span className="manufacturer-profile-label">Pincode:</span>
+                    <span className="manufacturer-profile-value">{userProfile.pincode}</span>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {userProfile.walletAddress && (
+              <div className="manufacturer-profile-section">
+                <h3>Blockchain Details</h3>
+                <div className="manufacturer-profile-row">
+                  <span className="manufacturer-profile-label">Wallet Address:</span>
+                  <span className="manufacturer-profile-value manufacturer-wallet-address">
+                    {userProfile.walletAddress}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p>Failed to load profile data</p>
+        )}
+      </div>
+      <div className="manufacturer-modal-footer">
+        <button
+          className="manufacturer-btn manufacturer-btn-primary"
+          onClick={() => setShowProfileModal(false)}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
 
     </div>
