@@ -1,7 +1,7 @@
 import express from 'express';
 import { createShipment,   getDistributorShipments,
   acceptShipment,
-  rejectShipment, createShipmentToRetailer, createShipmentToWholesaler, createShipmentToPharmacy, acceptPharmacyShipment, rejectPharmacyShipment, getPharmacyShipments} from '../controllers/shipmentController.js';
+  rejectShipment, createShipmentToRetailer, createShipmentToWholesaler, createShipmentToPharmacy, acceptPharmacyShipment, rejectPharmacyShipment, getPharmacyShipments, getManufacturerShipments} from '../controllers/shipmentController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 import Shipment from '../models/Shipment.js';
 
@@ -46,5 +46,6 @@ router.post('/to-pharmacy', protect,createShipmentToPharmacy);
 router.get('/pharmacy/:pharmacyId', getPharmacyShipments);
 router.put('/accept/pharmacy/:shipmentId', acceptPharmacyShipment);
 router.put('/reject/pharmacy/:shipmentId', rejectPharmacyShipment);
+router.get('/fetch/manufacturer', protect, getManufacturerShipments);
 
 export default router;

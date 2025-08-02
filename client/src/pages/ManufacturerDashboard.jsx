@@ -63,6 +63,38 @@ const [routeDetails, setRouteDetails] = useState({
   destination: null
 });
 
+const [shipmentHistory, setShipmentHistory] = useState([]);
+const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+// Add this function to fetch shipment history
+const fetchShipmentHistory = async () => {
+  setIsLoadingHistory(true);
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axios.get('http://localhost:5000/api/shipments/fetch/manufacturer', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    console.log("Shipment history:", response.data.shipments);
+    
+    if (response.data.success) {
+      setShipmentHistory(response.data.shipments);
+    }
+  } catch (error) {
+    console.error('Error fetching shipment history:', error);
+    alert('Failed to load shipment history');
+  } finally {
+    setIsLoadingHistory(false);
+  }
+};
+
+// Add this useEffect to fetch history when tab is activated
+useEffect(() => {
+  if (activeTab === 'history' && user?._id) {
+    fetchShipmentHistory();
+  }
+}, [activeTab, user?._id]);
 
 const handleOptimizeRoute = async () => {
   if (!shipmentForm.distributor) {
@@ -1838,62 +1870,88 @@ useEffect(() => {
       )}
 
       {/* Shipment History Tab */}
-      {activeTab === 'history' && (
-        <div className="manufacturer-card">
-          <div className="manufacturer-card-header">
-            <h2 className="manufacturer-card-title">Shipment History</h2>
-            <div className="manufacturer-card-actions">
-              <button className="manufacturer-btn manufacturer-btn-outline">
-                <FaFilter /> Filters
-              </button>
-              <button className="manufacturer-btn manufacturer-btn-outline">
-                <FaDownload /> Export
-              </button>
-            </div>
-          </div>
-          <div className="manufacturer-search-bar">
-            <input type="text" placeholder="Search shipments..." />
-            <button><FaSearch /></button>
-          </div>
-          <div className="manufacturer-table-responsive">
-            <table>
-              <thead>
-                <tr>
-                  <th>Shipment ID</th>
-                  <th>Drugs Included</th>
-                  <th>Distributor</th>
-                  <th>Status</th>
-                  <th>Date Created</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shipmentsData.map(shipment => (
-                  <tr key={shipment.id}>
-                    <td>{shipment.id}</td>
-                    <td>{shipment.drugs}</td>
-                    <td>{shipment.distributor}</td>
-                    <td><StatusBadge status={shipment.status} /></td>
-                    <td>{shipment.date}</td>
-                    <td>
-                      <button className="manufacturer-btn manufacturer-btn-outline" style={{ padding: '0.25rem 0.5rem' }}>
-                        <FaEye />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="manufacturer-pagination">
-            <button><FaChevronLeft /></button>
-            <button className="manufacturer-active">1</button>
-            <button>2</button>
-            <button>3</button>
-            <button><FaChevronRight /></button>
-          </div>
-        </div>
-      )}
+     {/* // Update the Shipment History tab content to: */}
+{activeTab === 'history' && (
+  <div className="manufacturer-card">
+    <div className="manufacturer-card-header">
+      <h2 className="manufacturer-card-title">Shipment History</h2>
+      <div className="manufacturer-card-actions">
+        <button className="manufacturer-btn manufacturer-btn-outline">
+          <FaFilter /> Filters
+        </button>
+        <button className="manufacturer-btn manufacturer-btn-outline">
+          <FaDownload /> Export
+        </button>
+      </div>
+    </div>
+    <div className="manufacturer-search-bar">
+      <input type="text" placeholder="Search shipments..." />
+      <button><FaSearch /></button>
+    </div>
+    <div className="manufacturer-table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Tracking #</th>
+            <th>Drugs Count</th>
+            <th>Distributor</th>
+            <th>Status</th>
+            <th>Created At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {isLoadingHistory ? (
+            <tr>
+              <td colSpan="6" style={{ textAlign: 'center' }}>
+                Loading shipment history...
+              </td>
+            </tr>
+          ) : shipmentHistory.length > 0 ? (
+            shipmentHistory.map(shipment => (
+              <tr key={shipment._id}>
+                <td>{shipment.trackingNumber}</td>
+                <td>{shipment.drugs.length}</td>
+                <td>
+                  {shipment.participants.find(p => p.type === 'distributor')?.participantId?.name || 
+                   'Unknown distributor'}
+                </td>
+                <td><StatusBadge status={shipment.status} /></td>
+                <td>{new Date(shipment.createdAt).toLocaleDateString()}</td>
+                <td>
+                  <button 
+                    className="manufacturer-btn manufacturer-btn-outline" 
+                    style={{ padding: '0.25rem 0.5rem' }}
+                    onClick={() => {
+                      // You can implement a view details modal here
+                      console.log('View shipment:', shipment._id);
+                    }}
+                  >
+                    <FaEye />
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="6" style={{ textAlign: 'center' }}>
+                No shipment history found
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+    <div className="manufacturer-pagination">
+      <button><FaChevronLeft /></button>
+      <button className="manufacturer-active">1</button>
+      <button>2</button>
+      <button>3</button>
+      <button><FaChevronRight /></button>
+    </div>
+  </div>
+)}
+
 
       {/* Analytics Tab */}
       {/* Analytics Tab */}

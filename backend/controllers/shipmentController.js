@@ -1233,3 +1233,58 @@ export const rejectPharmacyShipment = async (req, res) => {
     res.status(500).json({ message: 'Server error', details: error.message });
   }
 };
+
+// In your shipmentController.js file, add this new controller function:
+
+/**
+ * @route GET /api/shipments/manufacturer
+ * @desc Get all shipments created by the current manufacturer
+ * @access Private (Manufacturer only)
+ */
+export const getManufacturerShipments = async (req, res) => {
+  try {
+    const manufacturerId = req.user._id;
+
+    // Find shipments where the manufacturer is a participant and is the creator
+    const shipments = await Shipment.find({
+      $and: [
+        { 'participants.type': 'manufacturer' },
+        { 'participants.participantId': manufacturerId },
+        { createdBy: manufacturerId }
+      ]
+    })
+      .populate({
+        path: 'participants.participantId',
+        select: 'name email',
+        model: 'User'
+      })
+      .populate({
+        path: 'drugs',
+        select: 'name batch batchBarcode',
+        model: 'Drug'
+      })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      shipments: shipments.map(shipment => ({
+        _id: shipment._id,
+        trackingNumber: shipment.trackingNumber,
+        drugs: shipment.drugs,
+        participants: shipment.participants,
+        status: shipment.status,
+        currentLocation: shipment.currentLocation,
+        createdAt: shipment.createdAt,
+        estimatedDelivery: shipment.estimatedDelivery,
+        actualDelivery: shipment.actualDelivery
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching manufacturer shipments:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch shipments',
+      details: error.message
+    });
+  }
+};
