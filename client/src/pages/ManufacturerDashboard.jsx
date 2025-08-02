@@ -43,7 +43,6 @@ const [dashboardStats, setDashboardStats] = useState({
   totalDrugs: 0,
   activeShipments: 0,
   nearExpiry: 0,
-  recalledBatches: 0,
   drugVolume: [],
   shipmentsOverTime: [],
   statusDistribution: [],
@@ -550,7 +549,6 @@ const fetchDashboardStats = async () => {
         totalDrugs: response.data.stats.totalDrugs || 0,
         activeShipments: response.data.stats.activeShipments || 0,
         nearExpiry: response.data.stats.nearExpiry || 0,
-        recalledBatches: response.data.stats.recalledBatches || 0,
         drugVolume: response.data.stats.drugVolume || [],
         shipmentsOverTime: response.data.stats.shipmentsOverTime || [],
         statusDistribution: response.data.stats.statusDistribution || [],
@@ -1101,7 +1099,6 @@ const handleManualSubmit = async (e) => {
     const statusMap = {
       'in-stock': { class: 'status-in-stock', text: 'In Stock' },
       'shipped': { class: 'status-shipped', text: 'Shipped' },
-      'recalled': { class: 'status-recalled', text: 'Recalled' },
       'expired': { class: 'status-expired', text: 'Expired' },
       'delivered': { class: 'badge-success', text: 'Delivered' },
       'in-transit': { class: 'badge-primary', text: 'In Transit' },
@@ -1262,10 +1259,6 @@ useEffect(() => {
           <FaChartLine />
           <span>Analytics</span>
         </a>
-        <a href="#" className={`manufacturer-nav-item ${activeTab === 'recalls' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('recalls')}>
-          <FaBell />
-          <span>Recalls</span>
-        </a>
         <a href="#" className={`manufacturer-nav-item ${activeTab === 'settings' ? 'manufacturer-active' : ''}`} onClick={() => setActiveTab('settings')}>
           <FaCog />
           <span>Settings</span>
@@ -1344,7 +1337,7 @@ useEffect(() => {
             <div className="manufacturer-icon manufacturer-success">
               <FaTruck />
             </div>
-            <h3>{isLoadingStats ? '...' : dashboardStats.activeShipments}</h3>
+            <h3>{shipmentHistory.length}</h3>
             <p>Total Shipments</p>
           </div>
           <div className="manufacturer-stats-card">
@@ -1353,13 +1346,6 @@ useEffect(() => {
             </div>
             <h3>{isLoadingStats ? '...' : dashboardStats.nearExpiry}</h3>
             <p>Near Expiry</p>
-          </div>
-          <div className="manufacturer-stats-card">
-            <div className="manufacturer-icon manufacturer-danger">
-              <FaBell />
-            </div>
-            <h3>0</h3> {/* Placeholder for recalled batches */}
-            <p>Recalled Batches</p>
           </div>
         </div>
       )}
@@ -1979,13 +1965,6 @@ useEffect(() => {
               </div>
               <h3>{isLoadingStats ? '...' : dashboardStats.nearExpiry || 0}</h3>
               <p>Near Expiry</p>
-            </div>
-            <div className="manufacturer-stats-card">
-              <div className="manufacturer-icon manufacturer-danger">
-                <FaBell />
-              </div>
-              <h3>{isLoadingStats ? '...' : dashboardStats.recalledBatches || 0}</h3>
-              <p>Recalled Batches</p>
             </div>
           </div>
 
