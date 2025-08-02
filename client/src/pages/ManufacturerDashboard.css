@@ -1332,3 +1332,70 @@ textarea.manufacturer-form-control {
   font-family: monospace;
   word-break: break-all;
 }
+
+/* --- Modal Overlay and Container --- */
+.manufacturer-modal-overlay {
+  background-color: rgba(240, 242, 245, 0.8);
+  backdrop-filter: blur(8px);
+}
+
+.manufacturer-modal {
+  background-color: #ffffff;
+  color: #333333;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e0e0e0;
+}
+
+/* --- Header and Close Button --- */
+.manufacturer-modal-header h2 {
+  color: #1a1a1a;
+}
+
+.manufacturer-btn-close {
+  color: #666666;
+}
+
+.manufacturer-btn-close:hover {
+  color: #333333;
+}
+
+/* --- Profile Sections and Labels --- */
+.manufacturer-profile-section {
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+}
+
+.manufacturer-profile-section h3 {
+  color: #1a1a1a;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.manufacturer-profile-row {
+  border-bottom: 1px solid #e9e9e9;
+}
+
+.manufacturer-profile-label {
+  color: #666666;
+}
+
+/* --- Avatar and Special Elements --- */
+.manufacturer-profile-avatar {
+  background-color: #6c757d; /* A subtle, professional gray */
+  box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+}
+
+.manufacturer-wallet-address {
+  color: #5a809e; /* A cool, dark blue */
+}
+
+/* --- Buttons --- */
+.manufacturer-btn-primary {
+  background-color: #007bff; /* Standard bootstrap blue */
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+}
+
+.manufacturer-btn-primary:hover {
+  background-color: #0056b3;
+  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+}
