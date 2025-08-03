@@ -807,7 +807,47 @@ export const createShipmentToPharmacy = async (req, res) => {
   }
 };
 
+export const getWholesalerShipments = async (req, res) => {
+  try {
+    console.log("Fetching wholesaler shipments...");
+    
+    const shipments = await Shipment.find({ 
+      'participants.participantId': req.user._id,
+      'participants.type': 'wholesaler'
+    })
+    .populate({
+      path: 'participants.participantId',
+      select: 'name email',
+      model: 'User'
+    })
+    .populate({
+      path: 'drugs',
+      select: 'name batch status batchBarcode expiryDate manufacturer',
+      populate: {
+        path: 'manufacturer',
+        select: 'name'
+      }
+    })
+    .sort({ createdAt: -1 });
 
+    // Transform the data to make it easier to work with in the frontend
+    const transformedShipments = shipments.map(shipment => {
+      const manufacturerParticipant = shipment.participants.find(p => p.type === 'manufacturer');
+      const wholesalerParticipant = shipment.participants.find(p => p.type === 'wholesaler');
+      
+      return {
+        ...shipment.toObject(),
+        manufacturer: manufacturerParticipant?.participantId,
+        wholesaler: wholesalerParticipant?.participantId
+      };
+    });
+
+    res.json(transformedShipments);
+  } catch (error) {
+    console.error('Error fetching shipments:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
 
 // Get shipments for pharmacy
 export const getPharmacyShipments = async (req, res) => {

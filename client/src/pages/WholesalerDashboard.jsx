@@ -143,6 +143,8 @@ const WholesalerDashboard = () => {
         const shipmentsRes = await axios.get('http://localhost:5000/api/shipments/wholesaler', {
           headers: { Authorization: `Bearer ${token}` }
         });
+        console.log("Shipments:", shipmentsRes);
+        
         setShipments(shipmentsRes.data);
         
         // Get inventory

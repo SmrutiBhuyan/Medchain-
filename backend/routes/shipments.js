@@ -1,7 +1,7 @@
 import express from 'express';
 import { createShipment,   getDistributorShipments,
   acceptShipment,
-  rejectShipment, createShipmentToRetailer, createShipmentToWholesaler, createShipmentToPharmacy, acceptPharmacyShipment, rejectPharmacyShipment, getPharmacyShipments, getManufacturerShipments, getRetailerShipments, acceptShipmentRetailer,rejectShipmentRetailer} from '../controllers/shipmentController.js';
+  rejectShipment, createShipmentToRetailer, createShipmentToWholesaler, createShipmentToPharmacy, acceptPharmacyShipment, rejectPharmacyShipment, getPharmacyShipments, getManufacturerShipments, getRetailerShipments, acceptShipmentRetailer,rejectShipmentRetailer, getWholesalerShipments} from '../controllers/shipmentController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 import Shipment from '../models/Shipment.js';
 
@@ -47,6 +47,7 @@ router.get('/pharmacy/:pharmacyId', getPharmacyShipments);
 router.put('/accept/pharmacy/:shipmentId', acceptPharmacyShipment);
 router.put('/reject/pharmacy/:shipmentId', rejectPharmacyShipment);
 router.get('/fetch/manufacturer', protect, getManufacturerShipments);
+router.get('/wholesaler', protect, getWholesalerShipments);
 router.get('/retailer/:retailerId', protect, getRetailerShipments);
 router.put('/accept/retailer/:id', protect, acceptShipmentRetailer);
 router.put('/reject/retailer/:id', protect, rejectShipmentRetailer);
