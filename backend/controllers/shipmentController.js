@@ -907,8 +907,69 @@ export const acceptWholesalerShipment = async (req, res) => {
   }
 };
 
+
+export const getRetailerShipments = async (req, res) => {
+  try {
+    const retailerId = req.params.retailerId;
+
+    // Validate retailerId
+    if (!mongoose.Types.ObjectId.isValid(retailerId)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid retailer ID format'
+      });
+    }
+
+    // Find shipments where the retailer is a participant
+    const shipments = await Shipment.find({
+      'participants.type': 'retailer',
+      'participants.participantId': retailerId
+    })
+    .populate({
+      path: 'participants.participantId',
+      select: 'name email',
+      model: 'User'
+    })
+    .populate({
+      path: 'drugs',
+      select: 'name batch status batchBarcode expiryDate manufacturer',
+      populate: {
+        path: 'manufacturer',
+        select: 'name'
+      }
+    })
+    .sort({ createdAt: -1 });
+
+    // Transform the data to make it easier to work with in the frontend
+    const transformedShipments = shipments.map(shipment => {
+      const distributorParticipant = shipment.participants.find(p => p.type === 'distributor');
+      const retailerParticipant = shipment.participants.find(p => p.type === 'retailer');
+      
+      return {
+        ...shipment.toObject(),
+        distributor: distributorParticipant?.participantId,
+        retailer: retailerParticipant?.participantId
+      };
+    });
+
+    res.json({
+      success: true,
+      shipments: transformedShipments
+    });
+  } catch (error) {
+    console.error('Error fetching retailer shipments:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to fetch shipments',
+      error: error.message 
+    });
+  }
+};
 // Accept shipment for retailer
-export const acceptRetailerShipment = async (req, res) => {
+// ShipmentController.js
+
+// Retailer accepts a shipment
+export const acceptShipmentRetailer = async (req, res) => {
   try {
     const shipment = await Shipment.findOne({
       _id: req.params.id,
@@ -918,10 +979,13 @@ export const acceptRetailerShipment = async (req, res) => {
     });
 
     if (!shipment) {
-      return res.status(404).json({ message: 'Shipment not found or cannot be accepted' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Shipment not found or cannot be accepted' 
+      });
     }
 
-    // Update shipment status
+    // Update shipment status and participant status
     shipment.status = 'delivered';
     shipment.actualDelivery = new Date();
     shipment.currentLocation = 'retailer';
@@ -937,7 +1001,7 @@ export const acceptRetailerShipment = async (req, res) => {
 
     await shipment.save();
 
-    // Update drug statuses
+    // Update drug statuses and current holder
     await Drug.updateMany(
       { _id: { $in: shipment.drugs } },
       { 
@@ -947,16 +1011,142 @@ export const acceptRetailerShipment = async (req, res) => {
           retailer: req.user._id,
           'unitBarcodes.$[].status': 'in-stock',
           'unitBarcodes.$[].currentHolder': 'retailer'
-        } 
+        }
       }
     );
+
+    // Update each unit barcode in the drugs
+    for (const drugId of shipment.drugs) {
+      const drug = await Drug.findById(drugId);
+      if (drug) {
+        const updatedUnitBarcodes = drug.unitBarcodes.map(unit => ({
+          ...unit.toObject(),
+          status: 'in-stock',
+          currentHolder: 'retailer',
+          retailer: req.user._id,
+          history: [
+            ...(unit.history || []),
+            {
+              holderType: 'retailer',
+              holderId: req.user._id,
+              status: 'in-stock',
+              date: new Date()
+            }
+          ]
+        }));
+
+        await Drug.updateOne(
+          { _id: drugId },
+          { $set: { unitBarcodes: updatedUnitBarcodes } }
+        );
+      }
+    }
     
-    res.json({ message: 'Shipment accepted successfully', shipment });
+    res.json({ 
+      success: true,
+      message: 'Shipment accepted successfully', 
+      shipment 
+    });
   } catch (error) {
     console.error('Error accepting shipment:', error);
-    res.status(500).json({ message: 'Server error', details: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while accepting shipment',
+      details: error.message 
+    });
   }
 };
+
+// Retailer rejects a shipment
+export const rejectShipmentRetailer = async (req, res) => {
+  try {
+    const shipment = await Shipment.findOne({
+      _id: req.params.id,
+      'participants.participantId': req.user._id,
+      'participants.type': 'retailer',
+      status: 'in-transit'
+    });
+
+    if (!shipment) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Shipment not found or cannot be rejected' 
+      });
+    }
+
+    // Update shipment status
+    shipment.status = 'returned';
+    shipment.currentLocation = 'in-transit';
+    
+    // Update retailer participant status
+    const retailerParticipant = shipment.participants.find(
+      p => p.type === 'retailer'
+    );
+    if (retailerParticipant) {
+      retailerParticipant.status = 'cancelled';
+      retailerParticipant.notes = 'Rejected by retailer';
+    }
+
+    await shipment.save();
+
+    // Update drug statuses to reflect return to wholesaler
+    await Drug.updateMany(
+      { _id: { $in: shipment.drugs } },
+      { 
+        $set: { 
+          status: 'in-stock with wholesaler',
+          currentHolder: 'wholesaler',
+          retailer: null,
+          'unitBarcodes.$[].status': 'in-stock',
+          'unitBarcodes.$[].currentHolder': 'wholesaler'
+        }
+      }
+    );
+
+    // Update each unit barcode in the drugs
+    for (const drugId of shipment.drugs) {
+      const drug = await Drug.findById(drugId);
+      if (drug) {
+        const updatedUnitBarcodes = drug.unitBarcodes.map(unit => ({
+          ...unit.toObject(),
+          status: 'in-stock',
+          currentHolder: 'wholesaler',
+          retailer: null,
+          history: [
+            ...(unit.history || []),
+            {
+              holderType: 'wholesaler',
+              holderId: drug.wholesaler,
+              status: 'returned',
+              date: new Date()
+            }
+          ]
+        }));
+
+        await Drug.updateOne(
+          { _id: drugId },
+          { $set: { unitBarcodes: updatedUnitBarcodes } }
+        );
+      }
+    }
+    
+    res.json({ 
+      success: true,
+      message: 'Shipment rejected and returned to wholesaler', 
+      shipment 
+    });
+  } catch (error) {
+    console.error('Error rejecting shipment:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while rejecting shipment',
+      details: error.message 
+    });
+  }
+};
+
+
+
 
 // Reject shipment for wholesaler
 export const rejectWholesalerShipment = async (req, res) => {
@@ -1005,52 +1195,7 @@ export const rejectWholesalerShipment = async (req, res) => {
   }
 };
 
-// Reject shipment for retailer
-export const rejectRetailerShipment = async (req, res) => {
-  try {
-    const shipment = await Shipment.findOne({
-      _id: req.params.id,
-      'participants.participantId': req.user._id,
-      'participants.type': 'retailer',
-      status: { $in: ['processing', 'in-transit'] }
-    });
 
-    if (!shipment) {
-      return res.status(404).json({ message: 'Shipment not found or cannot be rejected' });
-    }
-
-    shipment.status = 'cancelled';
-    
-    // Update retailer participant status
-    const retailerParticipant = shipment.participants.find(
-      p => p.type === 'retailer'
-    );
-    if (retailerParticipant) {
-      retailerParticipant.status = 'cancelled';
-    }
-
-    await shipment.save();
-
-    // Update drug statuses back to distributor
-    await Drug.updateMany(
-      { _id: { $in: shipment.drugs } },
-      { 
-        $set: { 
-          status: 'in-stock with distributor',
-          currentHolder: 'distributor',
-          retailer: null,
-          'unitBarcodes.$[].status': 'in-stock',
-          'unitBarcodes.$[].currentHolder': 'distributor'
-        } 
-      }
-    );
-
-    res.json({ message: 'Shipment rejected successfully', shipment });
-  } catch (error) {
-    console.error('Error rejecting shipment:', error);
-    res.status(500).json({ message: 'Server error', details: error.message });
-  }
-};
 
 import mongoose from 'mongoose';
 const ObjectId = mongoose.Types.ObjectId;
