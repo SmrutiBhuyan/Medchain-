@@ -90,24 +90,26 @@ const RetailerDashboard = () => {
     showNotification('Failed to load inventory', 'danger');
   }
 };
-  const fetchShipments = async () => {
-    try {
-      setLoadingShipments(true);
-      const response = await axios.get(`http://localhost:5000/api/shipments/retailer/${user._id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      console.log("Shipments found:",response.data);
-      
-      setShipments(response.data);
-    } catch (error) {
-      console.error('Error fetching shipments:', error);
-      showNotification('Failed to load shipments', 'danger');
-    } finally {
-      setLoadingShipments(false); 
-    }
-  };
+
+ const fetchShipments = async () => {
+  try {
+    setLoadingShipments(true);
+    const response = await axios.get(`http://localhost:5000/api/shipments/retailer/${user._id}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    console.log("Shipments found:", response.data);
+    
+    // Fix: Access the shipments array from the response data
+    setShipments(response.data.shipments);
+  } catch (error) {
+    console.error('Error fetching shipments:', error);
+    showNotification('Failed to load shipments', 'danger');
+  } finally {
+    setLoadingShipments(false); 
+  }
+};
 
 // Accept shipment
 const handleAcceptShipment = async (shipmentId) => {
