@@ -1,136 +1,291 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext';
+import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
+import Chart from 'chart.js/auto';
+import axios from 'axios';
+import './WholesalerDashboard.css';
 import { 
-  Box, Typography, Button, Table, TableBody, TableCell, 
-  TableContainer, TableHead, TableRow, Paper, TextField, 
-  Select, MenuItem, FormControl, InputLabel, Card, CardContent,
-  Grid, Modal, Chip, LinearProgress, IconButton, Tabs, Tab, useTheme
-} from '@mui/material';
-import { 
-  CheckCircle, Cancel, Search, QrCodeScanner, 
-  Inventory, LocalShipping, Analytics, Receipt, 
-  History, FilterList
-} from '@mui/icons-material';
-import { styled } from '@mui/system';
+  FaCheckCircle, FaTimes, FaSearch, FaQrcode, 
+  FaBoxes, FaTruck, FaChartLine, FaReceipt, FaSignOutAlt,
+  FaStore, FaClinicMedical, FaPills, FaSpinner, FaRoute
+} from 'react-icons/fa';
+import DrugVerification from './DrugVerification';
+import RouteOptimizer from './RouteOptimizer';
 
-// Mock data
-const mockIncomingShipments = [
-  { id: 'WSH-1001', sender: 'MediDistributors', senderType: 'distributor', drugCount: 250, dateSent: '2023-06-10', status: 'pending' },
-  { id: 'WSH-1002', sender: 'PharmaCorp', senderType: 'manufacturer', drugCount: 180, dateSent: '2023-06-12', status: 'pending' },
-  { id: 'WSH-1003', sender: 'HealthPlus', senderType: 'manufacturer', drugCount: 120, dateSent: '2023-06-05', status: 'received' },
-];
-
-const mockInventory = [
-  { id: 'WDRG-001', name: 'Paracetamol 500mg', barcode: '8901234567890', batch: 'B20230501', manufacturer: 'PharmaCorp', expiry: '2024-06-30', status: 'in_stock' },
-  { id: 'WDRG-002', name: 'Ibuprofen 400mg', barcode: '8901234567891', batch: 'B20230502', manufacturer: 'MediLife', expiry: '2024-07-15', status: 'in_stock' },
-  { id: 'WDRG-003', name: 'Amoxicillin 250mg', barcode: '8901234567892', batch: 'B20230503', manufacturer: 'HealthPlus', expiry: '2024-05-30', status: 'in_stock' },
-  { id: 'WDRG-004', name: 'Cetirizine 10mg', barcode: '8901234567893', batch: 'B20230504', manufacturer: 'PharmaCorp', expiry: '2024-08-20', status: 'recalled' },
-];
-
-const mockRetailers = [
-  { id: 'RET-001', name: 'City Pharmacy' },
-  { id: 'RET-002', name: 'MediMart' },
-  { id: 'RET-003', name: 'HealthFirst' },
-];
-
-const mockShipmentHistory = [
-  { id: 'OUT-1001', retailer: 'City Pharmacy', drugCount: 50, dateSent: '2023-05-20', status: 'delivered' },
-  { id: 'OUT-1002', retailer: 'MediMart', drugCount: 75, dateSent: '2023-05-25', status: 'delivered' },
-  { id: 'OUT-1003', retailer: 'HealthFirst', drugCount: 60, dateSent: '2023-06-01', status: 'in_transit' },
-];
-
-// Styled components
-const DashboardCard = styled(Card)(({ theme }) => ({
-  borderRadius: '12px',
-  boxShadow: '0 4px 20px 0 rgba(0,0,0,0.12)',
-  transition: 'transform 0.3s ease-in-out',
-  '&:hover': {
-    transform: 'translateY(-5px)',
-  },
-}));
-
-// Remove the styled StatusChip and replace with a function component
-function StatusChip({ label, status, ...props }) {
-  const theme = useTheme();
-  let bg;
+function StatusChip({ label, status }) {
+  let className = 'wholesaler-status-chip';
   switch (status) {
-    case 'in_stock':
-      bg = theme.palette.success.light;
+    case 'in-stock':
+    case 'delivered':
+      className += ' success';
       break;
-    case 'pending':
-      bg = theme.palette.warning.light;
+    case 'processing':
+    case 'in-transit':
+      className += ' warning';
       break;
     case 'received':
-      bg = theme.palette.success.light;
+      className += ' success';
       break;
     case 'recalled':
-      bg = theme.palette.error.light;
-      break;
-    case 'in_transit':
-      bg = theme.palette.info.light;
-      break;
-    case 'delivered':
-      bg = theme.palette.success.light;
+    case 'cancelled':
+      className += ' error';
       break;
     default:
-      bg = theme.palette.grey[300];
+      className += ' info';
   }
-  return (
-    <Chip
-      label={label}
-      sx={{
-        backgroundColor: bg,
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: '0.75rem',
-      }}
-      {...props}
-    />
-  );
+  return <span className={className}>{label}</span>;
 }
 
 const WholesalerDashboard = () => {
-  const [activeTab, setActiveTab] = useState(0);
-  const [shipments, setShipments] = useState(mockIncomingShipments);
-  const [inventory, setInventory] = useState(mockInventory);
+  const { user, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState('shipments');
+  const [shipments, setShipments] = useState([]);
+  const [inventory, setInventory] = useState([]);
   const [selectedShipment, setSelectedShipment] = useState(null);
   const [selectedDrugs, setSelectedDrugs] = useState([]);
-  const [selectedRetailer, setSelectedRetailer] = useState('');
+  const [selectedRecipient, setSelectedRecipient] = useState('');
+  const [recipientType, setRecipientType] = useState('retailer');
   const [searchTerm, setSearchTerm] = useState('');
   const [verificationResult, setVerificationResult] = useState(null);
   const [openModal, setOpenModal] = useState(false);
   const [qrInput, setQrInput] = useState('');
-  const [filterManufacturer, setFilterManufacturer] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [shipmentHistory, setShipmentHistory] = useState(mockShipmentHistory);
+  const [loading, setLoading] = useState(true);
+  const [retailers, setRetailers] = useState([]);
+  const [pharmacies, setPharmacies] = useState([]);
+  const navigate = useNavigate();
 
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
+  // Route Optimization
+  const [showRouteOptimizer, setShowRouteOptimizer] = useState(false);
+  const [routeDetails, setRouteDetails] = useState({
+    origin: null,
+    destination: null
+  });
+
+  const handleOptimizeRoute = async () => {
+    if (!selectedRecipient) {
+      alert('Please select a recipient first');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Get wholesaler location (current user)
+      const wholesalerResponse = await axios.get('http://localhost:5000/api/users/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Get recipient location
+      let recipientResponse;
+      switch (recipientType) {
+        case 'retailer':
+          recipientResponse = await axios.get(`http://localhost:5000/api/users/${selectedRecipient}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          break;
+        case 'pharmacy':
+          recipientResponse = await axios.get(`http://localhost:5000/api/users/${selectedRecipient}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          break;
+        default:
+          throw new Error('Invalid recipient type');
+      }
+
+      const wholesaler = wholesalerResponse.data;
+      const recipient = recipientResponse.data;
+      
+      if (!wholesaler.pincode || !recipient.pincode) {
+        alert('Location information not available for one or both parties');
+        return;
+      }
+
+      const wholesalerAddress = [
+        wholesaler.location,
+        wholesaler.pincode,
+        'India'
+      ].filter(Boolean).join(', ');
+
+      const recipientAddress = [
+        recipient.location,
+        recipient.pincode,
+        'India'
+      ].filter(Boolean).join(', ');
+
+      setRouteDetails({
+        origin: {
+          address: wholesalerAddress,
+          lat: null,
+          lng: null
+        },
+        destination: {
+          address: recipientAddress,
+          lat: null,
+          lng: null
+        }
+      });
+      
+      setShowRouteOptimizer(true);
+    } catch (error) {
+      console.error('Error fetching location data:', error);
+      alert('Failed to fetch location information');
+    }
   };
 
-  const handleReceiveShipment = (shipmentId) => {
-    // Update shipment status
-    setShipments(shipments.map(shipment => 
-      shipment.id === shipmentId ? { ...shipment, status: 'received' } : shipment
-    ));
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('token');
+        
+        // Get shipments
+        const shipmentsRes = await axios.get('http://localhost:5000/api/shipments/wholesaler', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setShipments(shipmentsRes.data);
+        
+        // Get inventory
+        const inventoryRes = await axios.get('http://localhost:5000/api/drugs/inventory', {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { status: 'in-stock' }
+        });
+        
+        setInventory(inventoryRes.data.items.map(item => ({
+          _id: `${item.drugId}-${item.unitBarcode}`,
+          name: item.name,
+          batch: item.batch,
+          barcode: item.unitBarcode,
+          batchBarcode: item.batchBarcode,
+          expiryDate: item.expiryDate,
+          manufacturer: item.manufacturer,
+          status: item.status,
+          currentHolder: item.currentHolder,
+          unitStatus: item.status
+        })));
+
+        const retailersRes = await axios.get('http://localhost:5000/api/users/retailers', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setRetailers(retailersRes.data);
+
+        const pharmaciesRes = await axios.get('http://localhost:5000/api/users/pharmacies', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setPharmacies(pharmaciesRes.data);
+        
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    // Add drugs to inventory - in real app this would come from shipment details
-    const newDrugs = Array(5).fill().map((_, i) => ({
-      id: `WDRG-${Math.floor(Math.random() * 10000)}`,
-      name: ['Paracetamol', 'Ibuprofen', 'Amoxicillin', 'Cetirizine', 'Omeprazole'][Math.floor(Math.random() * 5)],
-      barcode: `890${Math.floor(Math.random() * 10000000000)}`,
-      batch: `B2023${Math.floor(Math.random() * 1000)}`,
-      manufacturer: ['PharmaCorp', 'MediLife', 'HealthPlus'][Math.floor(Math.random() * 3)],
-      expiry: `2024-${Math.floor(Math.random() * 12) + 1}-${Math.floor(Math.random() * 28) + 1}`,
-      status: 'in_stock'
-    }));
-    
-    setInventory([...inventory, ...newDrugs]);
-    setSelectedShipment(null);
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
+
+  const verifyDrug = async (barcode) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`http://localhost:5000/api/drugs/verify/${barcode}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        const drug = response.data.drug;
+        const expiryDate = new Date(drug.expiryDate);
+        const today = new Date();
+        const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+        
+        return {
+          ...drug,
+          daysLeft,
+          status: drug.unitStatus || drug.status
+        };
+      } else {
+        return { 
+          error: response.data.error || 'Drug not found in system' 
+        };
+      }
+    } catch (error) {
+      console.error('Verification error:', error);
+      return { 
+        error: error.response?.data?.error || 'Verification failed' 
+      };
+    }
   };
 
-  const handleRejectShipment = (shipmentId) => {
-    setShipments(shipments.filter(shipment => shipment.id !== shipmentId));
-    setSelectedShipment(null);
+  const handleReceiveShipment = async (shipmentId) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      
+      await axios.put(
+        `http://localhost:5000/api/shipments/${shipmentId}/accept`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      const shipmentsRes = await axios.get('http://localhost:5000/api/shipments/wholesaler', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setShipments(shipmentsRes.data);
+      
+      const inventoryRes = await axios.get('http://localhost:5000/api/drugs/inventory', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { status: 'in-stock with wholesaler' } 
+      });
+      
+      const flattenedInventory = inventoryRes.data.items.map(item => ({
+        _id: `${item.drugId}-${item.unitBarcode}`,
+        name: item.name,
+        batch: item.batch,
+        barcode: item.unitBarcode,
+        batchBarcode: item.batchBarcode,
+        expiryDate: item.expiryDate,
+        manufacturer: item.manufacturer,
+        status: item.status,
+        currentHolder: item.currentHolder
+      }));
+
+      setInventory(flattenedInventory);
+      setSelectedShipment(null);
+    } catch (error) {
+      console.error('Error accepting shipment:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectShipment = async (shipmentId) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      
+      await axios.put(
+        `http://localhost:5000/api/shipments/${shipmentId}/reject`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      await axios.put(
+        `http://localhost:5000/api/drugs/update-from-shipment/${shipmentId}`,
+        { status: 'cancelled' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      const shipmentsRes = await axios.get('http://localhost:5000/api/shipments/wholesaler', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setShipments(shipmentsRes.data);
+      setSelectedShipment(null);
+    } catch (error) {
+      console.error('Error rejecting shipment:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSelectDrug = (drugId) => {
@@ -141,661 +296,943 @@ const WholesalerDashboard = () => {
     );
   };
 
-  const handleShipToRetailer = () => {
-    if (selectedDrugs.length === 0 || !selectedRetailer) return;
-    
-    // Create new shipment record
-    const newShipment = {
-      id: `OUT-${Math.floor(1000 + Math.random() * 9000)}`,
-      retailer: mockRetailers.find(r => r.id === selectedRetailer).name,
-      drugCount: selectedDrugs.length,
-      dateSent: new Date().toISOString().split('T')[0],
-      status: 'in_transit'
-    };
-    
-    setShipmentHistory([newShipment, ...shipmentHistory]);
-    setInventory(inventory.filter(drug => !selectedDrugs.includes(drug.id)));
-    setSelectedDrugs([]);
-    setSelectedRetailer('');
+  const handleShipToRecipient = async () => {
+    if (selectedDrugs.length === 0 || !selectedRecipient) {
+      alert('Please select both drugs and a recipient');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+
+      const drugPayload = selectedDrugs.map(drugId => {
+        const drug = inventory.find(d => d._id === drugId);
+        if (!drug) {
+          throw new Error(`Drug ${drugId} not found in inventory`);
+        }
+        return {
+          drugId: drug._id.split('-')[0],
+          unitBarcode: drug.barcode
+        };
+      });
+
+      const drugIds = [...new Set(drugPayload.map(d => d.drugId))];
+      const unitBarcodes = drugPayload.map(d => d.unitBarcode);
+
+      let endpoint, payload;
+      switch (recipientType) {
+        case 'retailer':
+          endpoint = '/api/shipments/to-retailer';
+          payload = {
+            drugIds,
+            unitBarcodes,
+            retailerId: selectedRecipient
+          };
+          break;
+        case 'pharmacy':
+          endpoint = '/api/shipments/to-pharmacy';
+          payload = {
+            drugIds,
+            unitBarcodes,
+            pharmacyId: selectedRecipient
+          };
+        case 'wholesaler':
+          endpoint = '/api/shipments/to-wholesaler';
+          payload = {
+            drugIds,
+            unitBarcodes,
+            wholeslaerId: selectedRecipient
+          };
+          break;
+        default:
+          throw new Error('Invalid recipient type');
+      }
+
+      const response = await axios.post(
+        `http://localhost:5000${endpoint}`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        const [shipmentsRes, inventoryRes] = await Promise.all([
+          axios.get('http://localhost:5000/api/shipments/wholesaler', {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get('http://localhost:5000/api/drugs/inventory', {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { status: 'in-stock' }
+          })
+        ]);
+
+        setShipments(shipmentsRes.data);
+        setInventory(inventoryRes.data.items || []);
+        setSelectedDrugs([]);
+        setSelectedRecipient('');
+
+        alert(`Successfully shipped ${selectedDrugs.length} items to ${getRecipientName(selectedRecipient)}`);
+      } else {
+        throw new Error(response.data.error || 'Shipment failed');
+      }
+    } catch (error) {
+      console.error('Shipping error:', error);
+      alert(`Shipping failed: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const verifyDrug = () => {
-    const foundDrug = inventory.find(drug => drug.barcode === qrInput);
-    setVerificationResult(foundDrug || { error: 'Drug not found in system' });
-    setOpenModal(true);
+  const getRecipientName = (recipientId) => {
+    let recipient;
+    switch (recipientType) {
+      case 'retailer':
+        recipient = retailers.find(r => r._id === recipientId);
+        break;
+      case 'pharmacy':
+        recipient = pharmacies.find(p => p._id === recipientId);
+        break;
+      default:
+        return 'Unknown';
+    }
+    return recipient?.name || 'Unknown';
   };
 
-  const filteredInventory = inventory.filter(drug => {
-    const matchesSearch = drug.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         drug.barcode.includes(searchTerm);
-    const matchesManufacturer = filterManufacturer === 'all' || drug.manufacturer === filterManufacturer;
-    const matchesStatus = filterStatus === 'all' || drug.status === filterStatus;
-    return matchesSearch && matchesManufacturer && matchesStatus;
-  });
+  const filteredInventory = Array.isArray(inventory) ? 
+    inventory.filter(drug => {
+      if (!drug) return false;
+      const nameMatch = drug.name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const barcodeMatch = String(drug.barcode || '').includes(searchTerm);
+      const batchBarcodeMatch = String(drug.batchBarcode || '').includes(searchTerm);
+      return nameMatch || barcodeMatch || batchBarcodeMatch;
+    }) : [];
 
-  const pendingShipments = shipments.filter(s => s.status === 'pending');
-  const receivedShipments = shipments.filter(s => s.status === 'received');
+  const pendingShipments = shipments.filter(s => s.status === 'processing');
+  const receivedShipments = shipments.filter(s => s.status === 'delivered');
 
-  const manufacturers = [...new Set(inventory.map(drug => drug.manufacturer))];
-  const statusOptions = [...new Set(inventory.map(drug => drug.status))];
+  const getManufacturerName = (manufacturer) => {
+    if (!manufacturer) return 'Unknown';
+    if (typeof manufacturer === 'object') return manufacturer.name || 'Unknown';
+    return manufacturer;
+  };
+
+  if (loading) {
+    return (
+      <div className="wholesaler-loading-screen">
+        <FaSpinner className="wholesaler-spinner-icon" />
+        <p>Loading dashboard...</p>
+      </div>
+    );
+  }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
-        Wholesaler Dashboard
-      </Typography>
-      
-      <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 3 }}>
-        <Tab label="Incoming Shipments" icon={<Receipt />} iconPosition="start" />
-        <Tab label="My Inventory" icon={<Inventory />} iconPosition="start" />
-        <Tab label="Ship to Retailer" icon={<LocalShipping />} iconPosition="start" />
-        <Tab label="Verification" icon={<QrCodeScanner />} iconPosition="start" />
-        <Tab label="Shipment History" icon={<History />} iconPosition="start" />
-        <Tab label="Analytics" icon={<Analytics />} iconPosition="start" />
-      </Tabs>
-      
-      {activeTab === 0 && (
-        <Box>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
-            Pending Shipments ({pendingShipments.length})
-          </Typography>
+    <div className="wholesaler-dashboard-container">
+      {/* Sidebar */}
+      <div className="wholesaler-sidebar">
+        <div className="wholesaler-sidebar-header">
+          <h2>Wholesaler Dashboard</h2>
+          {user && (
+            <div className="wholesaler-user-info">
+              <div className="wholesaler-user-avatar">
+                {user.name?.charAt(0).toUpperCase()}
+              </div>
+              <span>{user.name}</span>
+              <button className="wholesaler-logout-btn" onClick={logout}>
+                <FaSignOutAlt />
+              </button>
+            </div>
+          )}
+        </div>
+        
+        <nav className="wholesaler-sidebar-nav">
+          <button 
+            className={`wholesaler-nav-btn ${activeTab === 'shipments' ? 'active' : ''}`}
+            onClick={() => setActiveTab('shipments')}
+          >
+            <FaReceipt className="wholesaler-nav-icon" />
+            <span>Incoming Shipments</span>
+          </button>
           
-          {pendingShipments.length > 0 ? (
-            <TableContainer component={Paper} sx={{ mb: 4 }}>
-              <Table>
-                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                  <TableRow>
-                    <TableCell>Shipment ID</TableCell>
-                    <TableCell>Sender</TableCell>
-                    <TableCell>Sender Type</TableCell>
-                    <TableCell>Drug Count</TableCell>
-                    <TableCell>Date Sent</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {pendingShipments.map((shipment) => (
-                    <TableRow key={shipment.id}>
-                      <TableCell>{shipment.id}</TableCell>
-                      <TableCell>{shipment.sender}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={shipment.senderType} 
-                          color={shipment.senderType === 'manufacturer' ? 'primary' : 'secondary'} 
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>{shipment.drugCount}</TableCell>
-                      <TableCell>{shipment.dateSent}</TableCell>
-                      <TableCell>
-                        <StatusChip label={shipment.status} status={shipment.status} />
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="outlined" 
-                          size="small" 
-                          onClick={() => setSelectedShipment(shipment)}
-                          sx={{ mr: 1 }}
-                        >
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <DashboardCard sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="body1" color="textSecondary">
+          <button 
+            className={`wholesaler-nav-btn ${activeTab === 'inventory' ? 'active' : ''}`}
+            onClick={() => setActiveTab('inventory')}
+          >
+            <FaBoxes className="wholesaler-nav-icon" />
+            <span>My Inventory</span>
+          </button>
+          
+          <button 
+            className={`wholesaler-nav-btn ${activeTab === 'ship' ? 'active' : ''}`}
+            onClick={() => setActiveTab('ship')}
+          >
+            <FaTruck className="wholesaler-nav-icon" />
+            <span>Ship Products</span>
+          </button>
+          
+          <button 
+            className={`wholesaler-nav-btn ${activeTab === 'verify' ? 'active' : ''}`}
+            onClick={() => setActiveTab('verify')}
+          >
+            <FaQrcode className="wholesaler-nav-icon" />
+            <span>Verify Drug</span>
+          </button>
+          
+          <button 
+            className={`wholesaler-nav-btn ${activeTab === 'analytics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            <FaChartLine className="wholesaler-nav-icon" />
+            <span>Analytics</span>
+          </button>
+        </nav>
+      </div>
+
+      {/* Main Content */}
+      <div className="wholesaler-main-content">
+        {activeTab === 'shipments' && (
+          <div className="wholesaler-tab-content">
+            <h3>Pending Shipments ({pendingShipments.length})</h3>
+            
+            {pendingShipments.length > 0 ? (
+              <div className="wholesaler-table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tracking #</th>
+                      <th>Manufacturer</th>
+                      <th>Drug Count</th>
+                      <th>Date Sent</th>
+                      <th>Estimated Delivery</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingShipments.map((shipment) => (
+                      <tr key={shipment._id}>
+                        <td>{shipment.trackingNumber}</td>
+                        <td>{shipment.manufacturer?.name || 'Unknown'}</td>
+                        <td>{shipment.drugs?.length || 0}</td>
+                        <td>{new Date(shipment.createdAt).toLocaleDateString()}</td>
+                        <td>
+                          {shipment.estimatedDelivery 
+                            ? new Date(shipment.estimatedDelivery).toLocaleDateString() 
+                            : 'Not specified'}
+                        </td>
+                        <td><StatusChip label={shipment.status} status={shipment.status} /></td>
+                        <td>
+                          <button 
+                            className="wholesaler-view-btn"
+                            onClick={() => setSelectedShipment(shipment)}
+                          >
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="wholesaler-empty-state">
                 No pending shipments at this time
-              </Typography>
-            </DashboardCard>
-          )}
+              </div>
+            )}
 
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
-            Received Shipments ({receivedShipments.length})
-          </Typography>
-          
-          {receivedShipments.length > 0 ? (
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                  <TableRow>
-                    <TableCell>Shipment ID</TableCell>
-                    <TableCell>Sender</TableCell>
-                    <TableCell>Sender Type</TableCell>
-                    <TableCell>Drug Count</TableCell>
-                    <TableCell>Date Sent</TableCell>
-                    <TableCell>Status</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {receivedShipments.map((shipment) => (
-                    <TableRow key={shipment.id}>
-                      <TableCell>{shipment.id}</TableCell>
-                      <TableCell>{shipment.sender}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={shipment.senderType} 
-                          color={shipment.senderType === 'manufacturer' ? 'primary' : 'secondary'} 
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>{shipment.drugCount}</TableCell>
-                      <TableCell>{shipment.dateSent}</TableCell>
-                      <TableCell>
-                        <StatusChip label={shipment.status} status={shipment.status} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <DashboardCard sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="body1" color="textSecondary">
+            <h3>Received Shipments ({receivedShipments.length})</h3>
+            
+            {receivedShipments.length > 0 ? (
+              <div className="wholesaler-table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tracking #</th>
+                      <th>Manufacturer</th>
+                      <th>Drug Count</th>
+                      <th>Date Received</th>
+                      <th>Status</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {receivedShipments.map((shipment) => (
+                      <tr key={shipment._id}>
+                        <td>{shipment.trackingNumber}</td>
+                        <td>{shipment.manufacturer?.name || 'Unknown'}</td>
+                        <td>{shipment.drugs?.length || 0}</td>
+                        <td>
+                          {shipment.actualDelivery 
+                            ? new Date(shipment.actualDelivery).toLocaleDateString()
+                            : new Date(shipment.updatedAt).toLocaleDateString()}
+                        </td>
+                        <td><StatusChip label={shipment.status} status={shipment.status} /></td>
+                        <td>
+                          <button 
+                            className="wholesaler-view-btn"
+                            onClick={() => setSelectedShipment(shipment)}
+                          >
+                            View Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="wholesaler-empty-state">
                 No received shipments to display
-              </Typography>
-            </DashboardCard>
-          )}
-        </Box>
-      )}
+              </div>
+            )}
+          </div>
+        )}
 
-      {activeTab === 1 && (
-        <Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              Current Inventory ({inventory.length} drugs)
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Search drugs..."
-                InputProps={{
-                  startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
-                }}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                sx={{ width: 300 }}
-              />
-              <Button variant="outlined" startIcon={<FilterList />}>
-                Filters
-              </Button>
-            </Box>
-          </Box>
-          
-          <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel>Manufacturer</InputLabel>
-              <Select
-                value={filterManufacturer}
-                onChange={(e) => setFilterManufacturer(e.target.value)}
-                label="Manufacturer"
-              >
-                <MenuItem value="all">All Manufacturers</MenuItem>
-                {manufacturers.map(m => (
-                  <MenuItem key={m} value={m}>{m}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                label="Status"
-              >
-                <MenuItem value="all">All Statuses</MenuItem>
-                {statusOptions.map(s => (
-                  <MenuItem key={s} value={s}>{s.replace('_', ' ')}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-          
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                <TableRow>
-                  <TableCell>Drug Name</TableCell>
-                  <TableCell>Barcode</TableCell>
-                  <TableCell>Batch Number</TableCell>
-                  <TableCell>Manufacturer</TableCell>
-                  <TableCell>Expiry Date</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Current Holder</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredInventory.map((drug) => (
-                  <TableRow key={drug.id}>
-                    <TableCell>{drug.name}</TableCell>
-                    <TableCell>{drug.barcode}</TableCell>
-                    <TableCell>{drug.batch}</TableCell>
-                    <TableCell>{drug.manufacturer}</TableCell>
-                    <TableCell>{drug.expiry}</TableCell>
-                    <TableCell>
-                      <StatusChip label={drug.status} status={drug.status} />
-                    </TableCell>
-                    <TableCell>
-                      <Chip label="You" color="info" size="small" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          
-          {filteredInventory.length === 0 && (
-            <DashboardCard sx={{ p: 3, textAlign: 'center', mt: 2 }}>
-              <Typography variant="body1" color="textSecondary">
-                No drugs found matching your criteria
-              </Typography>
-            </DashboardCard>
-          )}
-        </Box>
-      )}
-
-      {activeTab === 2 && (
-        <Box>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-            Ship Drugs to Retailer
-          </Typography>
-          
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
-              <DashboardCard>
-                <CardContent>
-                  <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
-                    Select Drugs to Ship ({selectedDrugs.length} selected)
-                  </Typography>
-                  
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    placeholder="Search drugs..."
-                    InputProps={{
-                      startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
-                    }}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    sx={{ width: '100%', mb: 2 }}
-                  />
-                  
-                  <Box sx={{ maxHeight: '400px', overflow: 'auto' }}>
-                    <TableContainer>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell padding="checkbox"></TableCell>
-                            <TableCell>Drug Name</TableCell>
-                            <TableCell>Barcode</TableCell>
-                            <TableCell>Manufacturer</TableCell>
-                            <TableCell>Expiry</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {filteredInventory.map((drug) => (
-                            <TableRow 
-                              key={drug.id} 
-                              hover 
-                              selected={selectedDrugs.includes(drug.id)}
-                              onClick={() => handleSelectDrug(drug.id)}
-                              sx={{ cursor: 'pointer' }}
-                            >
-                              <TableCell padding="checkbox">
-                                {selectedDrugs.includes(drug.id) ? (
-                                  <CheckCircle color="primary" />
-                                ) : (
-                                  <Cancel color="disabled" />
-                                )}
-                              </TableCell>
-                              <TableCell>{drug.name}</TableCell>
-                              <TableCell>{drug.barcode}</TableCell>
-                              <TableCell>{drug.manufacturer}</TableCell>
-                              <TableCell>{drug.expiry}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Box>
-                </CardContent>
-              </DashboardCard>
-            </Grid>
-            
-            <Grid item xs={12} md={4}>
-              <DashboardCard>
-                <CardContent>
-                  <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
-                    Shipping Details
-                  </Typography>
-                  
-                  <FormControl fullWidth sx={{ mb: 3 }}>
-                    <InputLabel>Select Retailer</InputLabel>
-                    <Select
-                      value={selectedRetailer}
-                      onChange={(e) => setSelectedRetailer(e.target.value)}
-                      label="Select Retailer"
-                    >
-                      {mockRetailers.map(retailer => (
-                        <MenuItem key={retailer.id} value={retailer.id}>
-                          {retailer.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="body2" color="textSecondary" gutterBottom>
-                      Selected Drugs: {selectedDrugs.length}
-                    </Typography>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={Math.min(100, (selectedDrugs.length / inventory.length) * 100)} 
-                      sx={{ height: 8, borderRadius: 4 }}
-                    />
-                  </Box>
-                  
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    fullWidth
-                    size="large"
-                    disabled={selectedDrugs.length === 0 || !selectedRetailer}
-                    onClick={handleShipToRetailer}
-                    startIcon={<LocalShipping />}
-                  >
-                    Confirm Shipment
-                  </Button>
-                </CardContent>
-              </DashboardCard>
-            </Grid>
-          </Grid>
-        </Box>
-      )}
-
-      {activeTab === 3 && (
-        <Box sx={{ maxWidth: 600, mx: 'auto' }}>
-          <DashboardCard>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-                Verify Drug Authenticity
-              </Typography>
-              
-              <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                <TextField
-                  fullWidth
-                  variant="outlined"
-                  placeholder="Enter drug barcode or scan QR code"
-                  value={qrInput}
-                  onChange={(e) => setQrInput(e.target.value)}
+        {activeTab === 'inventory' && (
+          <div className="wholesaler-tab-content">
+            <div className="wholesaler-inventory-header">
+              <h3>Current Inventory ({inventory.length} units)</h3>
+              <div className="wholesaler-search-box">
+                <FaSearch className="wholesaler-search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search drugs..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                <Button 
-                  variant="contained" 
-                  startIcon={<QrCodeScanner />}
-                  onClick={() => alert('QR scanner would open here')}
-                >
-                  Scan
-                </Button>
-              </Box>
-              
-              <Button
-                fullWidth
-                variant="contained"
-                color="primary"
-                size="large"
-                disabled={!qrInput}
-                onClick={verifyDrug}
+              </div>
+            </div>
+            
+            {filteredInventory.length > 0 ? (
+              <div className="wholesaler-table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Drug Name</th>
+                      <th>Unit Barcode</th>
+                      <th>Batch Number</th>
+                      <th>Manufacturer</th>
+                      <th>Expiry Date</th>
+                      <th>Unit Status</th>
+                      <th>Overall Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredInventory.map((drug) => (
+                      <tr key={drug._id}>
+                        <td>{drug.name}</td>
+                        <td>{drug.barcode}</td>
+                        <td>{drug.batch}</td>
+                        <td>{getManufacturerName(drug.manufacturer)}</td>
+                        <td>{new Date(drug.expiryDate).toLocaleDateString()}</td>
+                        <td><StatusChip label={drug.unitStatus} status={drug.unitStatus} /></td>
+                        <td><StatusChip label={drug.status} status={drug.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="wholesaler-empty-state">
+                {inventory.length === 0 ? 'No inventory available' : 'No drugs found matching your search'}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'ship' && (
+          <div className="wholesaler-tab-content">
+            <h3>Ship Products to Recipients</h3>
+            
+            <div className="wholesaler-recipient-tabs">
+              <button 
+                className={`wholesaler-tab-btn ${recipientType === 'retailer' ? 'active' : ''}`}
+                onClick={() => {
+                  setRecipientType('retailer');
+                  setSelectedRecipient('');
+                }}
               >
-                Verify Drug
-              </Button>
-            </CardContent>
-          </DashboardCard>
-        </Box>
-      )}
-
-      {activeTab === 4 && (
-        <Box>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-            Shipment History
-          </Typography>
-          
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                <TableRow>
-                  <TableCell>Shipment ID</TableCell>
-                  <TableCell>Retailer</TableCell>
-                  <TableCell>Drug Count</TableCell>
-                  <TableCell>Date Sent</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {shipmentHistory.map((shipment) => (
-                  <TableRow key={shipment.id}>
-                    <TableCell>{shipment.id}</TableCell>
-                    <TableCell>{shipment.retailer}</TableCell>
-                    <TableCell>{shipment.drugCount}</TableCell>
-                    <TableCell>{shipment.dateSent}</TableCell>
-                    <TableCell>
-                      <StatusChip label={shipment.status} status={shipment.status} />
-                    </TableCell>
-                    <TableCell>
-                      <Button size="small">View Details</Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-      )}
-
-      {activeTab === 5 && (
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <DashboardCard>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Shipments to Retailers (Last 6 Months)
-                </Typography>
-                <Box sx={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography variant="h3" color="primary">
-                    42
-                  </Typography>
-                </Box>
-              </CardContent>
-            </DashboardCard>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <DashboardCard>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Near-Expiry Drugs (Next 3 Months)
-                </Typography>
-                <Box sx={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography variant="h3" color="warning.main">
-                    {inventory.filter(d => {
-                      const expiryDate = new Date(d.expiry);
-                      const threeMonthsFromNow = new Date();
-                      threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
-                      return expiryDate <= threeMonthsFromNow;
-                    }).length}
-                  </Typography>
-                </Box>
-              </CardContent>
-            </DashboardCard>
-          </Grid>
-          
-          <Grid item xs={12}>
-            <DashboardCard>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Stock Over Time
-                </Typography>
-                <Box sx={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography variant="body1" color="textSecondary">
-                    Stock trend visualization would appear here
-                  </Typography>
-                </Box>
-              </CardContent>
-            </DashboardCard>
-          </Grid>
-        </Grid>
-      )}
-
-      {/* Shipment Details Modal */}
-      <Modal
-        open={!!selectedShipment}
-        onClose={() => setSelectedShipment(null)}
-      >
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 600,
-          bgcolor: 'background.paper',
-          boxShadow: 24,
-          p: 4,
-          borderRadius: 2
-        }}>
-          {selectedShipment && (
-            <>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Shipment Details: {selectedShipment.id}
-              </Typography>
-              
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="body1"><strong>Sender:</strong> {selectedShipment.sender}</Typography>
-                <Typography variant="body1"><strong>Sender Type:</strong> 
-                  <Chip 
-                    label={selectedShipment.senderType} 
-                    color={selectedShipment.senderType === 'manufacturer' ? 'primary' : 'secondary'} 
-                    size="small" 
-                    sx={{ ml: 1 }}
+                <FaStore className="wholesaler-tab-icon" /> Retailers
+              </button>
+              <button 
+                className={`wholesaler-tab-btn ${recipientType === 'pharmacy' ? 'active' : ''}`}
+                onClick={() => {
+                  setRecipientType('pharmacy');
+                  setSelectedRecipient('');
+                }}
+              >
+                <FaClinicMedical className="wholesaler-tab-icon" /> Pharmacies
+              </button>
+            </div>
+            
+            <div className="wholesaler-ship-grid">
+              <div className="wholesaler-drug-selection">
+                <h4>Select Units to Ship</h4>
+                
+                <div className="wholesaler-search-box">
+                  <FaSearch className="wholesaler-search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Search by name, barcode, batch, or manufacturer..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                   />
-                </Typography>
-                <Typography variant="body1"><strong>Drug Count:</strong> {selectedShipment.drugCount}</Typography>
-                <Typography variant="body1"><strong>Date Sent:</strong> {selectedShipment.dateSent}</Typography>
-                <Typography variant="body1"><strong>Status:</strong> 
-                  <StatusChip label={selectedShipment.status} status={selectedShipment.status} sx={{ ml: 1 }} />
-                </Typography>
-              </Box>
+                  {searchTerm && (
+                    <button 
+                      className="wholesaler-clear-search"
+                      onClick={() => setSearchTerm('')}
+                    >
+                      <FaTimes />
+                    </button>
+                  )}
+                </div>
+                
+                <div className="wholesaler-drug-list-container">
+                  <table className="wholesaler-drug-list">
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th>Drug Name</th>
+                        <th>Unit Barcode</th>
+                        <th>Batch Barcode</th>
+                        <th>Expiry</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredInventory.map((drug) => (
+                        <tr 
+                          key={drug._id} 
+                          className={selectedDrugs.includes(drug._id) ? 'selected' : ''}
+                          onClick={() => handleSelectDrug(drug._id)}
+                        >
+                          <td>
+                            {selectedDrugs.includes(drug._id) ? (
+                              <FaCheckCircle className="wholesaler-selected-icon" />
+                            ) : (
+                              <FaTimes className="wholesaler-unselected-icon" />
+                            )}
+                          </td>
+                          <td>{drug.name}</td>
+                          <td>{drug.barcode}</td>
+                          <td>{drug.batchBarcode || "No rendering"}</td>
+                          <td>{new Date(drug.expiryDate).toLocaleDateString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
               
-              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Drug List (Sample)
-              </Typography>
-              
-              <Box sx={{ maxHeight: 200, overflow: 'auto', mb: 3, p: 1, border: '1px solid #eee', borderRadius: 1 }}>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Typography key={i} variant="body2" sx={{ py: 0.5 }}>
-                    - {['Paracetamol', 'Ibuprofen', 'Amoxicillin', 'Cetirizine', 'Omeprazole'][i]} (Batch: B20230{i+1})
-                  </Typography>
-                ))}
-              </Box>
-              
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                <Button 
-                  variant="outlined" 
-                  color="error"
-                  onClick={() => handleRejectShipment(selectedShipment.id)}
+              <div className="wholesaler-shipping-details">
+                <h4>Shipping Details</h4>
+                
+                <div className="wholesaler-form-group">
+                  <label>Select {recipientType.charAt(0).toUpperCase() + recipientType.slice(1)}</label>
+                  <select
+                    value={selectedRecipient}
+                    onChange={(e) => setSelectedRecipient(e.target.value)}
+                  >
+                    <option value="">Select a recipient</option>
+                    {recipientType === 'retailer' && retailers.map(retailer => (
+                      <option key={retailer._id} value={retailer._id}>
+                        {retailer.name} ({retailer.organization})
+                      </option>
+                    ))}
+                    {recipientType === 'pharmacy' && pharmacies.map(pharmacy => (
+                      <option key={pharmacy._id} value={pharmacy._id}>
+                        {pharmacy.name} ({pharmacy.organization})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <button
+                  className="wholesaler-route-btn"
+                  onClick={handleOptimizeRoute}
+                  disabled={!selectedRecipient}
                 >
-                  Reject Shipment
-                </Button>
-                <Button 
-                  variant="contained" 
-                  color="primary"
-                  onClick={() => handleReceiveShipment(selectedShipment.id)}
+                  <FaRoute className="wholesaler-btn-icon" />
+                  Find Best Route
+                </button>
+                
+                <div className="wholesaler-selection-progress">
+                  <span>Selected Drugs: {selectedDrugs.length}</span>
+                  <div className="wholesaler-progress-bar">
+                    <div 
+                      className="wholesaler-progress" 
+                      style={{ width: `${Math.min(100, (selectedDrugs.length / inventory.length) * 100)}%` }}
+                    ></div>
+                  </div>
+                </div>
+                
+                <button
+                  className="wholesaler-ship-btn"
+                  disabled={selectedDrugs.length === 0 || !selectedRecipient}
+                  onClick={handleShipToRecipient}
                 >
-                  Accept Shipment
-                </Button>
-              </Box>
-            </>
-          )}
-        </Box>
-      </Modal>
+                  <FaTruck className="wholesaler-btn-icon" />
+                  Confirm Shipment to {recipientType.charAt(0).toUpperCase() + recipientType.slice(1)}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* Verification Result Modal */}
-      <Modal
-        open={openModal}
-        onClose={() => {
-          setOpenModal(false);
-          setVerificationResult(null);
-          setQrInput('');
-        }}
-      >
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 500,
-          bgcolor: 'background.paper',
-          boxShadow: 24,
-          p: 4,
-          borderRadius: 2
-        }}>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-            Drug Verification Result
-          </Typography>
-          
-          {verificationResult?.error ? (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Cancel color="error" sx={{ fontSize: 60, mb: 2 }} />
-              <Typography variant="h6" color="error">
-                {verificationResult.error}
-              </Typography>
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                This drug may be counterfeit or not registered in our system.
-              </Typography>
-            </Box>
-          ) : verificationResult ? (
-            <>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                <CheckCircle color="success" sx={{ fontSize: 40, mr: 2 }} />
-                <Typography variant="h6" color="success.main">
-                  Valid Drug Found
-                </Typography>
-              </Box>
+        {activeTab === 'verify' && (
+          <DrugVerification 
+            onVerify={verifyDrug}
+            getManufacturerName={getManufacturerName}
+          />
+        )}
+
+        {activeTab === 'analytics' && (
+          <div className="wholesaler-analytics-content">
+            <div className="wholesaler-analytics-grid">
+              {/* Summary Cards */}
+              <div className="wholesaler-analytics-card">
+                <h4>Total Inventory</h4>
+                <div className="wholesaler-analytics-value primary">{inventory.length}</div>
+                <small>units in stock</small>
+              </div>
               
-              <Box sx={{ pl: 2 }}>
-                <Typography variant="body1"><strong>Name:</strong> {verificationResult.name}</Typography>
-                <Typography variant="body1"><strong>Barcode:</strong> {verificationResult.barcode}</Typography>
-                <Typography variant="body1"><strong>Batch:</strong> {verificationResult.batch}</Typography>
-                <Typography variant="body1"><strong>Manufacturer:</strong> {verificationResult.manufacturer}</Typography>
-                <Typography variant="body1"><strong>Expiry:</strong> {verificationResult.expiry}</Typography>
-                <Typography variant="body1"><strong>Status:</strong> 
-                  <StatusChip label={verificationResult.status} status={verificationResult.status} sx={{ ml: 1 }} />
-                </Typography>
-                <Typography variant="body1"><strong>Current Holder:</strong> 
-                  <Chip label="You (Wholesaler)" color="info" size="small" sx={{ ml: 1 }} />
-                </Typography>
-              </Box>
-            </>
-          ) : null}
-          
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-            <Button 
-              variant="contained" 
-              onClick={() => {
-                setOpenModal(false);
-                setVerificationResult(null);
-                setQrInput('');
-              }}
-            >
-              Close
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
-    </Box>
+              <div className="wholesaler-analytics-card">
+                <h4>Near-Expiry Drugs</h4>
+                <div className="wholesaler-analytics-value warning">
+                  {inventory.filter(d => {
+                    const expiry = new Date(d.expiryDate);
+                    const today = new Date();
+                    const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+                    return daysLeft <= 30;
+                  }).length}
+                </div>
+                <small>expiring in 30 days</small>
+              </div>
+              
+              <div className="wholesaler-analytics-card">
+                <h4>Active Partners</h4>
+                <div className="wholesaler-analytics-value info">
+                  {[...retailers, ...pharmacies].length}
+                </div>
+                <small>business connections</small>
+              </div>
+              
+              <div className="wholesaler-analytics-card">
+                <h4>Monthly Shipments</h4>
+                <div className="wholesaler-analytics-value secondary">
+                  {shipments.filter(s => {
+                    const shipDate = new Date(s.createdAt);
+                    const now = new Date();
+                    return shipDate.getMonth() === now.getMonth() && 
+                          shipDate.getFullYear() === now.getFullYear();
+                  }).length}
+                </div>
+                <small>this month</small>
+              </div>
+            </div>
+
+            {/* Main Charts Section */}
+            <div className="wholesaler-charts-container">
+              {/* Inventory by Status */}
+              <div className="wholesaler-chart-card">
+                <h4>Inventory Status Distribution</h4>
+                <div className="wholesaler-chart-wrapper">
+                  <Doughnut 
+                    data={{
+                      labels: ['In Stock', 'Shipped', 'Delivered', 'Recalled', 'Expired'],
+                      datasets: [{
+                        data: [
+                          inventory.filter(d => d.status.includes('in-stock')).length,
+                          inventory.filter(d => d.status.includes('shipped')).length,
+                          inventory.filter(d => d.status === 'delivered').length,
+                          inventory.filter(d => d.status === 'recalled').length,
+                          inventory.filter(d => d.status === 'expired').length
+                        ],
+                        backgroundColor: [
+                          '#4BC0C0',
+                          '#FFCE56',
+                          '#36A2EB',
+                          '#FF6384',
+                          '#9966FF'
+                        ],
+                        borderWidth: 1
+                      }]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'right'
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Monthly Shipment Trends */}
+              <div className="wholesaler-chart-card">
+                <h4>Monthly Shipment Trends</h4>
+                <div className="wholesaler-chart-wrapper">
+                  <Line 
+                    data={{
+                      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                      datasets: [
+                        {
+                          label: 'Received Shipments',
+                          data: Array(12).fill(0).map((_, i) => 
+                            shipments.filter(s => 
+                              new Date(s.createdAt).getMonth() === i && 
+                              ['delivered', 'received'].includes(s.status)
+                            ).length
+                          ),
+                          borderColor: '#36A2EB',
+                          backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                          tension: 0.3,
+                          fill: true
+                        },
+                        {
+                          label: 'Sent Shipments',
+                          data: Array(12).fill(0).map((_, i) => 
+                            shipments.filter(s => 
+                              new Date(s.createdAt).getMonth() === i && 
+                              s.createdBy === user._id
+                            ).length
+                          ),
+                          borderColor: '#4BC0C0',
+                          backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                          tension: 0.3,
+                          fill: true
+                        }
+                      ]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          title: {
+                            display: true,
+                            text: 'Number of Shipments'
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Inventory by Manufacturer */}
+              <div className="wholesaler-chart-card">
+                <h4>Inventory by Manufacturer</h4>
+                <div className="wholesaler-chart-wrapper">
+                  <Bar 
+                    data={{
+                      labels: Array.from(new Set(inventory.map(d => 
+                        typeof d.manufacturer === 'object' ? d.manufacturer.name : 'Unknown'
+                        ))).slice(0, 5),
+                      datasets: [{
+                        label: 'Units in Stock',
+                        data: Array.from(new Set(inventory.map(d => 
+                          typeof d.manufacturer === 'object' ? d.manufacturer.name : 'Unknown'
+                          ))).map(manu => 
+                          inventory.filter(d => 
+                            (typeof d.manufacturer === 'object' ? d.manufacturer.name : 'Unknown') === manu
+                          ).length
+                          ).slice(0, 5),
+                        backgroundColor: '#FF9F40',
+                        borderColor: '#FF6384',
+                        borderWidth: 1
+                      }]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          title: {
+                            display: true,
+                            text: 'Number of Units'
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Partner Distribution */}
+              <div className="wholesaler-chart-card">
+                <h4>Partner Distribution</h4>
+                <div className="wholesaler-chart-wrapper">
+                  <Pie 
+                    data={{
+                      labels: ['Retailers', 'Pharmacies'],
+                      datasets: [{
+                        data: [retailers.length, pharmacies.length],
+                        backgroundColor: [
+                          '#FF6384',
+                          '#36A2EB'
+                        ],
+                        borderWidth: 1
+                      }]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'right'
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Expiry Timeline */}
+              <div className="wholesaler-chart-card wide">
+                <h4>Drug Expiry Timeline</h4>
+                <div className="wholesaler-chart-wrapper">
+                  <Bar 
+                    data={{
+                      labels: ['<30 days', '30-60 days', '60-90 days', '90-180 days', '>180 days'],
+                      datasets: [{
+                        label: 'Units Expiring',
+                        data: [
+                          inventory.filter(d => {
+                            const days = Math.ceil((new Date(d.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+                            return days <= 30;
+                          }).length,
+                          inventory.filter(d => {
+                            const days = Math.ceil((new Date(d.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+                            return days > 30 && days <= 60;
+                          }).length,
+                          inventory.filter(d => {
+                            const days = Math.ceil((new Date(d.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+                            return days > 60 && days <= 90;
+                          }).length,
+                          inventory.filter(d => {
+                            const days = Math.ceil((new Date(d.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+                            return days > 90 && days <= 180;
+                          }).length,
+                          inventory.filter(d => {
+                            const days = Math.ceil((new Date(d.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+                            return days > 180;
+                          }).length
+                        ],
+                        backgroundColor: [
+                          '#FF6384',
+                          '#FF9F40',
+                          '#FFCE56',
+                          '#4BC0C0',
+                          '#36A2EB'
+                        ],
+                        borderWidth: 1
+                      }]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          title: {
+                            display: true,
+                            text: 'Number of Units'
+                          }
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Shipment Status */}
+              <div className="wholesaler-chart-card">
+                <h4>Shipment Status</h4>
+                <div className="wholesaler-chart-wrapper">
+                  <Doughnut 
+                    data={{
+                      labels: ['Processing', 'In Transit', 'Delivered', 'Cancelled'],
+                      datasets: [{
+                        data: [
+                          shipments.filter(s => s.status === 'processing').length,
+                          shipments.filter(s => s.status === 'in-transit').length,
+                          shipments.filter(s => s.status === 'delivered').length,
+                          shipments.filter(s => s.status === 'cancelled').length
+                        ],
+                        backgroundColor: [
+                          '#FFCE56',
+                          '#36A2EB',
+                          '#4BC0C0',
+                          '#FF6384'
+                        ],
+                        borderWidth: 1
+                      }]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'right'
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Shipment Details Modal */}
+        {selectedShipment && (
+          <div className="wholesaler-modal-overlay">
+            <div className="wholesaler-modal">
+              <h3>Shipment Details: {selectedShipment.trackingNumber}</h3>
+              
+              <div className="wholesaler-modal-content">
+                <div className="wholesaler-shipment-info-grid">
+                  <div>
+                    <p><strong>Manufacturer:</strong> {selectedShipment.manufacturer?.name || 'Unknown'}</p>
+                    <p><strong>Date Sent:</strong> {new Date(selectedShipment.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p><strong>Estimated Delivery:</strong> 
+                      {selectedShipment.estimatedDelivery 
+                        ? new Date(selectedShipment.estimatedDelivery).toLocaleDateString()
+                        : 'Not specified'}
+                    </p>
+                    {selectedShipment.actualDelivery && (
+                      <p><strong>Actual Delivery:</strong> {new Date(selectedShipment.actualDelivery).toLocaleDateString()}</p>
+                    )}
+                  </div>
+                </div>
+                
+                <p><strong>Status:</strong> 
+                  <StatusChip label={selectedShipment.status} status={selectedShipment.status} />
+                </p>
+                
+                <h4>Drugs in Shipment ({selectedShipment.drugs?.length || 0})</h4>
+                
+                <div className="wholesaler-drug-list-modal">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Drug Name</th>
+                        <th>Batch</th>
+                        <th>Expiry Date</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedShipment.drugs?.map((drug, i) => (
+                        <tr key={i}>
+                          <td>{drug.name}</td>
+                          <td>{drug.batch}</td>
+                          <td>{new Date(drug.expiryDate).toLocaleDateString()}</td>
+                          <td><StatusChip label={drug.status} status={drug.status} /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {selectedShipment.notes && (
+                  <div className="wholesaler-shipment-notes">
+                    <h4>Notes</h4>
+                    <p>{selectedShipment.notes}</p>
+                  </div>
+                )}
+                
+                {(selectedShipment.status === 'processing' || selectedShipment.status === 'in-transit') && (
+                  <div className="wholesaler-modal-actions">
+                    <button 
+                      className="wholesaler-reject-btn"
+                      onClick={() => handleRejectShipment(selectedShipment._id)}
+                    >
+                      Reject Shipment
+                    </button>
+                    <button 
+                      className="wholesaler-accept-btn"
+                      onClick={() => handleReceiveShipment(selectedShipment._id)}
+                    >
+                      Accept Shipment
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              <button 
+                className="wholesaler-close-modal"
+                onClick={() => setSelectedShipment(null)}
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Verification Result Modal */}
+        {openModal && (
+          <div className="wholesaler-modal-overlay">
+            <div className="wholesaler-modal">
+              <h3>Drug Verification Result</h3>
+              
+              <div className="wholesaler-modal-content">
+                {verificationResult?.error ? (
+                  <div className="wholesaler-verification-error">
+                    <FaTimes className="wholesaler-error-icon" />
+                    <h4>{verificationResult.error}</h4>
+                    <p>This drug may be counterfeit or not registered in our system.</p>
+                  </div>
+                ) : verificationResult ? (
+                  <>
+                    <div className="wholesaler-verification-success">
+                      <FaCheckCircle className="wholesaler-success-icon" />
+                      <h4>Valid Drug Found</h4>
+                    </div>
+                    
+                    <div className="wholesaler-verification-details">
+                      <p><strong>Name:</strong> {verificationResult.name}</p>
+                      <p><strong>Barcode:</strong> {verificationResult.barcode}</p>
+                      <p><strong>Batch:</strong> {verificationResult.batch}</p>
+                      <p><strong>Manufacturer:</strong> {getManufacturerName(verificationResult.manufacturer)}</p>
+                      <p><strong>Expiry:</strong> {verificationResult.expiry}</p>
+                      <p><strong>Status:</strong> 
+                        <StatusChip label={verificationResult.status} status={verificationResult.status} />
+                      </p>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+              
+              <button
+                className="wholesaler-close-btn"
+                onClick={() => {
+                  setOpenModal(false);
+                  setVerificationResult(null);
+                  setQrInput('');
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showRouteOptimizer && (
+          <RouteOptimizer 
+            origin={routeDetails.origin}
+            destination={routeDetails.destination}
+            onClose={() => setShowRouteOptimizer(false)}
+          />
+        )}
+      </div>
+    </div>
   );
 };
 

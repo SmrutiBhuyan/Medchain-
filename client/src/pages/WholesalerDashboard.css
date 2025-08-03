@@ -1,180 +1,810 @@
-/* wholesaler-dashboard.css */
+/* General Layout and Typography */
+:root {
+  --primary-color: #007bff;
+  --secondary-color: #6c757d;
+  --success-color: #28a745;
+  --warning-color: #ffc107;
+  --error-color: #dc3545;
+  --info-color: #17a2b8;
+  --bg-color-light: #f8f9fa;
+  --bg-color-dark: #343a40;
+  --card-bg-color: #ffffff;
+  --border-color: #e9ecef;
+  --text-color: #343a40;
+  --text-color-light: #6c757d;
+  --sidebar-bg: #2c3e50;
+  --sidebar-text: #ecf0f1;
+  --sidebar-hover: #34495e;
+  --header-bg: #ffffff;
+  --box-shadow-light: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+  --box-shadow-medium: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+  --border-radius: 0.5rem;
+}
 
-/* Base Styles */
-.wholesaler-dashboard {
-    background-color: #f8fafc;
-    min-height: 100vh;
-    padding: 24px;
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-color-light);
+  color: var(--text-color);
+  margin: 0;
+}
+
+.wholesaler-dashboard-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar Styling */
+.wholesaler-sidebar {
+  width: 280px;
+  background-color: var(--sidebar-bg);
+  color: var(--sidebar-text);
+  padding: 2rem 1rem;
+  box-shadow: var(--box-shadow-medium);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.wholesaler-sidebar-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 1.5rem;
+}
+
+.wholesaler-sidebar-header h2 {
+  font-size: 1.5rem;
+  margin: 0 0 1rem 0;
+  color: #fff;
+  font-weight: 600;
+}
+
+.wholesaler-user-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.wholesaler-user-avatar {
+  width: 40px;
+  height: 40px;
+  background-color: var(--primary-color);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.wholesaler-user-info span {
+  font-weight: 500;
+}
+
+.wholesaler-logout-btn {
+  background: transparent;
+  border: none;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: color 0.2s ease-in-out;
+}
+
+.wholesaler-logout-btn:hover {
+  color: var(--error-color);
+}
+
+.wholesaler-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex-grow: 1;
+}
+
+.wholesaler-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  color: var(--sidebar-text);
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.wholesaler-nav-btn:hover,
+.wholesaler-nav-btn.active {
+  background-color: var(--sidebar-hover);
+  color: #fff;
+}
+
+.wholesaler-nav-icon {
+  font-size: 1.25rem;
+}
+
+/* Main Content Area */
+.wholesaler-main-content {
+  flex-grow: 1;
+  padding: 2rem;
+  background-color: var(--bg-color-light);
+  overflow-y: auto;
+}
+
+.wholesaler-tab-content h3,
+.wholesaler-tab-content h4 {
+  color: var(--text-color);
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+/* Status Chip */
+.wholesaler-status-chip {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.wholesaler-status-chip.success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.wholesaler-status-chip.warning {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.wholesaler-status-chip.error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.wholesaler-status-chip.info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+/* Table Styling */
+.wholesaler-table-container {
+  background-color: var(--card-bg-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow-light);
+  overflow-x: auto;
+  margin-bottom: 2rem;
+}
+
+.wholesaler-table-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.wholesaler-table-container thead {
+  background-color: var(--bg-color-light);
+  color: var(--text-color);
+  font-weight: 600;
+  text-align: left;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+.wholesaler-table-container th,
+.wholesaler-table-container td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.wholesaler-table-container tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.wholesaler-table-container tbody tr:hover {
+  background-color: #f1f3f5;
+}
+
+.wholesaler-view-btn {
+  padding: 0.5rem 1rem;
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.wholesaler-view-btn:hover {
+  background-color: #0056b3;
+}
+
+/* Search Box */
+.wholesaler-search-box {
+  position: relative;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  background-color: #f1f3f5;
+  border-radius: var(--border-radius);
+  padding: 0.5rem 1rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.wholesaler-search-box .wholesaler-search-icon {
+  color: var(--text-color-light);
+  margin-right: 0.5rem;
+}
+
+.wholesaler-search-box input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  font-size: 1rem;
+  outline: none;
+  color: var(--text-color);
+}
+
+.wholesaler-search-box input::placeholder {
+  color: var(--text-color-light);
+}
+
+.wholesaler-clear-search {
+  background: none;
+  border: none;
+  color: var(--text-color-light);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0;
+  margin-left: 0.5rem;
+}
+
+/* Empty State */
+.wholesaler-empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-color-light);
+  font-size: 1.1rem;
+  background-color: var(--card-bg-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow-light);
+}
+
+/* Ship Products Tab */
+.wholesaler-recipient-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.wholesaler-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  background-color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.wholesaler-tab-btn:hover {
+  border-color: var(--primary-color);
+}
+
+.wholesaler-tab-btn.active {
+  background-color: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+}
+
+.wholesaler-ship-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+}
+
+.wholesaler-drug-selection {
+  background-color: var(--card-bg-color);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow-light);
+}
+
+.wholesaler-shipping-details {
+  background-color: var(--card-bg-color);
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow-light);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.wholesaler-drug-list-container {
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+}
+
+.wholesaler-drug-list {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.wholesaler-drug-list thead {
+  position: sticky;
+  top: 0;
+  background-color: #f1f3f5;
+  z-index: 10;
+}
+
+.wholesaler-drug-list tbody tr {
+  cursor: pointer;
+  transition: background-color 0.1s ease-in-out;
+}
+
+.wholesaler-drug-list tbody tr:hover,
+.wholesaler-drug-list tbody tr.selected {
+  background-color: #e9f0f8;
+}
+
+.wholesaler-selected-icon,
+.wholesaler-unselected-icon {
+  font-size: 1.25rem;
+  margin-right: 0.5rem;
+}
+
+.wholesaler-selected-icon {
+  color: var(--success-color);
+}
+
+.wholesaler-unselected-icon {
+  color: var(--secondary-color);
+}
+
+.wholesaler-form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.wholesaler-form-group select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  background-color: #fff;
+  appearance: none;
+  cursor: pointer;
+}
+
+.wholesaler-form-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.wholesaler-route-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--info-color);
+  color: #fff;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.wholesaler-route-btn:hover {
+  background-color: #138496;
+}
+
+.wholesaler-route-btn:disabled {
+  background-color: var(--secondary-color);
+  cursor: not-allowed;
+}
+
+.wholesaler-ship-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.wholesaler-ship-btn:hover {
+  background-color: #0056b3;
+}
+
+.wholesaler-ship-btn:disabled {
+  background-color: var(--secondary-color);
+  cursor: not-allowed;
+}
+
+.wholesaler-selection-progress {
+  margin-top: 1rem;
+}
+
+.wholesaler-progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: var(--bg-color-light);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.wholesaler-progress {
+  height: 100%;
+  background-color: var(--success-color);
+  transition: width 0.3s ease-in-out;
+}
+
+/* Analytics Tab */
+.wholesaler-analytics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.wholesaler-analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.wholesaler-analytics-card {
+  background-color: var(--card-bg-color);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow-light);
+  text-align: center;
+}
+
+.wholesaler-analytics-card h4 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-color-light);
+  margin-bottom: 1rem;
+}
+
+.wholesaler-analytics-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.wholesaler-analytics-value.primary { color: var(--primary-color); }
+.wholesaler-analytics-value.warning { color: var(--warning-color); }
+.wholesaler-analytics-value.info { color: var(--info-color); }
+.wholesaler-analytics-value.secondary { color: var(--secondary-color); }
+
+.wholesaler-analytics-card small {
+  color: var(--text-color-light);
+  font-size: 0.8rem;
+}
+
+.wholesaler-charts-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.wholesaler-chart-card {
+  background-color: var(--card-bg-color);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow-light);
+}
+
+.wholesaler-chart-card h4 {
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.wholesaler-chart-wrapper {
+  height: 300px;
+}
+
+.wholesaler-chart-card.wide {
+  grid-column: 1 / -1;
+}
+
+/* Modal Styling */
+.wholesaler-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.wholesaler-modal {
+  background-color: #fff;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow-medium);
+  width: 90%;
+  max-width: 800px;
+  padding: 2rem;
+  position: relative;
+  animation: slideUp 0.3s ease-in-out;
+}
+
+.wholesaler-close-modal,
+.wholesaler-close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-color-light);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.wholesaler-close-modal:hover,
+.wholesaler-close-btn:hover {
+  color: var(--error-color);
+}
+
+.wholesaler-modal h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.wholesaler-modal-content {
+  margin-top: 1.5rem;
+}
+
+.wholesaler-shipment-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.wholesaler-shipment-info-grid p {
+  margin: 0.5rem 0;
+}
+
+.wholesaler-drug-list-modal {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  margin-top: 1rem;
+}
+
+.wholesaler-drug-list-modal table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.wholesaler-drug-list-modal thead {
+  background-color: var(--bg-color-light);
+}
+
+.wholesaler-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.wholesaler-reject-btn,
+.wholesaler-accept-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.wholesaler-reject-btn {
+  background-color: var(--error-color);
+  color: #fff;
+  border: none;
+}
+
+.wholesaler-reject-btn:hover {
+  background-color: #c82333;
+}
+
+.wholesaler-accept-btn {
+  background-color: var(--success-color);
+  color: #fff;
+  border: none;
+}
+
+.wholesaler-accept-btn:hover {
+  background-color: #218838;
+}
+
+/* Verification Modal */
+.wholesaler-verification-success {
+  text-align: center;
+  color: var(--success-color);
+}
+
+.wholesaler-verification-success .wholesaler-success-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.wholesaler-verification-error {
+  text-align: center;
+  color: var(--error-color);
+}
+
+.wholesaler-verification-error .wholesaler-error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.wholesaler-verification-details {
+  border-top: 1px solid var(--border-color);
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+}
+
+.wholesaler-verification-details p {
+  margin: 0.5rem 0;
+}
+
+.wholesaler-close-btn {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: var(--secondary-color);
+  color: #fff;
+  border: none;
+  border-radius: var(--border-radius);
+  margin-top: 2rem;
+  cursor: pointer;
+}
+
+.wholesaler-close-btn:hover {
+  background-color: #5a6268;
+}
+
+/* Loading Screen */
+.wholesaler-loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  z-index: 2000;
+  color: var(--primary-color);
+}
+
+.wholesaler-spinner-icon {
+  font-size: 3rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
   }
-  
-  /* Header Styles */
-  .dashboard-header {
-    margin-bottom: 32px;
+  to {
+    transform: rotate(360deg);
   }
-  
-  .dashboard-title {
-    font-weight: 700;
-    color: #1e293b;
-    margin-bottom: 8px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Media Queries for Responsiveness */
+@media (max-width: 1024px) {
+  .wholesaler-dashboard-container {
+    flex-direction: column;
   }
-  
-  /* Tab Styles */
-  .dashboard-tabs {
-    margin-bottom: 24px;
-  }
-  
-  .dashboard-tab {
-    text-transform: none;
-    font-weight: 500;
-    min-width: 120px;
-  }
-  
-  /* Card Styles */
-  .wholesaler-card {
-    border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .wholesaler-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  }
-  
-  .card-header {
-    padding: 16px 24px;
-    border-bottom: 1px solid #e2e8f0;
-  }
-  
-  .card-title {
-    font-weight: 600;
-    color: #1e293b;
-  }
-  
-  /* Table Styles */
-  .wholesaler-table {
-    border-collapse: separate;
-    border-spacing: 0;
-  }
-  
-  .wholesaler-table thead th {
-    background-color: #f1f5f9;
-    font-weight: 600;
-    color: #334155;
-    padding: 12px 16px;
-    position: sticky;
-    top: 0;
-  }
-  
-  .wholesaler-table tbody td {
-    padding: 12px 16px;
-    border-bottom: 1px solid #e2e8f0;
-  }
-  
-  .wholesaler-table tbody tr:hover td {
-    background-color: #f8fafc;
-  }
-  
-  /* Status Badges */
-  .status-badge {
-    font-weight: 500;
-    padding: 4px 12px;
-    border-radius: 16px;
-    font-size: 0.75rem;
-  }
-  
-  .status-pending {
-    background-color: #fef3c7;
-    color: #92400e;
-  }
-  
-  .status-received {
-    background-color: #d1fae5;
-    color: #065f46;
-  }
-  
-  .status-in_stock {
-    background-color: #dbeafe;
-    color: #1e40af;
-  }
-  
-  .status-recalled {
-    background-color: #fee2e2;
-    color: #991b1b;
-  }
-  
-  .status-in_transit {
-    background-color: #e0e7ff;
-    color: #4338ca;
-  }
-  
-  /* Form Elements */
-  .dashboard-select .MuiSelect-select {
-    padding-top: 10px;
-    padding-bottom: 10px;
-  }
-  
-  .dashboard-textfield .MuiOutlinedInput-input {
-    padding: 10px 14px;
-  }
-  
-  /* Responsive Adjustments */
-  @media (max-width: 768px) {
-    .dashboard-container {
-      padding: 16px;
-    }
-    
-    .dashboard-tab {
-      min-width: auto;
-      padding: 8px 12px;
-    }
-    
-    .wholesaler-table thead th,
-    .wholesaler-table tbody td {
-      padding: 8px 12px;
-    }
-  }
-  
-  /* Animations */
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  
-  .fade-in {
-    animation: fadeIn 0.3s ease-out forwards;
-  }
-  
-  /* Utility Classes */
-  .mb-3 {
-    margin-bottom: 16px;
-  }
-  
-  .mt-3 {
-    margin-top: 16px;
-  }
-  
-  .text-center {
-    text-align: center;
-  }
-  
-  .full-width {
+
+  .wholesaler-sidebar {
     width: 100%;
+    height: auto;
+    position: static;
+    padding: 1.5rem 1rem;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
-  
-  /* Color Classes */
-  .text-primary {
-    color: #3b82f6;
+
+  .wholesaler-sidebar-header {
+    flex-direction: row;
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    text-align: left;
   }
-  
-  .text-success {
-    color: #10b981;
+
+  .wholesaler-sidebar-header h2 {
+    font-size: 1.2rem;
   }
-  
-  .text-warning {
-    color: #f59e0b;
+
+  .wholesaler-sidebar-nav {
+    display: none; /* Hide for smaller screens, can be a hamburger menu */
   }
-  
-  .text-error {
-    color: #ef4444;
+
+  .wholesaler-main-content {
+    padding: 1rem;
   }
+
+  .wholesaler-ship-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .wholesaler-analytics-grid,
+  .wholesaler-charts-container {
+    grid-template-columns: 1fr;
+  }
+
+  .wholesaler-shipment-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wholesaler-sidebar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .wholesaler-user-info {
+    justify-content: flex-start;
+    margin-top: 1rem;
+  }
+}
