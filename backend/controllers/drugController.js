@@ -555,3 +555,4 @@ function getMissingLinks(participants) {
   const expectedChain = ['manufacturer', 'distributor', 'wholesaler', 'retailer', 'pharmacy'];
   return expectedChain.filter(link => !participants[link]);
 }
+

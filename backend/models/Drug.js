@@ -43,7 +43,7 @@ const DrugSchema = new mongoose.Schema({
     barcode: String,
     status: {
       type: String,
-      enum: ['in-stock', 'shipped', 'delivered', 'recalled', 'expired'],
+      enum: ['in-stock', 'shipped', 'delivered', 'recalled', 'expired','sold'],
       default: 'in-stock'
     },
     manufacturer: {

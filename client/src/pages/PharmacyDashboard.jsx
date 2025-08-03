@@ -59,9 +59,7 @@ const PharmacyDashboard = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [toastVariant, setToastVariant] = useState('success');
   const webcamRef = useRef(null);
-  const [showDiseaseChecker, setShowDiseaseChecker] = useState(false);
-
-  
+  const [showDiseaseChecker, setShowDiseaseChecker] = useState(false); 
 
   const recallData = [
     { id: 1, drug: 'Lipitor 20mg', batch: 'LIP2023-03', barcode: '7890123456', issued: '2023-05-15', by: 'FDA', severity: 'high' },
@@ -216,25 +214,24 @@ const handleRejectShipment = async (shipmentId) => {
     }, 1000);
   };
 
-  const markDrugAsSold = async () => {
-    try {
-      await axios.put(
-        `http://localhost:5000/api/drugs/mark-sold/${scannedDrug.barcode}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
+const markDrugAsSold = async (barcode) => {
+  try {
+    await axios.put(
+      `http://localhost:5000/api/drugs/mark-sold/${barcode}`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
         }
-      );
-      showNotification(`${scannedDrug.name} marked as sold`, 'success');
-      setScannedDrug(null);
-      fetchInventory();
-    } catch (error) {
-      console.error('Error marking drug as sold:', error);
-      showNotification('Failed to mark drug as sold', 'danger');
-    }
-  };
+      }
+    );
+    showNotification('Drug marked as sold', 'success');
+    fetchInventory(); // Refresh the inventory
+  } catch (error) {
+    console.error('Error marking drug as sold:', error);
+    showNotification('Failed to mark drug as sold', 'danger');
+  }
+};
 
   const reportDrugAsExpired = async () => {
     try {
@@ -291,21 +288,23 @@ const handleRejectShipment = async (shipmentId) => {
     setTimeout(() => setShowToast(false), 3000);
   };
 
-  const getStatusBadge = (status) => {
-    switch(status) {
-      case 'in_stock': return <span className="pharma-badge pharma-success">In Stock</span>;
-      case 'sold': return <span className="pharma-badge pharma-secondary">Sold Out</span>;
-      case 'recalled': return <span className="pharma-badge pharma-danger">Recalled</span>;
-      case 'expired': return <span className="pharma-badge pharma-warning">Expired</span>;
-      default: return <span className="pharma-badge pharma-light">Unknown</span>;
-    }
-  };
+const getStatusBadge = (status) => {
+  switch(status) {
+    case 'in_stock': return <span className="pharma-badge pharma-success">In Stock</span>;
+    case 'sold': return <span className="pharma-badge pharma-secondary">Sold</span>;
+    case 'recalled': return <span className="pharma-badge pharma-danger">Recalled</span>;
+    case 'expired': return <span className="pharma-badge pharma-warning">Expired</span>;
+    default: return <span className="pharma-badge pharma-light">Unknown</span>;
+  }
+};
 
   const getDrugStatus = (drug) => {
-    if (drug.status === 'recalled') return 'recalled';
-    if (new Date(drug.expiryDate) < new Date()) return 'expired';
-    return drug.status;
-  };
+  if (drug.status === 'recalled') return 'recalled';
+  if (new Date(drug.expiryDate) < new Date()) return 'expired';
+  if (drug.unitBarcodes?.some(b => b.barcode === drug.barcode && b.status === 'sold')) return 'sold';
+  return drug.status;
+};
+  
 
   return (
     <div className="pharma-dashboard">
@@ -442,21 +441,26 @@ const handleRejectShipment = async (shipmentId) => {
                       <h5>Recent Inventory Activity</h5>
                     </div>
                     <div className="pharma-card-body">
-                     <table className="pharma-data-table">
+         <table className="pharma-data-table">
   <thead>
     <tr>
       <th>Drug Name</th>
       <th>Batch</th>
-      <th>Unit Barcode</th>
+      <th>Barcode</th>
       <th>Manufacturer</th>
       <th>Expiry Date</th>
+      <th>Quantity</th>
+      <th>Status</th>
       <th>Actions</th>
     </tr>
   </thead>
   <tbody>
     {inventory.map(item => (
       <tr key={item._id} className={getDrugStatus(item)}>
-        <td>{item.name}</td>
+        <td>
+          {item.name} 
+          {item.quantity <= 2 && <span className="pharma-badge pharma-warning">Low stock</span>}
+        </td>
         <td>{item.batch}</td>
         <td>
           <OverlayTrigger
@@ -473,6 +477,8 @@ const handleRejectShipment = async (shipmentId) => {
         </td>
         <td>{item.manufacturer?.name || 'Unknown'}</td>
         <td>{new Date(item.expiryDate).toLocaleDateString()}</td>
+        <td>{item.quantity}</td>
+        <td>{getStatusBadge(getDrugStatus(item))}</td>
         <td className="pharma-actions">
           <button 
             className="pharma-btn-icon"
@@ -490,7 +496,16 @@ const handleRejectShipment = async (shipmentId) => {
             title="Verify on blockchain"
           >
             <ShieldCheck />
+            
           </button>
+            <button 
+              className="pharma-btn-icon"
+              onClick={() => markDrugAsSold(item.barcode)}
+              title="Mark as sold"
+            >
+              <CheckCircle />
+            </button>
+       
         </td>
       </tr>
     ))}
@@ -859,6 +874,14 @@ const handleRejectShipment = async (shipmentId) => {
                             >
                               <ShieldCheck />
                             </button>
+                             {/* Add the Mark as Sold button here */}
+  <button 
+    className="pharma-btn-icon"
+    onClick={() => markDrugAsSold(item.barcode)}
+    title="Mark as sold"
+  >
+    <CheckCircle />
+  </button>
                           </td>
                         </tr>
                       ))}
