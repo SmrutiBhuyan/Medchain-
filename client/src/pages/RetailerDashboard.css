@@ -379,7 +379,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .retailer-data-table th {
   font-weight: 600;
-  color: var(--text-color-light);
+  color: white;
   text-transform: uppercase;
   font-size: 0.85rem;
   letter-spacing: 0.5px;

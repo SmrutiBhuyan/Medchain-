@@ -40,7 +40,8 @@ import axios from 'axios';
 import { Modal, Button, Toast, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import Webcam from 'react-webcam';
 import DrugVerificationGlobal from './DrugVerificationGlobal'
-import DrugShortagePrediction from './DrugPredictionShortage';
+import DrugShortagePredictionPharmacy from './DrugShortagePredictionPharmacy';
+
 
 const PharmacyDashboard = () => {
   const { user, logout } = useAuth();
@@ -513,7 +514,7 @@ const getStatusBadge = (status) => {
                   </div>
                 </div>
                 <div className="pharma-side-panel">
-                  <DrugShortagePrediction/>
+                  <DrugShortagePredictionPharmacy/>
                 </div>
               </div>
             </div>
@@ -830,7 +831,7 @@ const getStatusBadge = (status) => {
 )}
 
           {activeTab === 'alerts' && (
-           <DrugShortagePrediction/>
+           <DrugShortagePredictionPharmacy/>
           )}
            {/* Shipment Details Modal */}
           {showShipmentModal && (

@@ -5,12 +5,12 @@ import axios from 'axios';
 import { useAuth } from './AuthContext';
 import './DrugPredictionShortage.css'
 
-const DrugShortagePrediction = () => {
+const DrugShortagePredictionPharmacy = () => {
   const { user } = useAuth();
   const [predictions, setPredictions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [timeHorizon, setTimeHorizon] = useState(30); // Default 30-day prediction
-  const [userType, setUserType] = useState('retailer'); // Default to pharmacy
+  const [userType, setUserType] = useState('pharmacy'); // Default to pharmacy
 
   useEffect(() => {
     if (user && user._id) {
@@ -133,4 +133,4 @@ const DrugShortagePrediction = () => {
   );
 };
 
-export default DrugShortagePrediction;
+export default DrugShortagePredictionPharmacy;
