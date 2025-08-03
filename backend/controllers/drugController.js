@@ -556,3 +556,83 @@ function getMissingLinks(participants) {
   return expectedChain.filter(link => !participants[link]);
 }
 
+
+export const getRetailerInventory = async (req, res) => {
+  try {
+    const { retailerId } = req.params;
+    
+    // Convert retailerId to ObjectId
+    const retailerObjectId = new mongoose.Types.ObjectId(retailerId);
+
+    const drugs = await Drug.find({
+      'unitBarcodes': {
+        $elemMatch: {
+          'retailer': retailerObjectId,
+          'currentHolder': 'retailer',
+          'status': { $in: ['in-stock', 'sold'] } // Include both in-stock and sold items
+        }
+      }
+    })
+    .populate('manufacturer')
+    .populate('unitBarcodes.retailer')
+    .exec();
+
+    // Transform the data to flatten the unitBarcodes
+    const inventory = drugs.flatMap(drug => 
+      drug.unitBarcodes
+        .filter(unit => 
+          unit.retailer && 
+          unit.retailer._id.toString() === retailerId && 
+          unit.currentHolder === 'retailer' && 
+          ['in-stock'].includes(unit.status)
+        )
+        .map(unit => ({
+          _id: unit._id,
+          drugId: drug._id,
+          name: drug.name,
+          batch: drug.batch,
+          barcode: unit.barcode,
+          expiryDate: drug.expiryDate,
+          manufacturer: drug.manufacturer,
+          status: unit.status,
+          quantity: 1 // Each unit barcode represents 1 item
+        }))
+    );
+
+    // Group by drug name and batch to get quantity counts
+    const groupedInventory = inventory.reduce((acc, item) => {
+      const key = `${item.name}-${item.batch}`;
+      if (!acc[key]) {
+        acc[key] = {
+          ...item,
+          quantity: 0,
+          unitBarcodes: []
+        };
+      }
+      acc[key].quantity += 1;
+      acc[key].unitBarcodes.push({
+        barcode: item.barcode,
+        status: item.status
+      });
+      return acc;
+    }, {});
+
+    // Convert back to array
+    const result = Object.values(groupedInventory).map(item => ({
+      _id: item.drugId,
+      name: item.name,
+      batch: item.batch,
+      barcode: item.barcode, // Keep one barcode as reference
+      expiryDate: item.expiryDate,
+      manufacturer: item.manufacturer,
+      status: item.status,
+      quantity: item.quantity,
+      unitBarcodes: item.unitBarcodes
+    }));
+
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

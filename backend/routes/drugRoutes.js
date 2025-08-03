@@ -1,5 +1,5 @@
 import express from 'express';
-import { createDrug, getDrugsByManufacturer, getDrugByBarcode, getPharmacyInventory, verifyDrugGlobal} from '../controllers/drugController.js';
+import { createDrug, getDrugsByManufacturer, getDrugByBarcode, getPharmacyInventory, verifyDrugGlobal, getRetailerInventory} from '../controllers/drugController.js';
 import upload from '../middleware/uploadMiddleware.js';
 import { uploadCSV } from '../controllers/uploadController.js';
 import {  getDistributorInventory, verifyDrugsForShipment, verifyDrug } from '../controllers/drugController.js';
@@ -54,5 +54,7 @@ router.put('/mark-sold/:barcode', protect, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+router.get('/retailer-inventory/:retailerId', protect, getRetailerInventory);
 
 export default router;

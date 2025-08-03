@@ -1064,7 +1064,7 @@ export const rejectShipmentRetailer = async (req, res) => {
       _id: req.params.id,
       'participants.participantId': req.user._id,
       'participants.type': 'retailer',
-      status: 'in-transit'
+       status: { $in: ['processing', 'in-transit'] }
     });
 
     if (!shipment) {
