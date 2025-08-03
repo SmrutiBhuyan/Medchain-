@@ -175,23 +175,21 @@ const handleRejectShipment = async (shipmentId) => {
   // Barcode scanning functions
   const handleBarcodeScan = async (barcode) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/drugs/unit/${barcode}`, {
+      const response = await axios.get(`http://localhost:5000/api/drugs/verifyDrug/${barcode}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
+      console.log(response.data);
+      
       setScannedDrug(response.data);
       setBarcodeInput('');
       setShowScanner(false);
       
       // Auto-speak important alerts
-      if (response.data.status === 'recalled') {
-        speak(`Warning! ${response.data.name} batch ${response.data.batch} has been recalled.`);
-      } else if (new Date(response.data.expiryDate) < new Date()) {
-        speak(`Alert! ${response.data.name} has expired. Please discard.`);
-      } else if (response.data.quantity <= 2) {
-        speak(`Low stock. Only ${response.data.quantity} ${response.data.name} remaining.`);
-      }
+      if (response.data.success) {
+         showNotification('Drug is Authentic ', 'success');
+      } 
     } catch (error) {
       console.error('Error fetching drug by barcode:', error);
       showNotification('Drug not found in inventory', 'danger');
@@ -744,78 +742,7 @@ const getStatusBadge = (status) => {
                   </div>
                 )}
 
-                {scannedDrug && (
-                  <div className={`pharma-scanned-drug ${getDrugStatus(scannedDrug)}`}>
-                    <div className="pharma-scanned-drug-header">
-                      <h5>{scannedDrug.name}</h5>
-                      {getStatusBadge(getDrugStatus(scannedDrug))}
-                      <button 
-                        className="pharma-btn-icon pharma-close-btn"
-                        onClick={() => setScannedDrug(null)}
-                      >
-                        &times;
-                      </button>
-                    </div>
-                    <div className="pharma-scanned-drug-details">
-                      <p><strong>Batch:</strong> {scannedDrug.batch}</p>
-                      <p><strong>Barcode:</strong> {scannedDrug.barcode}</p>
-                      <p><strong>Manufacturer:</strong> {scannedDrug.manufacturer?.name || 'Unknown'}</p>
-                      <p><strong>Expiry:</strong> {new Date(scannedDrug.expiryDate).toLocaleDateString()}</p>
-                      <p><strong>Quantity:</strong> {scannedDrug.quantity}</p>
-                      {scannedDrug.status === 'recalled' && (
-                        <div className="pharma-alert pharma-danger">
-                          <ExclamationTriangleFill className="pharma-icon" /> 
-                          This drug has been recalled. Please remove from inventory.
-                        </div>
-                      )}
-                      {new Date(scannedDrug.expiryDate) < new Date() && (
-                        <div className="pharma-alert pharma-warning">
-                          <ExclamationTriangleFill className="pharma-icon" /> 
-                          This drug has expired. Please discard.
-                        </div>
-                      )}
-                      {scannedDrug.quantity <= 2 && (
-                        <div className="pharma-alert pharma-info">
-                          <ExclamationTriangleFill className="pharma-icon" /> 
-                          Low stock. Only {scannedDrug.quantity} remaining.
-                        </div>
-                      )}
-                    </div>
-                    <div className="pharma-scanned-drug-actions">
-                      {getDrugStatus(scannedDrug) === 'recalled' ? (
-                        <button 
-                          className="pharma-btn pharma-btn-danger"
-                          onClick={removeRecalledDrug}
-                        >
-                          <Trash className="pharma-icon" /> Remove Recalled Drug
-                        </button>
-                      ) : getDrugStatus(scannedDrug) === 'expired' ? (
-                        <button 
-                          className="pharma-btn pharma-btn-warning"
-                          onClick={reportDrugAsExpired}
-                        >
-                          <ExclamationTriangleFill className="pharma-icon" /> Report Expired
-                        </button>
-                      ) : (
-                        <button 
-                          className="pharma-btn pharma-btn-success"
-                          onClick={markDrugAsSold}
-                        >
-                          <CheckCircleFill className="pharma-icon" /> Mark as Sold
-                        </button>
-                      )}
-                      <button 
-                        className="pharma-btn pharma-btn-outline"
-                        onClick={() => {
-                          setActiveTab('verify');
-                          verifyDrug(scannedDrug.barcode);
-                        }}
-                      >
-                        <ShieldCheck className="pharma-icon" /> Verify
-                      </button>
-                    </div>
-                  </div>
-                )}
+              
 
                 <div className="pharma-card-body">
                   <table className="pharma-data-table">
