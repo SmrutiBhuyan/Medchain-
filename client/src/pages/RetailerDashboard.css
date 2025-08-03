@@ -115,6 +115,8 @@ h1, h2, h3, h4, h5, h6 {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
+  /* Added to make main content scrollable and prevent it from expanding beyond viewport */
+  overflow-y: auto;
 }
 
 /* Header */
@@ -127,6 +129,8 @@ h1, h2, h3, h4, h5, h6 {
   border-bottom: 1px solid var(--light-color);
   box-shadow: var(--box-shadow);
   z-index: 100;
+  /* Added to fix the header height */
+  flex-shrink: 0;
 }
 
 .retailer-header h3 {
@@ -236,7 +240,7 @@ h1, h2, h3, h4, h5, h6 {
 .retailer-tab-content {
   flex-grow: 1;
   padding: 30px;
-  overflow-y: auto;
+  /* Removed overflow-y: auto from here, as it is now on .retailer-main-content */
 }
 
 /* General Card Styles */
