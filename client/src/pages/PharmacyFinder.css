@@ -1,396 +1,734 @@
-/* PharmacyFinder.css */
-
-/* Importing a modern font for a sleek look */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-/* Defining CSS Variables for easy theme management */
+/* General modern styling for a clean, professional look */
 :root {
-  --primary-color: #4CAF50; /* A vibrant green for main actions and highlights */
-  --primary-dark-color: #388E3C; /* Darker shade for hover states */
-  --secondary-color: #2196F3; /* A bright blue for secondary headings/elements */
-  --accent-color: #FFC107; /* An amber for subtle accents (not used widely here, but good to have) */
-  --background-light: #f4f6f8; /* Light grey background for the overall page */
-  --background-dark: #e0e4e8; /* Slightly darker grey for textured elements/scroll tracks */
-  --text-color: #333; /* Dark grey for primary text, ensuring readability */
-  --text-light-color: #666; /* Lighter grey for secondary text (e.g., descriptions) */
-  --border-color: #ddd; /* Light grey for borders, keeping things subtle */
-  --card-background: #ffffff; /* Pure white for cards and main containers */
-  --shadow-light: rgba(0, 0, 0, 0.1); /* Light shadow for subtle depth */
-  --shadow-medium: rgba(0, 0, 0, 0.15); /* Medium shadow for more pronounced depth on hover/focus */
-  --error-color: #d32f2f; /* Red for error messages */
-  --error-background: #ffebee; /* Light red for error message backgrounds */
+  --primary-color: #5d5c61;
+  --secondary-color: #93b5e1;
+  --accent-color: #7395ae;
+  --text-color: #333;
+  --subtle-text-color: #555;
+  --background-color: #f8f9fa;
+  --surface-color: #ffffff;
+  --border-color: #e0e0e0;
+  --shadow-color: rgba(0, 0, 0, 0.08);
+  --success-color: #4caf50;
+  --warning-color: #ff9800;
+  --error-color: #f44336;
 }
 
-/* Base Body Styling */
 body {
-  font-family: 'Poppins', sans-serif; /* Applying the Poppins font */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   margin: 0;
   padding: 0;
-  box-sizing: border-box; /* Ensures padding and border are included in the element's total width and height */
-  background-color: var(--background-light); /* Page background color */
-  color: var(--text-color); /* Default text color */
-  line-height: 1.6; /* Improved readability for text */
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-size: 16px;
+  line-height: 1.6;
 }
 
-/* Main Container for the Pharmacy Finder Application */
-.medicine-finder-container {
-  max-width: 1300px; /* Increased max-width to allow for comfortable side-by-side layout */
-  margin: 40px auto; /* Centers the container horizontally with vertical margin */
-  padding: 30px; /* Inner spacing */
-  background-color: var(--card-background); /* White background for the main app area */
-  border-radius: 12px; /* Softly rounded corners */
-  box-shadow: 0 10px 30px var(--shadow-medium); /* Prominent shadow for a floating effect */
-  text-align: center; /* Centers the heading and form elements */
-  overflow: hidden; /* Ensures any internal overflow is clipped, especially important for rounded corners */
-}
-
-/* Heading Styling */
-h1 {
-  font-size: 2.5em; /* Large, prominent heading */
-  color: var(--primary-dark-color); /* Matches primary theme color */
-  margin-bottom: 30px; /* Space below heading */
-  font-weight: 700; /* Bold font weight */
-  position: relative; /* Needed for the pseudo-element underline */
-  display: inline-block; /* Allows auto-sizing for the underline */
-}
-
-h1::after {
-  content: ''; /* Creates a decorative underline */
-  position: absolute;
-  left: 50%; /* Centers the underline */
-  bottom: -10px; /* Positions it below the text */
-  transform: translateX(-50%); /* Ensures perfect centering */
-  width: 60px; /* Width of the underline */
-  height: 4px; /* Thickness of the underline */
-  background-color: var(--primary-color); /* Color of the underline */
-  border-radius: 2px; /* Rounded ends for the underline */
-}
-
-/* Form Layout */
-form {
+/* Base Layout */
+.retailer-dashboard {
   display: flex;
-  flex-direction: column; /* Stacks form elements vertically */
-  gap: 20px; /* Space between form input groups */
-  margin-bottom: 40px; /* Space below the form */
-  padding: 0 20px; /* Horizontal padding for form content */
+  min-height: 100vh;
+  transition: all 0.3s ease;
 }
 
-/* Input Group Styling (Label + Input) */
-.input-group {
-  text-align: left; /* Aligns labels and inputs to the left */
+.retailer-main-content {
+  flex-grow: 1;
+  padding: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+  transition: margin-left 0.3s ease;
 }
 
-.input-group label {
-  display: block; /* Makes label take full width and puts input on new line */
-  margin-bottom: 8px; /* Space between label and input */
-  font-weight: 600; /* Semi-bold label text */
-  color: var(--text-color);
-  font-size: 1.1em;
+/* App Bar & Header */
+.retailer-appbar {
+  background-color: var(--surface-color);
+  box-shadow: 0 2px 4px var(--shadow-color);
+  position: sticky;
+  top: 0;
+  z-index: 1100;
 }
 
-.input-group input[type="text"] {
-  width: calc(100% - 20px); /* Full width minus padding */
-  padding: 12px 10px; /* Inner padding */
-  border: 1px solid var(--border-color); /* Subtle border */
-  border-radius: 8px; /* Rounded input fields */
-  font-size: 1em;
-  color: var(--text-color);
-  background-color: var(--background-light); /* Light background for inputs */
-  transition: all 0.3s ease; /* Smooth transitions for focus states */
+.retailer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 1rem 1.5rem;
+  min-height: 4rem;
 }
 
-.input-group input[type="text"]:focus {
-  border-color: var(--primary-color); /* Highlight border on focus */
-  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2); /* Soft glow effect on focus */
-  outline: none; /* Removes default outline */
-  background-color: var(--card-background); /* White background on focus */
+.retailer-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  flex-grow: 1;
+  margin: 0;
 }
 
-/* Submit Button Styling */
-button[type="submit"] {
-  background-color: var(--primary-color);
-  color: white;
-  padding: 14px 25px;
+.retailer-menu-button {
+  background: none;
   border: none;
-  border-radius: 8px;
-  font-size: 1.1em;
-  font-weight: 600;
+  color: var(--primary-color);
+  font-size: 1.5rem;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease; /* Smooth hover effects */
-  width: fit-content; /* Button width adjusts to its content */
-  margin: 0 auto; /* Centers the button */
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Subtle shadow for button */
-}
-
-button[type="submit"]:hover {
-  background-color: var(--primary-dark-color); /* Darker green on hover */
-  transform: translateY(-2px); /* Slight lift effect */
-}
-
-button[type="submit"]:disabled {
-  background-color: #cccccc; /* Greyed out when disabled */
-  cursor: not-allowed;
-  transform: none; /* No lift when disabled */
-  box-shadow: none; /* No shadow when disabled */
-}
-
-/* Error Message Styling */
-.error-message {
-  color: var(--error-color); /* Red text */
-  background-color: var(--error-background); /* Light red background */
-  padding: 12px 20px;
+  padding: 0.5rem;
   border-radius: 8px;
-  margin-top: 20px;
-  border: 1px solid #ef9a9a; /* Red border */
-  font-size: 0.95em;
-  font-weight: 500;
+  transition: background-color 0.2s;
+  margin-right: 1rem;
+  display: none;
 }
 
-/* NEW: Container for Map and Pharmacy List (Side-by-Side Layout) */
-.map-and-list-container {
-  display: flex; /* Enables Flexbox layout */
-  flex-wrap: wrap; /* Allows items to wrap to the next line on smaller screens */
-  justify-content: center; /* Centers items horizontally if there's extra space or when wrapped */
-  gap: 30px; /* Creates space between the map and the list */
-  margin-top: 40px;
-  align-items: flex-start; /* Aligns items to the top of the container */
+.retailer-menu-button:hover {
+  background-color: #f0f0f0;
 }
 
-/* Map Container Styling */
-.map-container {
-  flex: 2; /* Map takes up 2 parts of the available space, e.g., 2/3 ratio */
-  min-width: 500px; /* Minimum width the map will take before wrapping to the next line */
-  height: 500px; /* Fixed height for the map */
-  border-radius: 12px;
-  overflow: hidden; /* Ensures map content stays within rounded corners */
-  box-shadow: 0 5px 20px var(--shadow-light); /* Subtle shadow for map */
+/* Sidebar Navigation */
+.retailer-sidebar {
+  width: 18rem;
+  flex-shrink: 0;
 }
 
-.leaflet-container {
-  border-radius: 12px; /* Ensures the actual Leaflet map also has rounded corners */
-}
-
-/* Customizing Leaflet Popups for a modern look */
-.leaflet-popup-content-wrapper {
-  border-radius: 8px; /* Rounded corners for popups */
-  padding: 15px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.2); /* Shadow for popups */
-}
-
-.leaflet-popup-content h3 {
-  color: var(--primary-dark-color);
-  font-size: 1.2em;
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-
-.leaflet-popup-content p {
-  margin: 4px 0;
-  color: var(--text-light-color);
-  font-size: 0.9em;
-}
-
-/* Pharmacy List Container Styling */
-.pharmacy-list {
-  flex: 1; /* Pharmacy list takes up 1 part of the available space, e.g., 1/3 ratio */
-  min-width: 350px; /* Minimum width the list will take before wrapping */
-  text-align: left;
-  max-height: 500px; /* Limits the height to match the map, enabling scrolling if needed */
-  overflow-y: auto; /* Enables vertical scrolling for the list if content overflows */
-  padding-right: 15px; /* Adds space for the scrollbar and keeps content from touching the edge */
-  padding-top: 5px; /* Slight adjustment for visual alignment with the map */
-}
-
-.pharmacy-list h2 {
-  font-size: 2em;
-  color: var(--secondary-color); /* Blue color for list heading */
-  margin-top: 0; /* Ensures it aligns nicely with the map container */
-  margin-bottom: 25px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.pharmacy-cards {
-  display: flex;
-  flex-direction: column; /* Stacks pharmacy cards vertically */
-  gap: 15px; /* Space between individual pharmacy cards */
-}
-
-/* Individual Pharmacy Card Styling */
-.pharmacy-card {
-  background-color: var(--card-background);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 18px; /* Inner spacing for card content */
-  box-shadow: 0 4px 15px var(--shadow-light);
-  transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth hover effects */
-  text-align: left;
+.retailer-drawer {
+  width: 18rem;
+  background-color: var(--surface-color);
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  justify-content: space-between; /* Distributes space between elements */
 }
 
-.pharmacy-card:hover {
-  transform: translateY(-5px); /* Lifts the card on hover */
-  box-shadow: 0 8px 25px var(--shadow-medium); /* More pronounced shadow on hover */
+.retailer-drawer-content {
+  padding-top: 5rem; /* Space for the fixed app bar */
 }
 
-.pharmacy-card h3 {
-  font-size: 1.3em;
+.retailer-divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 1rem 1.5rem;
+}
+
+.retailer-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.retailer-list-item-button {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: none;
+  border: none;
+  color: var(--subtle-text-color);
+  font-size: 1rem;
+  cursor: pointer;
+  border-left: 4px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.retailer-list-item-button:hover {
+  background-color: #f0f4f8;
   color: var(--primary-color);
-  margin-top: 0;
-  margin-bottom: 10px;
+}
+
+.retailer-list-item-button.selected {
+  background-color: #e6f0ff;
+  border-left-color: var(--primary-color);
+  color: var(--primary-color);
   font-weight: 600;
 }
 
-.pharmacy-card p {
-  font-size: 0.9em;
-  color: var(--text-light-color);
-  margin-bottom: 6px;
+.retailer-list-item-icon {
+  margin-right: 1.2rem;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
 }
 
-.pharmacy-card p:last-child {
-  margin-bottom: 0; /* No bottom margin for the last paragraph */
+.retailer-drawer-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 999;
 }
 
-/* Custom Scrollbar Styling for Pharmacy List */
-.pharmacy-list::-webkit-scrollbar {
-  width: 8px; /* Width of the scrollbar */
-}
-
-.pharmacy-list::-webkit-scrollbar-track {
-  background: var(--background-dark); /* Color of the scrollbar track */
-  border-radius: 10px;
-}
-
-.pharmacy-list::-webkit-scrollbar-thumb {
-  background: var(--primary-color); /* Color of the scrollbar thumb */
-  border-radius: 10px;
-}
-
-.pharmacy-list::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-dark-color); /* Darker color on hover */
-}
-
-
-/* Responsive Adjustments */
-
-/* For medium to large screens (e.g., tablets in landscape, smaller desktops) */
-@media (max-width: 1200px) {
-  .medicine-finder-container {
-    max-width: 90%; /* Allows the container to take up more width */
-  }
-
-  .map-container {
-    min-width: 400px; /* Adjust min-width to prevent map from becoming too small */
-    height: 450px; /* Slightly reduced map height */
-  }
-
-  .pharmacy-list {
-    min-width: 300px; /* Adjust min-width for the list */
-    max-height: 450px; /* Match map height */
-  }
-}
-
-/* For tablets and smaller desktops (when side-by-side might be too cramped) */
+/* Responsive Sidebar */
 @media (max-width: 992px) {
-  .map-and-list-container {
-    flex-direction: column; /* Stacks map and list vertically */
-    align-items: center; /* Centers them horizontally when stacked */
-    gap: 30px; /* Space between stacked elements */
+  .retailer-sidebar {
+    width: 0;
   }
-
-  .map-container {
-    width: 100%; /* Map takes full width when stacked */
-    min-width: unset; /* Removes min-width constraint */
-    height: 400px; /* Adjusted height for stacked layout */
+  .retailer-drawer {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
   }
-
-  .pharmacy-list {
-    width: 100%; /* List takes full width when stacked */
-    min-width: unset; /* Removes min-width constraint */
-    max-height: unset; /* Allows list to expand based on content, scrollbar will appear naturally if needed */
-    overflow-y: visible; /* Removes forced scrollbar if not needed when full width */
-    padding-right: 0; /* Remove padding when full width */
-    margin-top: 0; /* Remove top margin as `gap` handles spacing */
+  .retailer-sidebar.open .retailer-drawer {
+    transform: translateX(0);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
   }
-
-  .pharmacy-list h2 {
-    margin-top: 20px; /* Add some top margin for the heading when stacked */
+  .retailer-sidebar.open .retailer-drawer-overlay {
+    display: block;
+  }
+  .retailer-main-content {
+    margin-left: 0;
+  }
+  .retailer-menu-button {
+    display: block;
   }
 }
 
-/* For smaller tablets and large smartphones */
+/* Content Sections */
+.retailer-content-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.retailer-tab {
+  padding: 1rem;
+}
+
+.retailer-section-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+}
+
+/* Cards & Containers */
+.retailer-card {
+  background-color: var(--surface-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px var(--shadow-color);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.retailer-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.retailer-card.empty-card {
+  text-align: center;
+  padding: 3rem 1.5rem;
+}
+
+.empty-message {
+  color: var(--subtle-text-color);
+  font-style: italic;
+  font-size: 1.1rem;
+}
+
+/* Alerts and Snackbar */
+.retailer-alerts-container {
+  margin-bottom: 2rem;
+}
+
+.retailer-alert {
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.retailer-alert.warning {
+  background-color: #fffbe6;
+  color: var(--warning-color);
+  border: 1px solid #ffe57f;
+}
+
+.retailer-alert.error {
+  background-color: #fef2f2;
+  color: var(--error-color);
+  border: 1px solid #fca5a5;
+}
+
+.retailer-alert-icon {
+  font-size: 1.5rem;
+  margin-right: 1rem;
+}
+
+.retailer-alert-message {
+  flex-grow: 1;
+}
+
+.retailer-alert-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: inherit;
+  cursor: pointer;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.retailer-alert-close:hover {
+  opacity: 1;
+}
+
+.retailer-snackbar {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--subtle-text-color);
+  color: var(--surface-color);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  z-index: 1200;
+  animation: fadein 0.5s;
+}
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.retailer-snackbar button {
+  background: none;
+  border: none;
+  color: var(--surface-color);
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-left: 1rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.retailer-snackbar button:hover {
+  opacity: 1;
+}
+
+/* Buttons */
+.retailer-button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.retailer-button.contained.primary {
+  background-color: var(--primary-color);
+  color: var(--surface-color);
+  border: 1px solid var(--primary-color);
+}
+
+.retailer-button.contained.primary:hover {
+  background-color: #4a494d;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.retailer-button.contained.success {
+  background-color: var(--success-color);
+  color: var(--surface-color);
+  border: 1px solid var(--success-color);
+}
+
+.retailer-button.contained.success:hover {
+  background-color: #388e3c;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.retailer-button.outlined {
+  background: none;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+}
+
+.retailer-button.outlined:hover {
+  background-color: #f0f4f8;
+}
+
+.retailer-button.outlined.error {
+  border-color: var(--error-color);
+  color: var(--error-color);
+}
+
+.retailer-button.outlined.error:hover {
+  background-color: #fef2f2;
+}
+
+.retailer-button.small {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.retailer-button.large {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+}
+
+.retailer-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #e0e0e0;
+  border-color: #e0e0e0;
+  color: #a0a0a0;
+  box-shadow: none;
+}
+
+.icon-button .button-icon {
+  display: flex;
+  align-items: center;
+}
+
+/* Tables */
+.retailer-table-container {
+  overflow-x: auto;
+  background-color: var(--surface-color);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.retailer-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.retailer-table th,
+.retailer-table td {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.retailer-table th {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: var(--subtle-text-color);
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+.retailer-table tr:last-child td {
+  border-bottom: none;
+}
+
+.retailer-table tbody tr:hover {
+  background-color: #f9f9fb;
+}
+
+/* Chips / Badges */
+.retailer-chip {
+  padding: 0.25rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--surface-color);
+  display: inline-block;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+.retailer-chip.primary {
+  background-color: var(--primary-color);
+}
+
+.retailer-chip.secondary {
+  background-color: var(--accent-color);
+}
+
+.retailer-chip.info {
+  background-color: var(--secondary-color);
+}
+
+.retailer-status-chip {
+  color: var(--surface-color);
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.8rem;
+}
+
+.retailer-status-chip.success {
+  background-color: var(--success-color);
+}
+
+.retailer-status-chip.warning {
+  background-color: var(--warning-color);
+}
+
+.retailer-status-chip.info {
+  background-color: var(--secondary-color);
+}
+
+.retailer-status-chip.error {
+  background-color: var(--error-color);
+}
+
+.retailer-status-chip.default {
+  background-color: #9e9e9e;
+}
+
+/* Forms & Inputs */
+.retailer-inventory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.retailer-inventory-controls {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.retailer-input, .retailer-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: all 0.2s;
+  color: var(--text-color);
+  background-color: var(--surface-color);
+}
+
+.retailer-input:focus, .retailer-select:focus {
+  outline: none;
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 3px rgba(147, 181, 225, 0.2);
+}
+
+.retailer-input-group {
+  position: relative;
+  width: 300px;
+}
+
+.retailer-input-group .input-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9e9e9e;
+}
+
+.retailer-search-input {
+  padding-left: 2.5rem;
+}
+
+.retailer-form-control {
+  min-width: 180px;
+}
+
+.retailer-form-control label {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--subtle-text-color);
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+.retailer-scan-container {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.retailer-scan-container .retailer-input {
+  flex-grow: 1;
+}
+
+/* Modals */
+.retailer-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+  animation: fadein-modal 0.3s;
+}
+
+@keyframes fadein-modal {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.retailer-modal-content {
+  background-color: var(--surface-color);
+  padding: 2rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  position: relative;
+  transform: translateY(-20px);
+  animation: slide-up 0.3s forwards;
+}
+
+@keyframes slide-up {
+  from { transform: translateY(-20px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.retailer-modal-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1rem;
+}
+
+.retailer-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
+}
+
+/* Specific Modal Styles */
+.retailer-error-result, .retailer-valid-result {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.error-icon {
+  font-size: 3rem;
+  color: var(--error-color);
+}
+
+.retailer-error-message {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--error-color);
+  margin-top: 0.5rem;
+}
+
+.retailer-error-detail {
+  color: var(--subtle-text-color);
+  margin-top: 0.25rem;
+}
+
+.retailer-valid-result {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.success-icon {
+  font-size: 2.5rem;
+  color: var(--success-color);
+  margin-right: 1.5rem;
+}
+
+.retailer-success-title {
+  font-size: 1.5rem;
+  color: var(--success-color);
+  font-weight: 600;
+}
+
+.retailer-drug-name {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.retailer-drug-details {
+  padding-left: 1rem;
+  margin-bottom: 2rem;
+  border-left: 3px solid var(--border-color);
+}
+
+.retailer-drug-details p {
+  margin-bottom: 0.75rem;
+}
+.retailer-drug-details strong {
+  color: var(--primary-color);
+}
+
+.retailer-trace-details {
+  padding-left: 1rem;
+  margin-bottom: 2rem;
+  border-left: 3px solid var(--border-color);
+}
+
+.retailer-trace-item {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--subtle-text-color);
+}
+
+/* Sell and Lookup Cards */
+.sell-card, .lookup-card {
+  padding: 3rem;
+}
+.retailer-card-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .medicine-finder-container {
-    margin: 20px auto;
-    padding: 20px;
+  .retailer-main-content {
+    padding: 1rem;
   }
-
-  h1 {
-    font-size: 2em;
-    margin-bottom: 25px;
+  .retailer-toolbar {
+    padding: 0.5rem 1rem;
   }
-
-  form {
-    padding: 0; /* Remove horizontal padding from form to use full width */
+  .retailer-title {
+    font-size: 1.25rem;
   }
-
-  button[type="submit"] {
-    width: 100%; /* Button takes full width */
-    padding: 12px 20px;
+  .retailer-section-title {
+    font-size: 1.5rem;
   }
-
-  .map-container {
-    height: 350px; /* Further adjust map height for smaller screens */
+  .retailer-card {
+    padding: 1.5rem;
   }
-
-  .pharmacy-list h2 {
-    font-size: 1.8em;
+  .retailer-inventory-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
-
-  .pharmacy-cards {
-    gap: 10px; /* Reduce gap between cards */
+  .retailer-inventory-controls {
+    width: 100%;
+    flex-direction: column;
   }
-
-  .pharmacy-card {
-    padding: 15px; /* Slightly less padding for more compact cards */
+  .retailer-input-group, .retailer-form-control {
+    width: 100%;
   }
-
-  .pharmacy-card h3 {
-    font-size: 1.2em;
+  .retailer-scan-container {
+    flex-direction: column;
   }
-
-  .pharmacy-card p {
-    font-size: 0.85em;
-  }
-}
-
-/* For very small screens (e.g., standard smartphones) */
-@media (max-width: 480px) {
-  .medicine-finder-container {
-    padding: 15px;
-  }
-
-  h1 {
-    font-size: 1.6em; /* Even smaller heading */
-  }
-
-  .input-group label {
-    font-size: 1em;
-  }
-
-  .input-group input[type="text"] {
-    padding: 10px;
-    font-size: 0.9em;
-  }
-
-  .error-message {
-    padding: 10px 15px;
-    font-size: 0.9em;
-  }
-
-  .map-container {
-    height: 280px; /* Even smaller map height for very small screens */
+  .retailer-modal-content {
+    padding: 1.5rem;
   }
 }

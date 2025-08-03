@@ -1,785 +1,1302 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Box, Typography, Button, Table, TableBody, TableCell, 
-  TableContainer, TableHead, TableRow, Paper, TextField, 
-  Select, MenuItem, FormControl, InputLabel, Card, CardContent,
-  Grid, Modal, Chip, LinearProgress, IconButton, Tabs, Tab,
-  Alert, Snackbar, Badge
-} from '@mui/material';
-import { 
-  CheckCircle, Cancel, Search, QrCodeScanner, 
-  Inventory, PointOfSale, Verified, History, 
-  NotificationImportant, Warning, Receipt
-} from '@mui/icons-material';
-import { styled } from '@mui/system';
-import { useTheme } from '@mui/material/styles';
+  Speedometer2, Truck, Clipboard2Pulse, Diagram3, ExclamationTriangle,
+  PersonCircle, Gear, BoxArrowRight, Capsule, ExclamationTriangleFill, ClockFill,
+  Funnel, Trash, Printer, Flag, Download, Filter, UpcScan, CheckCircleFill, 
+  ShieldCheck, GraphUp, BoxSeam, Link45deg, Search, CheckCircle, XCircle,
+  Camera, Mic, QrCodeScan
+} from 'react-bootstrap-icons';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Legend,
+  ArcElement,
+  PointElement,
+  LineElement,
+  Filler
+} from 'chart.js';
+import { Bar, Pie, Line, Doughnut } from 'react-chartjs-2';
+import { GeoAlt as LocationIcon } from 'react-bootstrap-icons';
 
-const DashboardCard = styled(Card)(({ theme }) => ({
-  borderRadius: '12px',
-  boxShadow: '0 4px 20px 0 rgba(0,0,0,0.12)',
-  transition: 'transform 0.3s ease-in-out',
-  '&:hover': {
-    transform: 'translateY(-5px)',
-  },
-}));
-
-// Mock data
-const mockIncomingShipments = [
-  { id: 'RSH-1001', sender: 'MediWholesalers', senderType: 'wholesaler', drugCount: 50, dateSent: '2023-06-15', status: 'pending' },
-  { id: 'RSH-1002', sender: 'PharmaDist', senderType: 'distributor', drugCount: 30, dateSent: '2023-06-18', status: 'pending' },
-  { id: 'RSH-1003', sender: 'HealthPlus', senderType: 'wholesaler', drugCount: 20, dateSent: '2023-06-10', status: 'received' },
-];
-
-const mockInventory = [
-  { id: 'RDRG-001', name: 'Paracetamol 500mg', barcode: '8901234567890', batch: 'B20230501', manufacturer: 'PharmaCorp', expiry: '2024-06-30', status: 'in_stock' },
-  { id: 'RDRG-002', name: 'Ibuprofen 400mg', barcode: '8901234567891', batch: 'B20230502', manufacturer: 'MediLife', expiry: '2024-07-15', status: 'in_stock' },
-  { id: 'RDRG-003', name: 'Amoxicillin 250mg', barcode: '8901234567892', batch: 'B20230503', manufacturer: 'HealthPlus', expiry: '2024-05-30', status: 'in_stock' },
-  { id: 'RDRG-004', name: 'Cetirizine 10mg', barcode: '8901234567893', batch: 'B20230504', manufacturer: 'PharmaCorp', expiry: '2024-08-20', status: 'sold', patientId: 'PAT-1001' },
-];
-
-const mockSalesLog = [
-  { id: 'SALE-1001', drugName: 'Cetirizine 10mg', barcode: '8901234567893', batch: 'B20230504', dateSold: '2023-06-05', patientId: 'PAT-1001' },
-  { id: 'SALE-1002', drugName: 'Paracetamol 500mg', barcode: '8901234567890', batch: 'B20230501', dateSold: '2023-06-10', patientId: 'PAT-1002' },
-];
-
-const mockAlerts = [
-  { id: 'ALERT-001', type: 'expiry', message: '5 drugs expiring within 3 months', severity: 'warning' },
-  { id: 'ALERT-002', type: 'recall', message: 'Batch B20230503 recalled by manufacturer', severity: 'error' },
-];
-
-// Remove the styled StatusChip and replace with a function component
-function StatusChip({ label, status, ...props }) {
-  const theme = useTheme();
-  let bg;
-  switch (status) {
-    case 'in_stock':
-      bg = theme.palette.success.light;
-      break;
-    case 'pending':
-      bg = theme.palette.warning.light;
-      break;
-    case 'received':
-      bg = theme.palette.success.light;
-      break;
-    case 'sold':
-      bg = theme.palette.secondary.light;
-      break;
-    case 'recalled':
-      bg = theme.palette.error.light;
-      break;
-    default:
-      bg = theme.palette.grey[300];
-  }
-  return (
-    <Chip
-      label={label}
-      sx={{
-        backgroundColor: bg,
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: '0.75rem',
-      }}
-      {...props}
-    />
-  );
-}
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Legend,
+  ArcElement,
+  PointElement,
+  LineElement,
+  Filler
+);
+import { useAuth } from './AuthContext';
+import DiseaseInventoryChecker from './DiseaseInventoryChecker';
+import './RetailerDashboard.css';
+import axios from 'axios';
+import { Modal, Button, Toast, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import Webcam from 'react-webcam';
+import DrugVerificationGlobal from './DrugVerificationGlobal'
+import DrugShortagePrediction from './DrugPredictionShortage';
 
 const RetailerDashboard = () => {
-  const [activeTab, setActiveTab] = useState(0);
-  const [shipments, setShipments] = useState(mockIncomingShipments);
-  const [inventory, setInventory] = useState(mockInventory);
-  const [selectedShipment, setSelectedShipment] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const { user, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [verificationResult, setVerificationResult] = useState(null);
-  const [openModal, setOpenModal] = useState(false);
-  const [qrInput, setQrInput] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [salesLog, setSalesLog] = useState(mockSalesLog);
-  const [alerts, setAlerts] = useState(mockAlerts);
-  const [openAlert, setOpenAlert] = useState(true);
-  const [patientId, setPatientId] = useState('');
-  const [sellSuccess, setSellSuccess] = useState(false);
+  const [shipments, setShipments] = useState([]);
+  const [loadingShipments, setLoadingShipments] = useState(false);
+  const [selectedShipment, setSelectedShipment] = useState(null);
+  const [showShipmentModal, setShowShipmentModal] = useState(false);
+  const [expandedShipmentId, setExpandedShipmentId] = useState(null);
+  const [inventory, setInventory] = useState([]);
+  const [scannedDrug, setScannedDrug] = useState(null);
+  const [showScanner, setShowScanner] = useState(false);
+  const [barcodeInput, setBarcodeInput] = useState('');
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastVariant, setToastVariant] = useState('success');
+  const webcamRef = useRef(null);
+  const [showDiseaseChecker, setShowDiseaseChecker] = useState(false); 
 
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-  };
-
-  const handleReceiveShipment = (shipmentId) => {
-    // Update shipment status
-    setShipments(shipments.map(shipment => 
-      shipment.id === shipmentId ? { ...shipment, status: 'received' } : shipment
-    ));
-    
-    // Add drugs to inventory - in real app this would come from shipment details
-    const newDrugs = Array(5).fill().map((_, i) => ({
-      id: `RDRG-${Math.floor(Math.random() * 10000)}`,
-      name: ['Paracetamol', 'Ibuprofen', 'Amoxicillin', 'Cetirizine', 'Omeprazole'][Math.floor(Math.random() * 5)],
-      barcode: `890${Math.floor(Math.random() * 10000000000)}`,
-      batch: `B2023${Math.floor(Math.random() * 1000)}`,
-      manufacturer: ['PharmaCorp', 'MediLife', 'HealthPlus'][Math.floor(Math.random() * 3)],
-      expiry: `2024-${Math.floor(Math.random() * 12) + 1}-${Math.floor(Math.random() * 28) + 1}`,
-      status: 'in_stock'
-    }));
-    
-    setInventory([...inventory, ...newDrugs]);
-    setSelectedShipment(null);
-  };
-
-  const handleRejectShipment = (shipmentId) => {
-    setShipments(shipments.filter(shipment => shipment.id !== shipmentId));
-    setSelectedShipment(null);
-  };
-
-  const verifyDrug = () => {
-    const foundDrug = inventory.find(drug => drug.barcode === qrInput);
-    setVerificationResult(foundDrug || { error: 'Drug not found in system' });
-    setOpenModal(true);
-  };
-
-  const sellDrug = () => {
-    if (!verificationResult || verificationResult.error) return;
-    
-    // Mark drug as sold
-    setInventory(inventory.map(drug => 
-      drug.id === verificationResult.id ? { ...drug, status: 'sold', patientId } : drug
-    ));
-    
-    // Add to sales log
-    const newSale = {
-      id: `SALE-${Math.floor(1000 + Math.random() * 9000)}`,
-      drugName: verificationResult.name,
-      barcode: verificationResult.barcode,
-      batch: verificationResult.batch,
-      dateSold: new Date().toISOString().split('T')[0],
-      patientId: patientId || 'N/A'
-    };
-    
-    setSalesLog([newSale, ...salesLog]);
-    setSellSuccess(true);
-    setOpenModal(false);
-    setVerificationResult(null);
-    setQrInput('');
-    setPatientId('');
-  };
-
-  const filteredInventory = inventory.filter(drug => {
-    const matchesSearch = drug.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         drug.barcode.includes(searchTerm);
-    const matchesStatus = filterStatus === 'all' || drug.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
-
-  const pendingShipments = shipments.filter(s => s.status === 'pending');
-  const receivedShipments = shipments.filter(s => s.status === 'received');
-  const statusOptions = [...new Set(inventory.map(drug => drug.status))];
-
-  const checkForAlerts = () => {
-    // Check for near expiry drugs
-    const nearExpiryCount = inventory.filter(d => {
-      const expiryDate = new Date(d.expiry);
-      const threeMonthsFromNow = new Date();
-      threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
-      return expiryDate <= threeMonthsFromNow && d.status === 'in_stock';
-    }).length;
-
-    // Check for recalled batches (in a real app this would come from API)
-    const recalledBatches = ['B20230503']; // Example recalled batch
-    
-    const newAlerts = [];
-    
-    if (nearExpiryCount > 0) {
-      newAlerts.push({
-        id: `ALERT-${Math.random()}`,
-        type: 'expiry',
-        message: `${nearExpiryCount} drugs expiring within 3 months`,
-        severity: 'warning'
-      });
+  const recallData = [
+    { id: 1, drug: 'Lipitor 20mg', batch: 'LIP2023-03', barcode: '7890123456', issued: '2023-05-15', by: 'FDA', severity: 'high' },
+    { id: 2, drug: 'Ventolin Inhaler', batch: 'VEN2023-01', barcode: '1234567890', issued: '2023-04-28', by: 'Manufacturer', severity: 'medium' }
+  ];
+  // Fetch inventory and shipments when their tabs are active
+  useEffect(() => {
+    if (activeTab === 'inventory' && user) {
+      fetchInventory();
     }
-    
-    recalledBatches.forEach(batch => {
-      if (inventory.some(d => d.batch === batch && d.status === 'in_stock')) {
-        newAlerts.push({
-          id: `ALERT-${Math.random()}`,
-          type: 'recall',
-          message: `Batch ${batch} recalled by manufacturer`,
-          severity: 'error'
-        });
+    if (activeTab === 'shipments' && user) {
+      fetchShipments();
+    }
+  }, [activeTab, user]);
+
+ const fetchInventory = async () => {
+  try {
+    const response = await axios.get(`http://localhost:5000/api/drugs/retailer-inventory/${user._id}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`
       }
     });
+    console.log("retailer inventory",response.data);
     
-    setAlerts(newAlerts);
+    setInventory(response.data);
+  } catch (error) {
+    console.error('Error fetching inventory:', error);
+    showNotification('Failed to load inventory', 'danger');
+  }
+};
+  const fetchShipments = async () => {
+    try {
+      setLoadingShipments(true);
+      const response = await axios.get(`http://localhost:5000/api/shipments/retailer/${user._id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      console.log("Shipments found:",response.data);
+      
+      setShipments(response.data);
+    } catch (error) {
+      console.error('Error fetching shipments:', error);
+      showNotification('Failed to load shipments', 'danger');
+    } finally {
+      setLoadingShipments(false); 
+    }
   };
 
-  useEffect(() => {
-    checkForAlerts();
-  }, [inventory]);
+// Accept shipment
+const handleAcceptShipment = async (shipmentId) => {
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axios.put(
+      `http://localhost:5000/api/shipments/accept/retailer/${shipmentId}`,
+      {},
+      { 
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (response.data.success) {
+      fetchShipments();
+      showNotification(response.data.message, 'success');
+    } else {
+      showNotification(response.data.message, 'warning');
+    }
+
+  } catch (error) {
+    console.error('Accept error:', error.response?.data || error.message);
+    showNotification(
+      error.response?.data?.message || 'Failed to accept shipment',
+      'danger'
+    );
+  }
+};
+
+// Reject shipment
+const handleRejectShipment = async (shipmentId) => {
+  try {
+        const token = localStorage.getItem('token');
+    await axios.put(
+      `http://localhost:5000/api/shipments/reject/retailer/${shipmentId}`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    fetchShipments(); // Refresh the shipment list
+    showNotification('Shipment rejected successfully', 'success');
+  } catch (error) {
+    console.error('Error rejecting shipment:', error);
+    showNotification(error.response?.data?.message || 'Failed to reject shipment', 'danger');
+  }
+};
+
+  const handleViewShipment = (shipment) => {
+    setSelectedShipment(shipment);
+    setShowShipmentModal(true);
+  };
+
+  // FIX: Renamed handleCloseModal to handleCloseShipmentModal for clarity and consistency
+  const handleCloseShipmentModal = () => {
+    setShowShipmentModal(false);
+    setSelectedShipment(null);
+  };
+
+  const toggleShipmentDetails = (shipmentId) => {
+    setExpandedShipmentId(expandedShipmentId === shipmentId ? null : shipmentId);
+  };
+
+  // Barcode scanning functions
+  const handleBarcodeScan = async (barcode) => {
+    try {
+      const response = await axios.get(`http://localhost:5000/api/drugs/verifyDrug/${barcode}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      console.log(response.data);
+      
+      setScannedDrug(response.data);
+      setBarcodeInput('');
+      setShowScanner(false);
+      
+      // Auto-speak important alerts
+      if (response.data.success) {
+         showNotification('Drug is Authentic ', 'success');
+      } 
+    } catch (error) {
+      console.error('Error fetching drug by barcode:', error);
+      showNotification('Drug not found in inventory', 'danger');
+      setScannedDrug(null);
+    }
+  };
+
+  const handleManualBarcodeInput = (e) => {
+    if (e.key === 'Enter' && barcodeInput.trim()) {
+      handleBarcodeScan(barcodeInput.trim());
+    }
+  };
+
+  const captureBarcode = () => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    // In a real app, you would use a barcode scanning library here
+    // For demo purposes, we'll just simulate a scan after 1 second
+    setTimeout(() => {
+      handleBarcodeScan('DEMO123'); // Replace with actual barcode from image
+    }, 1000);
+  };
+
+const markDrugAsSold = async (barcode) => {
+  try {
+    await axios.put(
+      `http://localhost:5000/api/drugs/mark-sold/${barcode}`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    );
+    showNotification('Drug marked as sold', 'success');
+    fetchInventory(); // Refresh the inventory
+  } catch (error) {
+    console.error('Error marking drug as sold:', error);
+    showNotification('Failed to mark drug as sold', 'danger');
+  }
+};
+
+  const reportDrugAsExpired = async () => {
+    try {
+      await axios.put(
+        `http://localhost:5000/api/drugs/report-expired/${scannedDrug.barcode}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      showNotification(`${scannedDrug.name} reported as expired`, 'success');
+      setScannedDrug(null);
+      fetchInventory();
+    } catch (error) {
+      console.error('Error reporting drug as expired:', error);
+      showNotification('Failed to report drug as expired', 'danger');
+    }
+  };
+
+  const removeRecalledDrug = async () => {
+    try {
+      await axios.put(
+        `http://localhost:5000/api/drugs/mark-recalled/${scannedDrug.barcode}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      showNotification(`${scannedDrug.name} removed due to recall`, 'success');
+      setScannedDrug(null);
+      fetchInventory();
+    } catch (error) {
+      console.error('Error removing recalled drug:', error);
+      showNotification('Failed to remove recalled drug', 'danger');
+    }
+  };
+
+  const speak = (text) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const showNotification = (message, variant) => {
+    setToastMessage(message);
+    setToastVariant(variant);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
+const getStatusBadge = (status) => {
+  switch(status) {
+    case 'in_stock': return <span className="retailer-badge retailer-success">In Stock</span>;
+    case 'sold': return <span className="retailer-badge retailer-secondary">Sold</span>;
+    case 'recalled': return <span className="retailer-badge retailer-danger">Recalled</span>;
+    case 'expired': return <span className="retailer-badge retailer-warning">Expired</span>;
+    default: return <span className="retailer-badge retailer-light">Unknown</span>;
+  }
+};
+
+  const getDrugStatus = (drug) => {
+  if (drug.status === 'recalled') return 'recalled';
+  if (new Date(drug.expiryDate) < new Date()) return 'expired';
+  if (drug.unitBarcodes?.some(b => b.barcode === drug.barcode && b.status === 'sold')) return 'sold';
+  return drug.status;
+};
+  
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
-        Retailer Dashboard
-      </Typography>
-      
-      {/* Alerts */}
-      {alerts.length > 0 && openAlert && (
-        <Box sx={{ mb: 3 }}>
-          {alerts.map(alert => (
-            <Alert 
-              key={alert.id}
-              severity={alert.severity}
-              sx={{ mb: 1 }}
-              onClose={() => setAlerts(alerts.filter(a => a.id !== alert.id))}
-              icon={alert.severity === 'error' ? <Warning /> : <NotificationImportant />}
+    <div className="retailer-dashboard">
+      <Toast 
+        show={showToast} 
+        onClose={() => setShowToast(false)} 
+        delay={3000} 
+        autohide
+        className={`retailer-toast retailer-toast-${toastVariant}`}
+      >
+        <Toast.Body>{toastMessage}</Toast.Body>
+      </Toast>
+      <div className="retailer-sidebar">
+        <div className="retailer-sidebar-content">
+          <h4 className="retailer-sidebar-title"><Capsule className="retailer-icon" />MedChain</h4>
+          <div className="retailer-tabs-container">
+            <div 
+              className={`retailer-tab-item ${activeTab === 'dashboard' ? 'retailer-active' : ''}`}
+              onClick={() => setActiveTab('dashboard')}
             >
-              {alert.message}
-            </Alert>
-          ))}
-        </Box>
-      )}
-      
-      {/* Success message */}
-      <Snackbar
-        open={sellSuccess}
-        autoHideDuration={3000}
-        onClose={() => setSellSuccess(false)}
-        message="Drug successfully marked as sold"
-      />
-      
-      <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 3 }}>
-        <Tab label="Incoming Shipments" icon={<Receipt />} iconPosition="start" />
-        <Tab label="Inventory" icon={<Inventory />} iconPosition="start" />
-        <Tab label="Sell Drug" icon={<PointOfSale />} iconPosition="start" />
-        <Tab label="Drug Lookup" icon={<Verified />} iconPosition="start" />
-        <Tab label="Sales Log" icon={<History />} iconPosition="start" />
-      </Tabs>
-      
-      {activeTab === 0 && (
-        <Box>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
-            Pending Shipments ({pendingShipments.length})
-          </Typography>
+              <Speedometer2 className="retailer-icon" /> Dashboard
+            </div>
+            <div 
+              className={`retailer-tab-item ${activeTab === 'shipments' ? 'retailer-active' : ''}`}
+              onClick={() => setActiveTab('shipments')}
+            >
+              <Truck className="retailer-icon" /> Receive Shipments
+            </div>
+            <div 
+              className={`retailer-tab-item ${activeTab === 'inventory' ? 'retailer-active' : ''}`}
+              onClick={() => setActiveTab('inventory')}
+            >
+              <Clipboard2Pulse className="retailer-icon" /> Inventory
+            </div>
+            <div 
+              className={`retailer-tab-item ${activeTab === 'verify' ? 'retailer-active' : ''}`}
+              onClick={() => setActiveTab('verify')}
+            >
+              <ShieldCheck className="retailer-icon" /> Verify Drug
+            </div>
+            <div 
+              className={`retailer-tab-item ${activeTab === 'alerts' ? 'retailer-active' : ''}`}
+              onClick={() => setActiveTab('alerts')}
+            >
+              <ExclamationTriangle className="retailer-icon" /> Alerts
+            </div>
+            <div 
+  className={`retailer-tab-item ${activeTab === 'stockPlanner' ? 'retailer-active' : ''}`}
+  onClick={() => setActiveTab('stockPlanner')}
+>
+  <LocationIcon className="retailer-icon" /> Stock Planner
+</div>
           
-          {pendingShipments.length > 0 ? (
-            <TableContainer component={Paper} sx={{ mb: 4 }}>
-              <Table>
-                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                  <TableRow>
-                    <TableCell>Shipment ID</TableCell>
-                    <TableCell>Sender</TableCell>
-                    <TableCell>Sender Type</TableCell>
-                    <TableCell>Drug Count</TableCell>
-                    <TableCell>Date Sent</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {pendingShipments.map((shipment) => (
-                    <TableRow key={shipment.id}>
-                      <TableCell>{shipment.id}</TableCell>
-                      <TableCell>{shipment.sender}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={shipment.senderType} 
-                          color={shipment.senderType === 'wholesaler' ? 'primary' : 'secondary'} 
-                          size="small"
+            <div 
+              className={`retailer-tab-item ${activeTab === 'analytics' ? 'retailer-active' : ''}`}
+              onClick={() => setActiveTab('analytics')}
+            >
+              <GraphUp className="retailer-icon" /> Analytics
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="retailer-main-content">
+        <div className="retailer-header">
+  <h3>MedChain Retailer Portal</h3>
+  <div className="retailer-header-controls">
+    <div className="retailer-search-box">
+      <Search className="retailer-search-icon" />
+      <input type="text" placeholder="Search..." />
+    </div>
+    <div className="retailer-dropdown">
+      <button className="retailer-dropdown-toggle">
+        <PersonCircle className="retailer-icon" /> {user?.name || 'Retailer'}
+      </button>
+      <div className="retailer-dropdown-menu">
+        <a href="#"><PersonCircle className="retailer-icon" /> Profile</a>
+        <a href="#"><Gear className="retailer-icon" /> Settings</a>
+        <div className="retailer-divider"></div>
+        <a href="#" onClick={(e) => { e.preventDefault(); logout(); }}>
+          <BoxArrowRight className="retailer-icon" /> Logout
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+        <div className="retailer-tab-content">
+          {activeTab === 'dashboard' && (
+            <div className="retailer-dashboard-tab">
+              <div className="retailer-stats-row">
+                <div className="retailer-stat-card">
+                  <div className="retailer-stat-content">
+                    <div>
+                      <h6>Total Inventory</h6>
+                      <h3>{inventory.length}</h3>
+                      <p>Drug batches</p>
+                    </div>
+                    <div className="retailer-icon-bg retailer-primary">
+                      <BoxSeam className="retailer-icon retailer-primary" />
+                    </div>
+                  </div>
+                </div>
+                <div className="retailer-stat-card">
+                  <div className="retailer-stat-content">
+                    <div>
+                      <h6>Active Alerts</h6>
+                      <h3>{recallData.length}</h3>
+                      <p>Recalls & warnings</p>
+                    </div>
+                    <div className="retailer-icon-bg retailer-warning">
+                      <ExclamationTriangleFill className="retailer-icon retailer-warning" />
+                    </div>
+                  </div>
+                </div>
+                <div className="retailer-stat-card">
+                  <div className="retailer-stat-content">
+                    <div>
+                      <h6>Expiring Soon</h6>
+                      <h3>{inventory.filter(d => new Date(d.expiry) < new Date(Date.now() + 30*24*60*60*1000)).length}</h3>
+                      <p>Within 30 days</p>
+                    </div>
+                    <div className="retailer-icon-bg retailer-danger">
+                      <ClockFill className="retailer-icon retailer-danger" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="retailer-content-row">
+                <div className="retailer-main-panel">
+                  <div className="retailer-card">
+                    <div className="retailer-card-header">
+                      <h5>Recent Inventory Activity</h5>
+                    </div>
+                    <div className="retailer-card-body">
+         <table className="retailer-data-table">
+  <thead>
+    <tr>
+      <th>Drug Name</th>
+      <th>Batch</th>
+      <th>Barcode</th>
+      <th>Manufacturer</th>
+      <th>Expiry Date</th>
+      <th>Quantity</th>
+      <th>Status</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {inventory.map(item => (
+      <tr key={item._id} className={getDrugStatus(item)}>
+        <td>
+          {item.name} 
+          {item.quantity <= 2 && <span className="retailer-badge retailer-warning">Low stock</span>}
+        </td>
+        <td>{item.batch}</td>
+        <td>
+          <OverlayTrigger
+            placement="top"
+            overlay={<Tooltip>Click to scan this barcode</Tooltip>}
+          >
+            <span 
+              className="retailer-barcode"
+              onClick={() => handleBarcodeScan(item.barcode)}
+            >
+              {item.barcode}
+            </span>
+          </OverlayTrigger>
+        </td>
+        <td>{item.manufacturer?.name || 'Unknown'}</td>
+        <td>{new Date(item.expiryDate).toLocaleDateString()}</td>
+        <td>{item.quantity}</td>
+        <td>{getStatusBadge(getDrugStatus(item))}</td>
+        <td className="retailer-actions">
+          <button 
+            className="retailer-btn-icon"
+            onClick={() => handleBarcodeScan(item.barcode)}
+            title="Scan this item"
+          >
+            <QrCodeScan />
+          </button>
+          <button 
+            className="retailer-btn-icon"
+            onClick={() => {
+              setActiveTab('verify');
+              verifyDrug(item.barcode);
+            }}
+            title="Verify on blockchain"
+          >
+            <ShieldCheck />
+            
+          </button>
+            <button 
+              className="retailer-btn-icon"
+              onClick={() => markDrugAsSold(item.barcode)}
+              title="Mark as sold"
+            >
+              <CheckCircle />
+            </button>
+       
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+                    </div>
+                  </div>
+                </div>
+                <div className="retailer-side-panel">
+                  <DrugShortagePrediction/>
+                </div>
+              </div>
+            </div>
+          )}
+{activeTab === 'shipments' && (
+  <div className="retailer-shipments-tab">
+    <div className="retailer-card">
+      <div className="retailer-card-header">
+        <h5>Incoming Shipments</h5>
+      </div>
+      <div className="retailer-card-body">
+        {loadingShipments ? (
+          <div className="retailer-loading">Loading shipments...</div>
+        ) : shipments.length === 0 ? (
+          <div className="retailer-no-data">
+            <p>No shipments pending acceptance</p>
+          </div>
+        ) : (
+          <div className="shipment-container">
+            {/* Shipments List */}
+            <table className="retailer-data-table">
+              <thead>
+                <tr>
+                  <th>Tracking Number</th>
+                  <th>Drugs</th>
+                  <th>From</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shipments.map(shipment => (
+                  <React.Fragment key={shipment._id}>
+                    <tr>
+                                <td>{shipment.trackingNumber}</td>
+                                <td>
+                                  {shipment.drugs?.map(drug => (
+                                    <div key={drug._id} className="retailer-drug-item">
+                                      {drug.name} (Batch: {drug.batch})
+                                    </div>
+                                  ))}
+                                </td>
+                                <td>
+                                  {shipment.participants?.find(p => p.type === 'distributor')?.participantId?.name || 'Distributor'}
+                                </td>
+                                <td>
+                                  <span className={`retailer-badge ${
+                                    shipment.status === 'processing' ? 'retailer-warning' :
+                                    shipment.status === 'in-transit' ? 'retailer-info' :
+                                    shipment.status === 'delivered' ? 'retailer-success' :
+                                    'retailer-secondary'
+                                  }`}>
+                                    {shipment.status}
+                                  </span>
+                                </td>
+                                <td className="retailer-actions">
+                                  <button 
+                                    className="retailer-btn retailer-btn-outline retailer-btn-sm"
+                                    onClick={() => handleViewShipment(shipment)}
+                                  >
+                                    View
+                                  </button>
+                                  {shipment.status === 'in-transit' && (
+                                    <div className="retailer-shipment-actions">
+                                      <button 
+                                        className="retailer-btn retailer-btn-success retailer-btn-sm"
+                                        onClick={() => handleAcceptShipment(shipment._id)}
+                                      >
+                                        Accept
+                                      </button>
+                                      <button 
+                                        className="retailer-btn retailer-btn-danger retailer-btn-sm"
+                                        onClick={() => handleRejectShipment(shipment._id)}
+                                      >
+                                        Reject
+                                      </button>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                    
+                    {/* Expanded Details */}
+                    {selectedShipment?._id === shipment._id && (
+                      <tr className="shipment-details-row">
+                        <td colSpan="5">
+                          <div className="retailer-shipment-details">
+                            <div className="retailer-shipment-info">
+                              <div>
+                                <strong>Status:</strong> 
+                                <span className={`retailer-badge ${
+                                  shipment.status === 'processing' ? 'retailer-warning' :
+                                  shipment.status === 'in-transit' ? 'retailer-info' :
+                                  shipment.status === 'delivered' ? 'retailer-success' :
+                                  'retailer-secondary'
+                                }`}>
+                                  {shipment.status}
+                                </span>
+                              </div>
+                              <div>
+                                <strong>From:</strong> 
+                                {shipment.participants?.find(p => p.type === 'distributor')?.participantId?.name || 'Distributor'}
+                              </div>
+                              {shipment.estimatedDelivery && (
+                                <div>
+                                  <strong>Estimated Delivery:</strong> 
+                                  {new Date(shipment.estimatedDelivery).toLocaleDateString()}
+                                </div>
+                              )}
+                              {shipment.actualDelivery && (
+                                <div>
+                                  <strong>Delivered On:</strong> 
+                                  {new Date(shipment.actualDelivery).toLocaleDateString()}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="retailer-shipment-drugs">
+                              <h5>Drugs in Shipment</h5>
+                              <table className="retailer-data-table">
+                                <thead>
+                                  <tr>
+                                    <th>Name</th>
+                                    <th>Batch</th>
+                                    <th>Manufacturer</th>
+                                    <th>Expiry</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {shipment.drugs?.map(drug => (
+                                    <tr key={drug._id}>
+                                      <td>{drug.name}</td>
+                                      <td>{drug.batch}</td>
+                                      <td>{drug.manufacturer?.name || 'Unknown'}</td>
+                                      <td>{drug.expiryDate || 'N/A'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            <div className="retailer-shipment-timeline">
+                              <h5>Shipment Timeline</h5>
+                              <div className="retailer-timeline">
+                                {shipment.participants?.map((participant, index) => (
+                                  <div key={index} className="retailer-timeline-event">
+                                    <div className="retailer-timeline-dot"></div>
+                                    <div className="retailer-timeline-content">
+                                      <h6>{participant.type}</h6>
+                                      <p>
+                                        {participant.actualArrival 
+                                          ? `Arrived: ${new Date(participant.actualArrival).toLocaleString()}`
+                                          : participant.expectedArrival 
+                                            ? `Expected: ${new Date(participant.expectedArrival).toLocaleString()}`
+                                            : 'Pending'
+                                        }
+                                      </p>
+                                      <p>Status: {participant.status}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+         {activeTab === 'inventory' && (
+            <div className="retailer-inventory-tab">
+              <div className="retailer-card">
+                <div className="retailer-card-header">
+                  <h5>Drug Inventory Management</h5>
+                  <div className="retailer-controls">
+                    <div className="retailer-scan-controls">
+                      <button 
+                        className="retailer-btn-primary"
+                        onClick={() => setShowScanner(!showScanner)}
+                      >
+                        <Camera className="retailer-icon" /> {showScanner ? 'Close Scanner' : 'Open Scanner'}
+                      </button>
+                      <div className="retailer-input-group">
+                        <input 
+                          type="text" 
+                          placeholder="Enter barcode manually" 
+                          value={barcodeInput}
+                          onChange={(e) => setBarcodeInput(e.target.value)}
+                          onKeyPress={handleManualBarcodeInput}
                         />
-                      </TableCell>
-                      <TableCell>{shipment.drugCount}</TableCell>
-                      <TableCell>{shipment.dateSent}</TableCell>
-                      <TableCell>
-                        <StatusChip label={shipment.status} status={shipment.status} />
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="outlined" 
-                          size="small" 
-                          onClick={() => setSelectedShipment(shipment)}
-                          sx={{ mr: 1 }}
+                        <button 
+                          className="retailer-btn-primary"
+                          onClick={() => handleBarcodeScan(barcodeInput)}
                         >
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <DashboardCard sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="body1" color="textSecondary">
-                No pending shipments at this time
-              </Typography>
-            </DashboardCard>
+                          <QrCodeScan className="retailer-icon" /> Scan
+                        </button>
+                      </div>
+                    </div>
+                    <button className="retailer-btn-outline">
+                      <Funnel className="retailer-icon" /> Filters
+                    </button>
+                  </div>
+                </div>
+
+                {showScanner && (
+                  <div className="retailer-scanner-container">
+                    <Webcam
+                      audio={false}
+                      ref={webcamRef}
+                      screenshotFormat="image/jpeg"
+                      className="retailer-scanner"
+                    />
+                    <button 
+                      className="retailer-btn-primary retailer-scan-button"
+                      onClick={captureBarcode}
+                    >
+                      <QrCodeScan className="retailer-icon" /> Capture Barcode
+                    </button>
+                  </div>
+                )}
+
+              
+
+                <div className="retailer-card-body">
+                  <table className="retailer-data-table">
+                    <thead>
+                      <tr>
+                        <th>Drug Name</th>
+                        <th>Batch</th>
+                        <th>Barcode</th>
+                        <th>Manufacturer</th>
+                        <th>Expiry Date</th>
+                        <th>Quantity</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {inventory.map(item => (
+                        <tr key={item._id} className={getDrugStatus(item)}>
+                          <td>
+                            {item.name} 
+                            {item.quantity <= 2 && <span className="retailer-badge retailer-warning">Low stock</span>}
+                          </td>
+                          <td>{item.batch}</td>
+                          <td>
+                            <OverlayTrigger
+                              placement="top"
+                              overlay={<Tooltip>Click to scan this barcode</Tooltip>}
+                            >
+                              <span 
+                                className="retailer-barcode"
+                                onClick={() => handleBarcodeScan(item.barcode)}
+                              >
+                                {item.barcode}
+                              </span>
+                            </OverlayTrigger>
+                          </td>
+                          <td>{item.manufacturer?.name || 'Unknown'}</td>
+                          <td>{new Date(item.expiryDate).toLocaleDateString()}</td>
+                          <td>{item.quantity}</td>
+                          <td>{getStatusBadge(getDrugStatus(item))}</td>
+                          <td className="retailer-actions">
+                            <button 
+                              className="retailer-btn-icon"
+                              onClick={() => handleBarcodeScan(item.barcode)}
+                              title="Scan this item"
+                            >
+                              <QrCodeScan />
+                            </button>
+                            <button 
+                              className="retailer-btn-icon"
+                              onClick={() => {
+                                setActiveTab('verify');
+                                verifyDrug(item.barcode);
+                              }}
+                              title="Verify on blockchain"
+                            >
+                              <ShieldCheck />
+                            </button>
+                             {/* Add the Mark as Sold button here */}
+  <button 
+    className="retailer-btn-icon"
+    onClick={() => markDrugAsSold(item.barcode)}
+    title="Mark as sold"
+  >
+    <CheckCircle />
+  </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+         {activeTab === 'verify' && (
+  <DrugVerificationGlobal 
+    
+    getManufacturerName={(manufacturerId) => {
+      // You might want to implement this function to get manufacturer names
+      // For now returning the ID as a fallback
+      return manufacturerId || 'Unknown Manufacturer';
+    }}
+  />
+)}
+
+          {activeTab === 'alerts' && (
+           <DrugShortagePrediction/>
+          )}
+           {/* Shipment Details Modal */}
+          {showShipmentModal && (
+            <div className='modal' tabIndex="-1" style={{display:'block'}}>
+              <div className="modal-dialog modal-lg">
+                <div className="modal-content">
+                  <Modal.Header closeButton>
+                <Modal.Title>Shipment Details - {selectedShipment.trackingNumber}</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                <div className="retailer-shipment-details">
+                  <div className="retailer-shipment-info">
+                    <div>
+                      <strong>Status:</strong> 
+                      <span className={`retailer-badge ${
+                        selectedShipment.status === 'processing' ? 'retailer-warning' :
+                        selectedShipment.status === 'in-transit' ? 'retailer-info' :
+                        selectedShipment.status === 'delivered' ? 'retailer-success' :
+                        'retailer-secondary'
+                      }`}>
+                        {selectedShipment.status}
+                      </span>
+                    </div>
+                    <div>
+                      <strong>From:</strong> 
+                      {selectedShipment.participants?.find(p => p.type === 'distributor')?.participantId?.name || 'Distributor'}
+                    </div>
+                    {selectedShipment.estimatedDelivery && (
+                      <div>
+                        <strong>Estimated Delivery:</strong> 
+                        {new Date(selectedShipment.estimatedDelivery).toLocaleDateString()}
+                      </div>
+                    )}
+                    {selectedShipment.actualDelivery && (
+                      <div>
+                        <strong>Delivered On:</strong> 
+                        {new Date(selectedShipment.actualDelivery).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="retailer-shipment-drugs">
+                    <h5>Drugs in Shipment</h5>
+                    <table className="retailer-data-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Batch</th>
+                          <th>Manufacturer</th>
+                          <th>Expiry</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedShipment.drugs?.map(drug => (
+                          <tr key={drug._id}>
+                            <td>{drug.name}</td>
+                            <td>{drug.batch}</td>
+                            <td>{drug.manufacturer?.name || 'Unknown'}</td>
+                            <td>{drug.expiryDate || 'N/A'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="retailer-shipment-timeline">
+                    <h5>Shipment Timeline</h5>
+                    <div className="retailer-timeline">
+                      {selectedShipment.participants?.map((participant, index) => (
+                        <div key={index} className="retailer-timeline-event">
+                          <div className="retailer-timeline-dot"></div>
+                          <div className="retailer-timeline-content">
+                            <h6>{participant.type}</h6>
+                            <p>
+                              {participant.actualArrival 
+                                ? `Arrived: ${new Date(participant.actualArrival).toLocaleString()}`
+                                : participant.expectedArrival 
+                                  ? `Expected: ${new Date(participant.expectedArrival).toLocaleString()}`
+                                  : 'Pending'
+                              }
+                            </p>
+                            <p>Status: {participant.status}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Modal.Body>
+              <Modal.Footer>
+                {selectedShipment.status === 'processing' && (
+                  <>
+                    <Button variant="success" onClick={() => handleAcceptShipment(selectedShipment._id)}>
+                      <CheckCircle /> Accept Shipment
+                    </Button>
+                    <Button variant="danger" onClick={() => handleRejectShipment(selectedShipment._id)}>
+                      <XCircle /> Reject Shipment
+                    </Button>
+                  </>
+                )}
+                <Button variant="secondary" onClick={handleCloseShipmentModal}> {/* FIX APPLIED HERE */}
+                  Close
+                </Button>
+              </Modal.Footer>
+                </div>
+              </div>
+            </div>
           )}
 
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
-            Received Shipments ({receivedShipments.length})
-          </Typography>
-          
-          {receivedShipments.length > 0 ? (
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                  <TableRow>
-                    <TableCell>Shipment ID</TableCell>
-                    <TableCell>Sender</TableCell>
-                    <TableCell>Sender Type</TableCell>
-                    <TableCell>Drug Count</TableCell>
-                    <TableCell>Date Sent</TableCell>
-                    <TableCell>Status</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {receivedShipments.map((shipment) => (
-                    <TableRow key={shipment.id}>
-                      <TableCell>{shipment.id}</TableCell>
-                      <TableCell>{shipment.sender}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={shipment.senderType} 
-                          color={shipment.senderType === 'wholesaler' ? 'primary' : 'secondary'} 
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>{shipment.drugCount}</TableCell>
-                      <TableCell>{shipment.dateSent}</TableCell>
-                      <TableCell>
-                        <StatusChip label={shipment.status} status={shipment.status} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          ) : (
-            <DashboardCard sx={{ p: 3, textAlign: 'center' }}>
-              <Typography variant="body1" color="textSecondary">
-                No received shipments to display
-              </Typography>
-            </DashboardCard>
-          )}
-        </Box>
-      )}
+          {activeTab === 'analytics' && (
+  <div className="retailer-analytics-tab">
+    <div className="retailer-analytics-row">
+      {/* Status Distribution Pie Chart */}
+      <div className="retailer-card retailer-chart-card">
+        <div className="retailer-card-header">
+          <h5>Drug Status Distribution</h5>
+        </div>
+        <div className="retailer-card-body">
+          <Doughnut 
+            data={{
+              labels: ['In Stock', 'Sold Out', 'Recalled', 'Expired'],
+              datasets: [{
+                data: [
+                  inventory.filter(d => getDrugStatus(d) === 'in_stock').length,
+                  inventory.filter(d => getDrugStatus(d) === 'sold').length,
+                  inventory.filter(d => getDrugStatus(d) === 'recalled').length,
+                  inventory.filter(d => getDrugStatus(d) === 'expired').length
+                ],
+                backgroundColor: [
+                  '#4e73df',  // Blue for in stock
+                  '#1cc88a',  // Green for sold
+                  '#e74a3b',  // Red for recalled
+                  '#f6c23e'   // Yellow for expired
+                ],
+                borderColor: '#fff',
+                borderWidth: 2,
+                hoverOffset: 10
+              }]
+            }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'right',
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function(context) {
+                      const label = context.label || '';
+                      const value = context.raw || 0;
+                      const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                      const percentage = Math.round((value / total) * 100);
+                      return `${label}: ${value} (${percentage}%)`;
+                    }
+                  }
+                }
+              },
+              cutout: '70%'
+            }}
+          />
+        </div>
+      </div>
 
-      {activeTab === 1 && (
-        <Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              Current Inventory ({inventory.filter(d => d.status === 'in_stock').length} in stock)
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Search drugs..."
-                InputProps={{
-                  startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
-                }}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                sx={{ width: 300 }}
-              />
-              <FormControl size="small" sx={{ minWidth: 180 }}>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  label="Status"
-                >
-                  <MenuItem value="all">All Statuses</MenuItem>
-                  {statusOptions.map(s => (
-                    <MenuItem key={s} value={s}>{s.replace('_', ' ')}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-          </Box>
-          
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                <TableRow>
-                  <TableCell>Drug Name</TableCell>
-                  <TableCell>Barcode</TableCell>
-                  <TableCell>Batch Number</TableCell>
-                  <TableCell>Manufacturer</TableCell>
-                  <TableCell>Expiry Date</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredInventory.map((drug) => (
-                  <TableRow key={drug.id}>
-                    <TableCell>{drug.name}</TableCell>
-                    <TableCell>{drug.barcode}</TableCell>
-                    <TableCell>{drug.batch}</TableCell>
-                    <TableCell>{drug.manufacturer}</TableCell>
-                    <TableCell>{drug.expiry}</TableCell>
-                    <TableCell>
-                      <StatusChip label={drug.status} status={drug.status} />
-                    </TableCell>
-                    <TableCell>
-                      <Button 
-                        size="small" 
-                        startIcon={<QrCodeScanner />}
-                        onClick={() => {
-                          setQrInput(drug.barcode);
-                          verifyDrug();
-                        }}
-                      >
-                        Verify
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          
-          {filteredInventory.length === 0 && (
-            <DashboardCard sx={{ p: 3, textAlign: 'center', mt: 2 }}>
-              <Typography variant="body1" color="textSecondary">
-                No drugs found matching your criteria
-              </Typography>
-            </DashboardCard>
-          )}
-        </Box>
-      )}
+      {/* Expiry Timeline Chart */}
+      <div className="retailer-card retailer-chart-card">
+        <div className="retailer-card-header">
+          <h5>Drugs Expiring in Next 6 Months</h5>
+        </div>
+        <div className="retailer-card-body">
+          <Bar
+            data={{
+              labels: Array.from({ length: 6 }, (_, i) => {
+                const date = new Date();
+                date.setMonth(date.getMonth() + i);
+                return date.toLocaleString('default', { month: 'short' });
+              }),
+              datasets: [{
+                label: 'Drugs Expiring',
+                data: Array.from({ length: 6 }, (_, i) => {
+                  const date = new Date();
+                  const startMonth = new Date(date.getFullYear(), date.getMonth() + i, 1);
+                  const endMonth = new Date(date.getFullYear(), date.getMonth() + i + 1, 0);
+                  return inventory.filter(d => {
+                    const expiryDate = new Date(d.expiryDate);
+                    return expiryDate >= startMonth && expiryDate <= endMonth;
+                  }).length;
+                }),
+                backgroundColor: [
+                  '#36b9cc',
+                  '#1cc88a',
+                  '#6f42c1',
+                  '#e83e8c',
+                  '#fd7e14',
+                  '#20c997'
+                ],
+                borderRadius: 4,
+              }]
+            }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: {
+                    display: false
+                  },
+                  title: {
+                    display: true,
+                    text: 'Number of Drugs',
+                    color: '#6c757d'
+                  }
+                },
+                x: {
+                  grid: {
+                    display: false
+                  },
+                  title: {
+                    display: true,
+                    text: 'Month',
+                    color: '#6c757d'
+                  }
+                }
+              }
+            }}
+          />
+        </div>
+      </div>
+    </div>
 
-      {activeTab === 2 && (
-        <Box sx={{ maxWidth: 600, mx: 'auto' }}>
-          <DashboardCard>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-                Sell Drug to Customer
-              </Typography>
-              
-              <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                <TextField
-                  fullWidth
-                  variant="outlined"
-                  placeholder="Scan drug barcode"
-                  value={qrInput}
-                  onChange={(e) => setQrInput(e.target.value)}
-                />
-                <Button 
-                  variant="contained" 
-                  startIcon={<QrCodeScanner />}
-                  onClick={() => alert('QR scanner would open here')}
-                >
-                  Scan
-                </Button>
-              </Box>
-              
-              <Button
-                fullWidth
-                variant="contained"
-                color="primary"
-                size="large"
-                disabled={!qrInput}
-                onClick={verifyDrug}
-                sx={{ mb: 3 }}
-              >
-                Verify Drug
-              </Button>
-              
-              {verificationResult && !verificationResult.error && (
-                <Box sx={{ mt: 3, p: 2, border: '1px solid #eee', borderRadius: 1 }}>
-                  <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Ready to Sell: {verificationResult.name}
-                  </Typography>
-                  <Typography variant="body2">Batch: {verificationResult.batch}</Typography>
-                  <Typography variant="body2">Expiry: {verificationResult.expiry}</Typography>
-                  
-                  <TextField
-                    fullWidth
-                    label="Patient ID (Optional)"
-                    variant="outlined"
-                    size="small"
-                    value={patientId}
-                    onChange={(e) => setPatientId(e.target.value)}
-                    sx={{ mt: 2 }}
-                  />
-                  
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    color="success"
-                    size="large"
-                    onClick={sellDrug}
-                    sx={{ mt: 2 }}
-                    startIcon={<PointOfSale />}
-                  >
-                    Mark as Sold
-                  </Button>
-                </Box>
-              )}
-            </CardContent>
-          </DashboardCard>
-        </Box>
-      )}
+    <div className="retailer-analytics-row">
+      {/* Manufacturer Distribution */}
+      <div className="retailer-card retailer-chart-card">
+        <div className="retailer-card-header">
+          <h5>Top Manufacturers</h5>
+        </div>
+        <div className="retailer-card-body">
+          <Bar
+            data={{
+              labels: [...new Set(inventory.map(d => d.manufacturer?.name || 'Unknown'))]
+                .slice(0, 5),
+              datasets: [{
+                label: 'Drug Count',
+                data: [...new Set(inventory.map(d => d.manufacturer?.name || 'Unknown'))]
+                  .map(manufacturer => 
+                    inventory.filter(d => (d.manufacturer?.name || 'Unknown') === manufacturer).length
+                  )
+                  .slice(0, 5),
+                backgroundColor: [
+                  '#4e73df',
+                  '#1cc88a',
+                  '#36b9cc',
+                  '#f6c23e',
+                  '#e74a3b'
+                ],
+                borderColor: '#fff',
+                borderWidth: 1
+              }]
+            }}
+            options={{
+              indexAxis: 'y',
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
+              scales: {
+                x: {
+                  beginAtZero: true,
+                  grid: {
+                    display: false
+                  },
+                  title: {
+                    display: true,
+                    text: 'Number of Drugs',
+                    color: '#6c757d'
+                  }
+                },
+                y: {
+                  grid: {
+                    display: false
+                  },
+                  title: {
+                    display: true,
+                    text: 'Manufacturer',
+                    color: '#6c757d'
+                  }
+                }
+              }
+            }}
+          />
+        </div>
+      </div>
 
-      {activeTab === 3 && (
-        <Box sx={{ maxWidth: 600, mx: 'auto' }}>
-          <DashboardCard>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-                Drug Lookup / Scanner
-              </Typography>
-              
-              <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                <TextField
-                  fullWidth
-                  variant="outlined"
-                  placeholder="Enter drug barcode or scan QR code"
-                  value={qrInput}
-                  onChange={(e) => setQrInput(e.target.value)}
-                />
-                <Button 
-                  variant="contained" 
-                  startIcon={<QrCodeScanner />}
-                  onClick={() => alert('QR scanner would open here')}
-                >
-                  Scan
-                </Button>
-              </Box>
-              
-              <Button
-                fullWidth
-                variant="contained"
-                color="primary"
-                size="large"
-                disabled={!qrInput}
-                onClick={verifyDrug}
-              >
-                Lookup Drug
-              </Button>
-            </CardContent>
-          </DashboardCard>
-        </Box>
-      )}
+      {/* Stock Status Over Time */}
+      <div className="retailer-card retailer-chart-card">
+        <div className="retailer-card-header">
+          <h5>Stock Levels Trend</h5>
+        </div>
+        <div className="retailer-card-body">
+          <Line
+            data={{
+              labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+              datasets: [
+                {
+                  label: 'In Stock',
+                  data: Array(12).fill(0).map((_, i) => 
+                    Math.floor(Math.random() * 100) + 50 // Replace with actual data
+                  ),
+                  borderColor: '#4e73df',
+                  backgroundColor: 'rgba(78, 115, 223, 0.1)',
+                  tension: 0.4,
+                  fill: true
+                },
+                {
+                  label: 'Low Stock',
+                  data: Array(12).fill(0).map((_, i) => 
+                    Math.floor(Math.random() * 20) + 5 // Replace with actual data
+                  ),
+                  borderColor: '#f6c23e',
+                  backgroundColor: 'rgba(246, 194, 62, 0.1)',
+                  tension: 0.4,
+                  fill: true
+                },
+                {
+                  label: 'Expired',
+                  data: Array(12).fill(0).map((_, i) => 
+                    Math.floor(Math.random() * 15) // Replace with actual data
+                  ),
+                  borderColor: '#e74a3b',
+                  backgroundColor: 'rgba(231, 74, 59, 0.1)',
+                  tension: 0.4,
+                  fill: true
+                }
+              ]
+            }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'top',
+                }
+              },
+              interaction: {
+                intersect: false,
+                mode: 'index',
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: {
+                    display: false
+                  },
+                  title: {
+                    display: true,
+                    text: 'Number of Drugs',
+                    color: '#6c757d'
+                  }
+                },
+                x: {
+                  grid: {
+                    display: false
+                  },
+                  title: {
+                    display: true,
+                    text: 'Month',
+                    color: '#6c757d'
+                  }
+                }
+              }
+            }}
+          />
+        </div>
+      </div>
+    </div>
 
-      {activeTab === 4 && (
-        <Box>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-            Sales Log ({salesLog.length} transactions)
-          </Typography>
-          
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-                <TableRow>
-                  <TableCell>Sale ID</TableCell>
-                  <TableCell>Drug Name</TableCell>
-                  <TableCell>Barcode</TableCell>
-                  <TableCell>Batch</TableCell>
-                  <TableCell>Date Sold</TableCell>
-                  <TableCell>Patient ID</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {salesLog.map((sale) => (
-                  <TableRow key={sale.id}>
-                    <TableCell>{sale.id}</TableCell>
-                    <TableCell>{sale.drugName}</TableCell>
-                    <TableCell>{sale.barcode}</TableCell>
-                    <TableCell>{sale.batch}</TableCell>
-                    <TableCell>{sale.dateSold}</TableCell>
-                    <TableCell>{sale.patientId}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-      )}
+    {/* Key Metrics Cards */}
+    <div className="retailer-analytics-row">
+      <div className="retailer-card retailer-stats-card">
+        <div className="retailer-card-header">
+          <h5>Inventory Health Metrics</h5>
+        </div>
+        <div className="retailer-card-body">
+          <div className="retailer-stats-grid">
+            <div className="retailer-stat-item">
+              <div className="retailer-stat-value">{inventory.length}</div>
+              <div className="retailer-stat-label">Total Drugs</div>
+              <div className="retailer-stat-icon">
+                <Capsule className="retailer-icon retailer-primary" />
+              </div>
+            </div>
+            <div className="retailer-stat-item">
+              <div className="retailer-stat-value">
+                {inventory.filter(d => getDrugStatus(d) === 'in_stock').length}
+              </div>
+              <div className="retailer-stat-label">In Stock</div>
+              <div className="retailer-stat-icon">
+                <CheckCircleFill className="retailer-icon retailer-success" />
+              </div>
+            </div>
+            <div className="retailer-stat-item">
+              <div className="retailer-stat-value">
+                {inventory.filter(d => getDrugStatus(d) === 'expired').length}
+              </div>
+              <div className="retailer-stat-label">Expired</div>
+              <div className="retailer-stat-icon">
+                <ExclamationTriangleFill className="retailer-icon retailer-warning" />
+              </div>
+            </div>
+            <div className="retailer-stat-item">
+              <div className="retailer-stat-value">
+                {inventory.filter(d => getDrugStatus(d) === 'recalled').length}
+              </div>
+              <div className="retailer-stat-label">Recalled</div>
+              <div className="retailer-stat-icon">
+                <ExclamationTriangleFill className="retailer-icon retailer-danger" />
+              </div>
+            </div>
+            <div className="retailer-stat-item">
+              <div className="retailer-stat-value">
+                {inventory.filter(d => d.quantity <= 2).length}
+              </div>
+              <div className="retailer-stat-label">Low Stock</div>
+              <div className="retailer-stat-icon">
+                <ClockFill className="retailer-icon retailer-info" />
+              </div>
+            </div>
+            <div className="retailer-stat-item">
+              <div className="retailer-stat-value">
+                {inventory.length > 0 
+                  ? Math.round(inventory.reduce((sum, d) => sum + d.quantity, 0) / inventory.length * 10) / 10
+                  : 0}
+              </div>
+              <div className="retailer-stat-label">Avg. Quantity</div>
+              <div className="retailer-stat-icon">
+                <Clipboard2Pulse className="retailer-icon retailer-secondary" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
-      {/* Shipment Details Modal */}
-      <Modal
-        open={!!selectedShipment}
-        onClose={() => setSelectedShipment(null)}
-      >
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 600,
-          bgcolor: 'background.paper',
-          boxShadow: 24,
-          p: 4,
-          borderRadius: 2
-        }}>
-          {selectedShipment && (
-            <>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Shipment Details: {selectedShipment.id}
-              </Typography>
-              
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="body1"><strong>Sender:</strong> {selectedShipment.sender}</Typography>
-                <Typography variant="body1"><strong>Sender Type:</strong> 
-                  <Chip 
-                    label={selectedShipment.senderType} 
-                    color={selectedShipment.senderType === 'wholesaler' ? 'primary' : 'secondary'} 
-                    size="small" 
-                    sx={{ ml: 1 }}
-                  />
-                </Typography>
-                <Typography variant="body1"><strong>Drug Count:</strong> {selectedShipment.drugCount}</Typography>
-                <Typography variant="body1"><strong>Date Sent:</strong> {selectedShipment.dateSent}</Typography>
-                <Typography variant="body1"><strong>Status:</strong> 
-                  <StatusChip label={selectedShipment.status} status={selectedShipment.status} sx={{ ml: 1 }} />
-                </Typography>
-              </Box>
-              
-              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Drug List (Sample)
-              </Typography>
-              
-              <Box sx={{ maxHeight: 200, overflow: 'auto', mb: 3, p: 1, border: '1px solid #eee', borderRadius: 1 }}>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Typography key={i} variant="body2" sx={{ py: 0.5 }}>
-                    - {['Paracetamol', 'Ibuprofen', 'Amoxicillin', 'Cetirizine', 'Omeprazole'][i]} (Batch: B20230{i+1})
-                  </Typography>
-                ))}
-              </Box>
-              
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                <Button 
-                  variant="outlined" 
-                  color="error"
-                  onClick={() => handleRejectShipment(selectedShipment.id)}
-                >
-                  Reject Shipment
-                </Button>
-                <Button 
-                  variant="contained" 
-                  color="primary"
-                  onClick={() => handleReceiveShipment(selectedShipment.id)}
-                >
-                  Accept Shipment
-                </Button>
-              </Box>
-            </>
-          )}
-        </Box>
-      </Modal>
 
-      {/* Verification Result Modal */}
-      <Modal
-        open={openModal}
-        onClose={() => {
-          setOpenModal(false);
-          setVerificationResult(null);
-        }}
-      >
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 500,
-          bgcolor: 'background.paper',
-          boxShadow: 24,
-          p: 4,
-          borderRadius: 2
-        }}>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
-            Drug Verification Result
-          </Typography>
-          
-          {verificationResult?.error ? (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Cancel color="error" sx={{ fontSize: 60, mb: 2 }} />
-              <Typography variant="h6" color="error">
-                {verificationResult.error}
-              </Typography>
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                This drug may be counterfeit or not registered in our system.
-              </Typography>
-            </Box>
-          ) : verificationResult ? (
-            <>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                <CheckCircle color="success" sx={{ fontSize: 40, mr: 2 }} />
-                <Box>
-                  <Typography variant="h6" color="success.main">
-                    Valid Drug Found
-                  </Typography>
-                  <Typography variant="body2">
-                    {verificationResult.name}
-                  </Typography>
-                </Box>
-              </Box>
-              
-              <Box sx={{ pl: 2, mb: 3 }}>
-                <Typography variant="body1"><strong>Barcode:</strong> {verificationResult.barcode}</Typography>
-                <Typography variant="body1"><strong>Batch:</strong> {verificationResult.batch}</Typography>
-                <Typography variant="body1"><strong>Manufacturer:</strong> {verificationResult.manufacturer}</Typography>
-                <Typography variant="body1"><strong>Expiry:</strong> {verificationResult.expiry}</Typography>
-                <Typography variant="body1"><strong>Status:</strong> 
-                  <StatusChip label={verificationResult.status} status={verificationResult.status} sx={{ ml: 1 }} />
-                </Typography>
-                <Typography variant="body1"><strong>Current Holder:</strong> 
-                  <Chip label="You (Retailer)" color="info" size="small" sx={{ ml: 1 }} />
-                </Typography>
-              </Box>
-              
-              {verificationResult.status === 'in_stock' && (
-                <>
-                  <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                    Drug Movement Trace
-                  </Typography>
-                  <Box sx={{ pl: 2, mb: 3 }}>
-                    <Typography variant="body2">1. Manufactured by {verificationResult.manufacturer} on 2023-05-01</Typography>
-                    <Typography variant="body2">2. Shipped to MediWholesalers on 2023-05-15</Typography>
-                    <Typography variant="body2">3. Received by You on 2023-06-10</Typography>
-                  </Box>
-                  
-                  {activeTab === 2 && (
-                    <>
-                      <TextField
-                        fullWidth
-                        label="Patient ID (Optional)"
-                        variant="outlined"
-                        size="small"
-                        value={patientId}
-                        onChange={(e) => setPatientId(e.target.value)}
-                        sx={{ mb: 2 }}
-                      />
-                      <Button
-                        fullWidth
-                        variant="contained"
-                        color="success"
-                        size="large"
-                        onClick={sellDrug}
-                        startIcon={<PointOfSale />}
-                      >
-                        Mark as Sold
-                      </Button>
-                    </>
-                  )}
-                </>
-              )}
-            </>
-          ) : null}
-          
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-            <Button 
-              variant="outlined" 
-              onClick={() => {
-                setOpenModal(false);
-                setVerificationResult(null);
-              }}
-            >
-              Close
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
-    </Box>
+{activeTab === 'stockPlanner' && (
+  <div className="retailer-stock-planner-tab">
+    <DiseaseInventoryChecker 
+      className="disease-inventory-component" inventory={inventory} 
+      onClose={() => setActiveTab('dashboard')} 
+    />
+  </div>
+)}
+        </div>
+      </div>
+    </div>
   );
 };
 
