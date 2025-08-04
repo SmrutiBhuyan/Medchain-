@@ -115,7 +115,7 @@ export default function Landing() {
 
   return (
     <div className="landing-page">
-   {/* Chatbot toggle button - fixed position */}
+      {/* Chatbot toggle button - fixed position */}
       <button 
         className="chatbot-toggle-button"
         onClick={toggleChatbot}
@@ -191,7 +191,7 @@ export default function Landing() {
                 </div>
               </div>
               <div className="hero-image">
-                <div className="demo-container" style={{    "width": "41vw", "position": "relative", "left": '22%'}}>
+                <div className="demo-container" style={{ "width": "41vw", "position": "relative", "left": '22%' }}>
                   <div className="demo-screen">
                     <video 
                       ref={videoRef}
@@ -246,7 +246,7 @@ export default function Landing() {
               <div className="features-header">
                 <h2>Comprehensive Healthcare Supply Chain</h2>
                 <p className="features-subtitle">
-                  Our platform ensures drug authenticity, tracks supply chains, and provides real-time stock information for healthcare providers.
+                  Our platform ensures drug authenticity, tracks supply chains, and connects patients with pharmacies.
                 </p>
               </div>
               
@@ -256,9 +256,9 @@ export default function Landing() {
                     <Shield className="icon" />
                     <div className="icon-bg"></div>
                   </div>
-                  <h3>Medicine Verification</h3>
+                  <h3>Instant Drug Verification</h3>
                   <p>
-                    Instantly verify medicine authenticity with QR codes, batch numbers, and secure logging.
+                    Scan barcodes or enter batch numbers to instantly verify medicine authenticity and safety.
                   </p>
                   <div className="feature-wave"></div>
                 </div>
@@ -268,9 +268,9 @@ export default function Landing() {
                     <MapPin className="icon" />
                     <div className="icon-bg"></div>
                   </div>
-                  <h3>Smart Emergency Locator</h3>
+                  <h3>Pharmacy Locator</h3>
                   <p>
-                    AI-powered Ant Colony Optimization algorithm finds the best pharmacy recommendations.
+                    Find nearby pharmacies that have your required medicine in stock by searching with a pincode.
                   </p>
                   <div className="feature-wave"></div>
                 </div>
@@ -280,9 +280,9 @@ export default function Landing() {
                     <QrCode className="icon" />
                     <div className="icon-bg"></div>
                   </div>
-                  <h3>Medicine Tracker</h3>
+                  <h3>Inventory Management</h3>
                   <p>
-                    Complete end-to-end drug tracking with secure records and digital verification.
+                    Track medicine stock levels, expiry dates, and shortages across your supply chain.
                   </p>
                   <div className="feature-wave"></div>
                 </div>
@@ -292,9 +292,9 @@ export default function Landing() {
                     <Thermometer className="icon" />
                     <div className="icon-bg"></div>
                   </div>
-                  <h3>Smart Storage Monitor</h3>
+                  <h3>Disease-Based Prediction</h3>
                   <p>
-                    Real-time temperature, humidity, and storage condition monitoring with smart sensors.
+                    Smart system predicts medicine demand based on disease patterns in different cities.
                   </p>
                   <div className="feature-wave"></div>
                 </div>
@@ -304,9 +304,9 @@ export default function Landing() {
                     <Activity className="icon" />
                     <div className="icon-bg"></div>
                   </div>
-                  <h3>Smart Demand Predictor</h3>
+                  <h3>Supply Chain Tracking</h3>
                   <p>
-                    Machine learning-powered demand prediction to prevent shortages and optimize inventory.
+                    Monitor your medicines from manufacturer to pharmacy with complete traceability.
                   </p>
                   <div className="feature-wave"></div>
                 </div>
@@ -318,7 +318,7 @@ export default function Landing() {
                   </div>
                   <h3>Voice Assistant</h3>
                   <p>
-                    Multilingual voice verification system for easy access and rural connectivity.
+                    Use voice commands to verify drugs, report counterfeits, or find pharmacies in your area.
                   </p>
                   <div className="feature-wave"></div>
                 </div>
