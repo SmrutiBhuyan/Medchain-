@@ -35,6 +35,7 @@ function App() {
           <Route path="/pending-approval" element={<PendingApproval />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/verify-drug" element={<DrugVerificationGlobal/>}/>
+          <Route path="/about" element={<About/>}/>
 
           </Route>
           <Route path="/manufacturer/dashboard" element={<ManufacturerDashboard />} />
@@ -47,7 +48,6 @@ function App() {
           <Route path="/find-medicines" element={<PharmacyFinder/>}/>
           <Route path="/chatbot" element={<Chatbot/>}/>
           <Route path="/report" element={<ReportCounterfeit/>}/>
-          <Route path="/about" element={<About/>}/>
         </Routes>
      
       </AuthProvider>
