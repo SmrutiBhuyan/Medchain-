@@ -710,23 +710,425 @@ const handleTimeRangeChange = async (chartType, days) => {
   });
 
   // Barcode Scanner Component
-const BarcodeScanner = ({ onScan, onClose, onError }) => {
+// const BarcodeScanner = ({ onScan, onClose, onError }) => {
+//   const scannerRef = useRef(null);
+//   const fileInputRef = useRef(null);
+//   const [isScannerActive, setIsScannerActive] = useState(false);
+//   const [cameraId, setCameraId] = useState(null);
+//   const [availableCameras, setAvailableCameras] = useState([]);
+//   const [capturedImage, setCapturedImage] = useState(null);
+//   const [isCapturing, setIsCapturing] = useState(false);
+//   const videoRef = useRef(null);
+//   const canvasRef = useRef(null);
+
+//   // Get list of available cameras
+//   const getCameras = async () => {
+//     try {
+//       const devices = await Html5Qrcode.getCameras();
+//       // if (devices && devices.length > 0) {
+//       //   setAvailableCameras(devices);
+//       //   // Prefer rear camera if available
+//       //   const rearCamera = devices.find(device => 
+//       //     device.label.toLowerCase().includes('back') || 
+//       //     device.label.toLowerCase().includes('rear')
+//       //   );
+//       //   setCameraId(rearCamera ? rearCamera.id : devices[0].id);
+//       // }
+//     } catch (err) {
+//       console.error('Error getting cameras:', err);
+//       onError('Failed to access camera');
+//     }
+//   };
+
+//   // Capture image from video stream
+//   const captureImage = () => {
+//     if (videoRef.current && canvasRef.current) {
+//       setIsCapturing(true);
+//       const video = videoRef.current;
+//       const canvas = canvasRef.current;
+//       const context = canvas.getContext('2d');
+      
+//       // Set canvas dimensions to match video
+//       canvas.width = video.videoWidth;
+//       canvas.height = video.videoHeight;
+      
+//       // Draw video frame to canvas
+//       context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+//       // Get image data URL
+//       const imageDataUrl = canvas.toDataURL('image/jpeg');
+//       setCapturedImage(imageDataUrl);
+//       setIsCapturing(false);
+      
+//       // Try to scan the captured image
+//       scanCapturedImage(canvas);
+//     }
+//   };
+
+//   // Scan the captured image
+//   const scanCapturedImage = async (canvas) => {
+//     try {
+//       const html5QrCode = new Html5Qrcode('barcode-scanner-file');
+//       const imageData = canvas.toDataURL('image/jpeg').split(',')[1];
+      
+//       // Convert base64 to blob
+//       const blob = await fetch(`data:image/jpeg;base64,${imageData}`).then(res => res.blob());
+      
+//       // Create file from blob
+//       const file = new File([blob], 'captured-barcode.jpg', { type: 'image/jpeg' });
+      
+//       // Scan the file
+//       const decodedText = await html5QrCode.scanFile(file, true);
+      
+//       if (/^[A-Za-z0-9-]+$/.test(decodedText)) {
+//         onScan(decodedText);
+//         if (onClose) onClose();
+//       } else {
+//         alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
+//       }
+//     } catch (error) {
+//       console.error('Error scanning captured image:', error);
+//       onError('Failed to scan captured image');
+//     }
+//   };
+
+//   // Clean up scanner completely
+//   const cleanUpScanner = async () => {
+//     if (scannerRef.current) {
+//       try {
+//         if (scannerRef.current.getState && scannerRef.current.getState() > 0) {
+//           await scannerRef.current.clear();
+//         } else {
+//           await scannerRef.current.stop();
+//         }
+//         const scannerElement = document.getElementById('barcode-scanner');
+//         if (scannerElement) {
+//           scannerElement.innerHTML = '';
+//         }
+//       } catch (error) {
+//         console.error('Error cleaning up scanner:', error);
+//         if (onError) onError('Scanner cleanup failed');
+//       } finally {
+//         scannerRef.current = null;
+//       }
+//     }
+//   };
+
+//   const handleBarcodeFileUpload = (event) => {
+//     const file = event.target.files[0];
+//     if (!file) return;
+
+//     const fileScanner = new Html5Qrcode('barcode-scanner-file');
+//     fileScanner.scanFile(file, true)
+//       .then(decodedText => {
+//         if (/^[A-Za-z0-9-]+$/.test(decodedText)) {
+//           onScan(decodedText);
+//           if (onClose) onClose();
+//         } else {
+//           alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
+//         }
+//       })
+//       .catch(err => {
+//         console.error('File scan error:', err);
+//         if (onError) onError(err.message);
+//         alert('Failed to scan the file. Please try another image.');
+//       })
+//       .finally(() => {
+//         fileScanner.clear().catch(console.error);
+//       });
+//   };
+
+//   useEffect(() => {
+//     if (isScannerActive) {
+//       const initializeScanner = async () => {
+//         await cleanUpScanner();
+//         await getCameras();
+        
+//         const config = {
+//           fps: 15,
+//           qrbox: { width: 400, height: 200 },
+//           aspectRatio: 1.777,
+//           disableFlip: false,
+//           formatsToSupport: [
+//             Html5QrcodeSupportedFormats.CODE_39,
+//             Html5QrcodeSupportedFormats.UPC_A,
+//             Html5QrcodeSupportedFormats.UPC_E,
+//             Html5QrcodeSupportedFormats.EAN_8,
+//             Html5QrcodeSupportedFormats.EAN_13,
+//             Html5QrcodeSupportedFormats.CODE_128,
+//             Html5QrcodeSupportedFormats.CODE_39,
+//             Html5QrcodeSupportedFormats.CODE_93,
+//             Html5QrcodeSupportedFormats.ITF,
+//             Html5QrcodeSupportedFormats.PDF_417,
+//             Html5QrcodeSupportedFormats.DATA_MATRIX,
+//             Html5QrcodeSupportedFormats.AZTEC
+//           ],
+//           rememberLastUsedCamera: true,
+//           supportedScanTypes: [
+//             Html5QrcodeScanType.SCAN_TYPE_CAMERA,
+//             Html5QrcodeScanType.SCAN_TYPE_FILE
+//           ],
+//           experimentalFeatures: {
+//             useBarCodeDetectorIfSupported: true
+//           }
+//         };
+
+//         const scanner = new Html5QrcodeScanner('barcode-scanner', config, false);
+//         scannerRef.current = scanner;
+
+//         const successCallback = (decodedText) => {
+//           if (/^[A-Za-z0-9-]+$/.test(decodedText)) {
+//             scanner.clear().then(() => {
+//               onScan(decodedText);
+//               if (onClose) onClose();
+//             }).catch(err => {
+//               console.error('Failed to clear scanner', err);
+//               if (onError) onError('Scanner cleanup failed');
+//             });
+//           } else {
+//             if (onError) onError('Invalid format');
+//             alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
+//           }
+//         };
+
+//         const errorCallback = (error) => {
+//           if (!error.message.includes('No MultiFormat Readers')) {
+//             console.warn('QR code scan error', error);
+//             if (onError) onError(error.message);
+//           }
+//         };
+
+//         scanner.render(successCallback, errorCallback);
+//       };
+      
+//       initializeScanner();
+//     }
+
+//     return () => {
+//       cleanUpScanner();
+//     };
+//   }, [isScannerActive, onScan, onClose, onError]);
+
+//   useEffect(() => {
+//     setIsScannerActive(true);
+//     return () => {
+//       setIsScannerActive(false);
+//     };
+//   }, []);
+
+//   return (
+//     <div className="scanner-container">
+//       {/* Camera selection dropdown */}
+//       {availableCameras.length > 1 && (
+//         <div className="camera-selector">
+//           <label>Camera: </label>
+//           <select
+//             onChange={(e) => setCameraId(e.target.value)}
+//             value={cameraId || ''}
+//           >
+//             {availableCameras.map(camera => (
+//               <option key={camera.id} value={camera.id}>
+//                 {camera.label}
+//               </option>
+//             ))}
+//           </select>
+//         </div>
+//       )}
+
+//       {/* Main scanner container */}
+//       <div id="barcode-scanner" key={Date.now()} style={{ width: '100%' }}></div>
+      
+//       {/* Hidden elements for capture functionality */}
+//       <video 
+//         ref={videoRef} 
+//         autoPlay 
+//         playsInline 
+//         style={{ display: 'none' }}
+//       />
+//       <canvas 
+//         ref={canvasRef} 
+//         style={{ display: 'none' }}
+//       />
+      
+//       {/* Hidden container for file scanning */}
+//       <div id="barcode-scanner-file" style={{ display: 'none' }}></div>
+      
+//       <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+//         <button 
+//           className="btn btn-primary"
+//           onClick={captureImage}
+//           disabled={isCapturing}
+//         >
+//           {isCapturing ? 'Capturing...' : 'Capture & Scan'}
+//         </button>
+        
+//         <button 
+//           className="btn btn-primary"
+//           onClick={() => fileInputRef.current.click()}
+//         >
+//           <FaUpload /> Scan from Image
+//         </button>
+//         <input
+//           type="file"
+//           ref={fileInputRef}
+//           accept="image/*"
+//           style={{ display: 'none' }}
+//           onChange={handleBarcodeFileUpload}
+//         />
+        
+//         <button 
+//           className="btn btn-danger" 
+//           onClick={() => {
+//             cleanUpScanner();
+//             if (onClose) onClose();
+//           }}
+//         >
+//           Close Scanner
+//         </button>
+//       </div>
+
+//       {capturedImage && (
+//         <div style={{ marginTop: '10px', textAlign: 'center' }}>
+//           <h4>Captured Image</h4>
+//           <img 
+//             src={capturedImage} 
+//             alt="Captured barcode" 
+//             style={{ maxWidth: '100%', maxHeight: '200px', border: '1px solid #ddd' }}
+//           />
+//           <button 
+//             className="btn btn-outline" 
+//             onClick={() => setCapturedImage(null)}
+//             style={{ marginTop: '5px' }}
+//           >
+//             Retake
+//           </button>
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
+
+const BarcodeScanner = ({ onScan, onClose, onError, inputRef }) => {
   const scannerRef = useRef(null);
   const fileInputRef = useRef(null);
   const [isScannerActive, setIsScannerActive] = useState(false);
+  const [cameraId, setCameraId] = useState(null);
+  const [availableCameras, setAvailableCameras] = useState([]);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+
+  // Get list of available cameras
+  const getCameras = async () => {
+    try {
+      const devices = await Html5Qrcode.getCameras();
+      // if (devices && devices.length > 0) {
+      //   setAvailableCameras(devices);
+      //   // Prefer rear camera if available
+      //   const rearCamera = devices.find(device => 
+      //     device.label.toLowerCase().includes('back') || 
+      //     device.label.toLowerCase().includes('rear')
+      //   );
+      //   setCameraId(rearCamera ? rearCamera.id : devices[0].id);
+      // }
+    } catch (err) {
+      console.error('Error getting cameras:', err);
+      onError?.('Failed to access camera');
+    }
+  };
+
+  // Capture image from video stream
+  const captureImage = () => {
+    if (videoRef.current && canvasRef.current) {
+      setIsCapturing(true);
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const imageDataUrl = canvas.toDataURL('image/jpeg');
+      setCapturedImage(imageDataUrl);
+      setIsCapturing(false);
+      
+      scanCapturedImage(canvas);
+    }
+  };
+
+  // Scan the captured image thoroughly
+  const scanCapturedImage = async (canvas) => {
+    setIsScanning(true);
+    try {
+      const html5QrCode = new Html5Qrcode('barcode-scanner-file');
+      const imageData = canvas.toDataURL('image/jpeg').split(',')[1];
+      const blob = await fetch(`data:image/jpeg;base64,${imageData}`).then(res => res.blob());
+      const file = new File([blob], 'captured-barcode.jpg', { type: 'image/jpeg' });
+      
+      const decodedText = await html5QrCode.scanFile(file, {
+        useBarCodeDetectorIfSupported: true,
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_93,
+          Html5QrcodeSupportedFormats.ITF,
+          Html5QrcodeSupportedFormats.PDF_417,
+          Html5QrcodeSupportedFormats.DATA_MATRIX,
+          Html5QrcodeSupportedFormats.AZTEC
+        ]
+      });
+      
+      handleScanSuccess(decodedText);
+    } catch (error) {
+      console.error('Error scanning captured image:', error);
+      onError?.('Failed to scan captured image. Please try again.');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  // Handle successful scan (common for both camera and image scans)
+  const handleScanSuccess = (decodedText) => {
+    if (/^[A-Za-z0-9-]+$/.test(decodedText)) {
+      // Auto-fill input if provided
+      if (inputRef?.current) {
+        inputRef.current.value = decodedText;
+        // Trigger React's onChange event if needed
+        const event = new Event('input', { bubbles: true });
+        inputRef.current.dispatchEvent(event);
+      }
+      
+      onScan?.(decodedText);
+      if (onClose) onClose();
+    } else {
+      onError?.('Invalid barcode format');
+      alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
+    }
+  };
 
   // Clean up scanner completely
   const cleanUpScanner = async () => {
     if (scannerRef.current) {
       try {
-        await scannerRef.current.clear();
+        if (scannerRef.current.getState && scannerRef.current.getState() > 0) {
+          await scannerRef.current.clear();
+        } else {
+          await scannerRef.current.stop();
+        }
         const scannerElement = document.getElementById('barcode-scanner');
         if (scannerElement) {
-          scannerElement.innerHTML = ''; // Clear the DOM element
+          scannerElement.innerHTML = '';
         }
       } catch (error) {
         console.error('Error cleaning up scanner:', error);
-        if (onError) onError('Scanner cleanup failed');
+        onError?.('Scanner cleanup failed');
       } finally {
         scannerRef.current = null;
       }
@@ -737,23 +1139,32 @@ const BarcodeScanner = ({ onScan, onClose, onError }) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Use a temporary scanner instance for file scanning
+    setIsScanning(true);
     const fileScanner = new Html5Qrcode('barcode-scanner-file');
-    fileScanner.scanFile(file, false)
-      .then(decodedText => {
-        if (/^[A-Za-z0-9-]+$/.test(decodedText)) {
-          onScan(decodedText);
-          if (onClose) onClose();
-        } else {
-          alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
-        }
-      })
+    fileScanner.scanFile(file, {
+      useBarCodeDetectorIfSupported: true,
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_93,
+        Html5QrcodeSupportedFormats.ITF,
+        Html5QrcodeSupportedFormats.PDF_417,
+        Html5QrcodeSupportedFormats.DATA_MATRIX,
+        Html5QrcodeSupportedFormats.AZTEC
+      ]
+    })
+      .then(handleScanSuccess)
       .catch(err => {
         console.error('File scan error:', err);
-        if (onError) onError(err.message);
+        onError?.(err.message);
         alert('Failed to scan the file. Please try another image.');
       })
       .finally(() => {
+        setIsScanning(false);
         fileScanner.clear().catch(console.error);
       });
   };
@@ -761,12 +1172,14 @@ const BarcodeScanner = ({ onScan, onClose, onError }) => {
   useEffect(() => {
     if (isScannerActive) {
       const initializeScanner = async () => {
-        // First clean up any existing scanner
         await cleanUpScanner();
-
+        await getCameras();
+        
         const config = {
-          fps: 10,
-          qrbox: 250,
+          fps: 15,
+          qrbox: { width: 400, height: 200 },
+          aspectRatio: 1.777,
+          disableFlip: false,
           formatsToSupport: [
             Html5QrcodeSupportedFormats.CODE_39,
             Html5QrcodeSupportedFormats.UPC_A,
@@ -774,76 +1187,85 @@ const BarcodeScanner = ({ onScan, onClose, onError }) => {
             Html5QrcodeSupportedFormats.EAN_8,
             Html5QrcodeSupportedFormats.EAN_13,
             Html5QrcodeSupportedFormats.CODE_128,
-            Html5QrcodeSupportedFormats.CODE_39,
             Html5QrcodeSupportedFormats.CODE_93,
-            Html5QrcodeSupportedFormats.ITF
+            Html5QrcodeSupportedFormats.ITF,
+            Html5QrcodeSupportedFormats.PDF_417,
+            Html5QrcodeSupportedFormats.DATA_MATRIX,
+            Html5QrcodeSupportedFormats.AZTEC
           ],
           rememberLastUsedCamera: true,
           supportedScanTypes: [
             Html5QrcodeScanType.SCAN_TYPE_CAMERA,
             Html5QrcodeScanType.SCAN_TYPE_FILE
-          ]
+          ],
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          }
         };
 
         const scanner = new Html5QrcodeScanner('barcode-scanner', config, false);
         scannerRef.current = scanner;
 
-        const successCallback = (decodedText) => {
-          if (/^[A-Za-z0-9-]+$/.test(decodedText)) {
-            scanner.clear().then(() => {
-              onScan(decodedText);
-              if (onClose) onClose();
-            }).catch(err => {
-              console.error('Failed to clear scanner', err);
-              if (onError) onError('Scanner cleanup failed');
-            });
-          } else {
-            if (onError) onError('Invalid format');
-            alert('Invalid barcode format. Only letters, numbers and hyphens are allowed.');
-          }
-        };
-
-        const errorCallback = (error) => {
+        scanner.render(handleScanSuccess, (error) => {
           if (!error.message.includes('No MultiFormat Readers')) {
             console.warn('QR code scan error', error);
-            if (onError) onError(error.message);
+            onError?.(error.message);
           }
-        };
-
-        scanner.render(successCallback, errorCallback);
+        });
       };
-
+      
       initializeScanner();
     }
 
     return () => {
-      // Clean up when component unmounts or when isScannerActive changes
       cleanUpScanner();
     };
-  }, [isScannerActive, onScan, onClose, onError]);
+  }, [isScannerActive, onScan, onClose, onError, inputRef]);
 
   useEffect(() => {
-    // Activate scanner when component mounts
     setIsScannerActive(true);
-
     return () => {
-      // Deactivate scanner when component unmounts
       setIsScannerActive(false);
     };
   }, []);
 
   return (
     <div className="scanner-container">
-      {/* Main scanner container - ensure this is empty before initialization */}
+      {availableCameras.length > 1 && (
+        <div className="camera-selector">
+          <label>Camera: </label>
+          <select
+            onChange={(e) => setCameraId(e.target.value)}
+            value={cameraId || ''}
+          >
+            {availableCameras.map(camera => (
+              <option key={camera.id} value={camera.id}>
+                {camera.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div id="barcode-scanner" key={Date.now()} style={{ width: '100%' }}></div>
       
-      {/* Hidden container for file scanning */}
+      <video ref={videoRef} autoPlay playsInline style={{ display: 'none' }} />
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
       <div id="barcode-scanner-file" style={{ display: 'none' }}></div>
       
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '10px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+        <button 
+          className="btn btn-primary"
+          onClick={captureImage}
+          disabled={isCapturing || isScanning}
+        >
+          {isCapturing ? 'Capturing...' : (isScanning ? 'Scanning...' : 'Capture & Scan')}
+        </button>
+        
         <button 
           className="btn btn-primary"
           onClick={() => fileInputRef.current.click()}
+          disabled={isScanning}
         >
           <FaUpload /> Scan from Image
         </button>
@@ -854,19 +1276,51 @@ const BarcodeScanner = ({ onScan, onClose, onError }) => {
           style={{ display: 'none' }}
           onChange={handleBarcodeFileUpload}
         />
+        
         <button 
           className="btn btn-danger" 
           onClick={() => {
             cleanUpScanner();
             if (onClose) onClose();
           }}
+          disabled={isScanning}
         >
           Close Scanner
         </button>
       </div>
+
+      {capturedImage && (
+        <div style={{ marginTop: '10px', textAlign: 'center' }}>
+          <h4>Captured Image</h4>
+          <img 
+            src={capturedImage} 
+            alt="Captured barcode" 
+            style={{ maxWidth: '100%', maxHeight: '200px', border: '1px solid #ddd' }}
+          />
+          <div style={{ marginTop: '10px' }}>
+            <button 
+              className="btn btn-outline" 
+              onClick={() => setCapturedImage(null)}
+              style={{ marginRight: '10px' }}
+            >
+              Retake
+            </button>
+            <button 
+              className="btn btn-primary" 
+              onClick={() => scanCapturedImage(canvasRef.current)}
+              disabled={isScanning}
+            >
+              {isScanning ? 'Rescanning...' : 'Rescan Image'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+
+
 
 const handleScan = (barcode) => {
    console.log('Scanned barcode:', barcode);
