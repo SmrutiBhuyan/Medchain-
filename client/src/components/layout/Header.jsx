@@ -18,7 +18,6 @@ export default function Header() {
     { name: "Home", href: "/" },
     { name: "Verify Medicine", href: "/verify-drug" },
     { name: "Find Medicine", href: "/find-medicine" },
-    { name: "Need Help?", href: "/chatbot" },
     { name: "Report", href: "/report" },
     { name: "About", href: "/about" },
   ];

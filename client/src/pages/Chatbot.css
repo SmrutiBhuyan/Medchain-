@@ -16,20 +16,19 @@
 }
 
 .chatbot .chat-container {
-    display: flex
-;
-    flex-direction: column;
-    height: 90vh;
-    width: 65%;
-    background: linear-gradient(145deg, #ffffff, #f8f9fa);
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: 0 12px 24px rgba(67, 97, 238, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    position: relative;
-    left: 20%;
-    margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(145deg, #ffffff, #f8f9fa);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 
+    0 12px 24px rgba(67, 97, 238, 0.15),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
+
 /* Header */
 .chatbot .chat-header {
   background: linear-gradient(135deg, var(--primary), var(--secondary));

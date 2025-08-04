@@ -96,10 +96,10 @@
 /* --- Desktop Navigation --- */
 .desktop-nav {
   display: flex;
-  align-items: center;
-  gap: 3.25rem;
-      position: relative;
-    left: -7%;
+    align-items: center;
+    gap: 4.25rem;
+    position: relative;
+    left: 6%;
 }
 
 .nav-link {
