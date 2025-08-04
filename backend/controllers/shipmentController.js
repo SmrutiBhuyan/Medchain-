@@ -919,6 +919,32 @@ export const acceptWholesalerShipment = async (req, res) => {
         } 
       }
     );
+
+      for (const drugId of shipment.drugs) {
+      const drug = await Drug.findById(drugId);
+      if (drug) {
+        const updatedUnitBarcodes = drug.unitBarcodes.map(unit => ({
+          ...unit.toObject(),
+          status: 'in-stock',
+          currentHolder: 'wholesaler',
+          distributor: req.user._id,
+          history: [
+            ...(unit.history || []),
+            {
+              holderType: 'wholesaler',
+              holderId: req.user._id,
+              status: 'in-stock',
+              date: new Date()
+            }
+          ]
+        }));
+
+        await Drug.updateOne(
+          { _id: drugId },
+          { $set: { unitBarcodes: updatedUnitBarcodes } }
+        );
+      }
+    }
     
     res.json({ message: 'Shipment accepted successfully', shipment });
   } catch (error) {
