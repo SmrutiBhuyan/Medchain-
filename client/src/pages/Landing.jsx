@@ -244,9 +244,11 @@ export default function Landing() {
           <section className="features-section">
             <div className="features-container">
               <div className="features-header">
-                <h2>Comprehensive Healthcare Supply Chain</h2>
+                <h2>Building Trust in Every Pill, Protecting Every Patient</h2>
                 <p className="features-subtitle">
-                  Our platform ensures drug authenticity, tracks supply chains, and connects patients with pharmacies.
+                  Our integrated anti-counterfeit platform combines cutting-edge verification with intelligent pharmacy networks 
+    to ensure authentic medicines reach those who need them most. From manufacturers to patients, 
+    we safeguard the entire journey.
                 </p>
               </div>
               
