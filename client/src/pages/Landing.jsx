@@ -191,7 +191,7 @@ export default function Landing() {
                 </div>
               </div>
               <div className="hero-image">
-                <div className="demo-container" style={{ "width": "41vw", "position": "relative", "left": '22%' }}>
+                <div className="demo-container" style={{ "width": "41vw", "position": "relative", "left": '19%' }}>
                   <div className="demo-screen">
                     <video 
                       ref={videoRef}
