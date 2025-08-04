@@ -1,0 +1,174 @@
+{
+  "intents": [
+    {
+      "intent": "verify_medicine",
+      "questions": [
+        "How do I verify a medicine?",
+        "Can I verify multiple medicines at once?",
+        "What details are needed for verification?",
+        "Is verification free?",
+        "What if my medicine fails verification?",
+        "Can I save verification results?"
+      ],
+      "answers": [
+        "Click **'Verify Medicine'** on the main panel, enter the drug details, and submit for authenticity verification.",
+        "Currently, you can verify one medicine at a time via **'Verify Medicine'**.",
+        "You’ll need the drug’s batch number, manufacturer, and expiry date.",
+        "Yes! MedChain offers free verification for all users.",
+        "Contact **'Help & Support'** to report counterfeit drugs.",
+        "Yes, log in to your account to save history under **'Verify Medicine'**."
+      ]
+    },
+    {
+      "intent": "emergency_stock",
+      "questions": [
+        "How do I find the nearest pharmacy?",
+        "Does Emergency Stock show real-time availability?",
+        "Can I reserve medicine via Emergency Stock?",
+        "What if no pharmacies have my medicine?",
+        "Is GPS mandatory for Emergency Stock?"
+      ],
+      "answers": [
+        "Use **'Emergency Stock'**, enable GPS, and enter the medicine name for nearby options.",
+        "Yes, it displays live stock data from partnered pharmacies.",
+        "Currently, it only shows availability. Contact the pharmacy directly to reserve.",
+        "Try broadening your search or use **'Demand Predictor'** to check future restocks.",
+        "Yes, GPS ensures accurate nearby results. You can also manually enter your location."
+      ]
+    },
+    {
+      "intent": "inventory_tracking",
+      "questions": [
+        "How do I track my medicine inventory?",
+        "Can I set low-stock alerts?",
+        "How does the Demand Predictor work?",
+        "Can I share inventory data with my doctor?",
+        "Is there a mobile app for inventory tracking?"
+      ],
+      "answers": [
+        "Use **'More Features 1'** > **'Smart Inventory Monitor'** to track stock levels.",
+        "Yes! Enable alerts in **'Smart Inventory Monitor'**.",
+        "It analyzes your usage patterns to forecast when you’ll need more medicine.",
+        "Yes, export reports from **'Smart Inventory Monitor'** and share them.",
+        "Currently, MedChain is web-based, but a mobile app is coming soon!"
+      ]
+    },
+    {
+      "intent": "user_roles",
+      "questions": [
+        "How do I register as a pharmacy?",
+        "What can manufacturers do on MedChain?",
+        "Can the public report fake medicines?",
+        "How do admins access the dashboard?",
+        "Can retailers update stock manually?"
+      ],
+      "answers": [
+        "Click **'Get Started'**, select **'Pharmacy'** as your role, and complete registration.",
+        "Manufacturers can register batches and track distribution via their dashboard.",
+        "Yes! Use **'Verify Medicine'** to flag suspicious drugs.",
+        "Admins log in via **'Login'** with special credentials.",
+        "Yes, retailers can sync inventory in **'Smart Inventory Monitor'**."
+      ]
+    },
+    {
+      "intent": "voice_assistant",
+      "questions": [
+        "How do I use the Voice Assistant?",
+        "What commands does the Voice Assistant support?",
+        "Is Voice Assistant available in multiple languages?",
+        "Can I disable Voice Assistant?",
+        "Does Voice Assistant work offline?"
+      ],
+      "answers": [
+        "Go to **'More Features 1'** > **'Voice Assistant'** and enable microphone access.",
+        "Try: *'Verify medicine,' 'Find pharmacies,' or 'Check inventory.'*",
+        "Currently, it supports English, with more languages coming soon.",
+        "Yes, toggle it off in **'More Features 1'** > **'Voice Assistant'**.",
+        "No, it requires an internet connection."
+      ]
+    },
+    {
+      "intent": "rewards_program",
+      "questions": [
+        "How do I earn reward points?",
+        "What can I redeem points for?",
+        "Where’s my rewards balance?",
+        "Do points expire?",
+        "Can I transfer points to another user?"
+      ],
+      "answers": [
+        "Verify medicines, report fakes, or refer friends via **'Rewards Program'**.",
+        "Discounts at partner pharmacies or premium features.",
+        "Check **'More Features 1'** > **'Rewards Program'**.",
+        "Yes, after 12 months of inactivity.",
+        "No, rewards are non-transferable."
+      ]
+    },
+    {
+      "intent": "troubleshooting",
+      "questions": [
+        "The website is slow. What should I do?",
+        "I forgot my password.",
+        "GPS isn’t working for Emergency Stock.",
+        "Voice Assistant isn’t responding.",
+        "How do I report a bug?"
+      ],
+      "answers": [
+        "Clear your browser cache or try **'Help & Support'** for technical issues.",
+        "Click **'Login'** > **'Forgot Password'** to reset it.",
+        "Ensure location permissions are enabled in your browser settings.",
+        "Check microphone permissions or restart your browser.",
+        "Go to **'Help & Support'** and submit a report."
+      ]
+    },
+    {
+      "intent": "general_navigation",
+      "questions": [
+        "Where can I find the rewards program?",
+        "How do I contact support?",
+        "What is MedChain’s purpose?",
+        "How do I watch the demo?"
+      ],
+      "answers": [
+        "Go to **'More Features 1'** > **'Rewards Program'** to view and redeem loyalty points.",
+        "Navigate to **'More Features 1'** > **'Help & Support'** for assistance.",
+        "MedChain helps you *'Track Trust. Fight Fakes.'* by verifying medicines and tracking inventory.",
+        "Click **'See MedChain in Action'** on the homepage for a verification demo."
+      ]
+    },
+    {
+      "intent": "future_features",
+      "questions": [
+        "Will MedChain add vaccine tracking?",
+        "Can I request a new feature?",
+        "Is blockchain used for verification?",
+        "When is the mobile app launching?",
+        "Will MedChain expand to other countries?"
+      ],
+      "answers": [
+        "Yes! Vaccine tracking is planned for a future update.",
+        "Submit suggestions via **'Help & Support'**.",
+        "Yes, MedChain uses blockchain to ensure tamper-proof records.",
+        "Expected release is late 2025.",
+        "Yes, international rollout is in progress."
+      ]
+    },
+    {
+      "intent": "miscellaneous",
+      "questions": [
+        "Is MedChain free for pharmacies?",
+        "How secure is my data?",
+        "Can I delete my account?",
+        "Who can I partner with as a distributor?",
+        "Where can I leave a review?"
+      ],
+      "answers": [
+        "Basic features are free; premium plans are available for advanced tools.",
+        "All data is encrypted and compliant with health privacy laws.",
+        "Yes, contact **'Help & Support'** for account deletion.",
+        "Email partnerships@medchain.com for collaboration.",
+        "Rate us on the app store or via **'Help & Support'**."
+      ]
+    }
+  ]
+}

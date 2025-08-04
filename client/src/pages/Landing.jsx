@@ -3,11 +3,13 @@ import { Shield, QrCode, MapPin, Search, Thermometer, Activity, Mic, Play } from
 import { useEffect, useState, useRef } from "react";
 import "./Landing.css";
 import { useAuth } from "./AuthContext";
+import Chatbot from "./Chatbot";
 
 export default function Landing() {
   const { user } = useAuth();
   const [showDemo, setShowDemo] = useState(false);
   const [demoProgress, setDemoProgress] = useState(0);
+  const [showChatbot, setShowChatbot] = useState(false);
   const videoRef = useRef(null);
 
   const handlePlayClick = () => {
@@ -15,6 +17,10 @@ export default function Landing() {
     if (videoRef.current) {
       videoRef.current.play();
     }
+  };
+
+  const toggleChatbot = () => {
+    setShowChatbot(!showChatbot);
   };
 
   const [stats, setStats] = useState({
@@ -109,6 +115,21 @@ export default function Landing() {
 
   return (
     <div className="landing-page">
+   {/* Chatbot toggle button - fixed position */}
+      <button 
+        className="chatbot-toggle-button"
+        onClick={toggleChatbot}
+      >
+        {showChatbot ? 'Close Chat' : 'Need Help?'}
+      </button>
+
+      {/* Chatbot component - fixed position */}
+      {showChatbot && (
+        <div className="chatbot-container">
+          <Chatbot />
+        </div>
+      )}
+
       {user ? (
         /* Role-specific dashboard for logged-in users */
         <section className="role-dashboard">

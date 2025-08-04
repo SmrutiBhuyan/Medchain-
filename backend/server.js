@@ -13,6 +13,7 @@ import pharmacyRoutes from './routes/pharmacyRoutes.js';
 import predictionRoutes from './routes/predictions.js';
 import diseaseRouter from './routes/disease.js';
 import outbreakRouter from './routes/outbreak.js';
+import chatbotRouter from './routes/chatbot.js';
 
 
 
@@ -30,7 +31,7 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-
+app.use('/api/chatbot', chatbotRouter);
 app.use("/api/auth", authRoutes);
 app.use('/api/users',userRoutes)
 app.use('/api/drugs', drugRoutes);
