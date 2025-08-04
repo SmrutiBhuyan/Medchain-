@@ -1,7 +1,11 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Shield, Menu, X } from "lucide-react";
+import { Menu } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../pages/AuthContext";
+import { 
+ FaPills
+
+} from 'react-icons/fa';
 import "./Header.css";
 
 export default function Header() {
@@ -13,8 +17,10 @@ export default function Header() {
   const navigation = [
     { name: "Home", href: "/" },
     { name: "Verify Medicine", href: "/verify-drug" },
-    { name: "Emergency Stock", href: "/emergency-locator" },
-   
+    { name: "Find Medicine", href: "/find-medicine" },
+    { name: "Need Help?", href: "/chatbot" },
+    { name: "Report", href: "/report" },
+    { name: "About", href: "/about" },
   ];
 
   const roleBasedNavigation = {
@@ -45,15 +51,6 @@ export default function Header() {
     ]
   };
 
-  const advancedFeatures = [
-    { name: "Medicine Tracker", href: "/blockchain-tracker" },
-    { name: "Smart Inventory Monitor", href: "/iot-monitoring" },
-    { name: "Demand Predictor", href: "/ai-forecasting" },
-    { name: "Voice Assistant", href: "/ivr-system" },
-    { name: "Rewards Program", href: "/incentive-system" },
-    { name: "Help & Support", href: "/support" },
-  ];
-
   const isActive = (href) => location.pathname === href;
 
   const handleLogout = async () => {
@@ -72,9 +69,10 @@ export default function Header() {
   return (
     <header className="header1">
       <div className="header-container">
+          {/* Enhanced Logo Section */}
         <div className="header-content">
           <Link to="/" className="logo-link">
-            <Shield className="logo-icon" />
+            <FaPills className="logo-icon" />
             <span className="logo-text">MedChain</span>
           </Link>
           
@@ -100,24 +98,6 @@ export default function Header() {
                 {item.name}
               </Link>
             ))}
-            
-            {/* Advanced Features Dropdown */}
-            <div className="dropdown">
-              <button className="dropdown-toggle">
-                More Features <span className="dropdown-arrow">↓</span>
-              </button>
-              <div className="dropdown-menu">
-                {advancedFeatures.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`dropdown-item ${isActive(item.href) ? 'active' : ''}`}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
           </nav>
 
           {/* Desktop Auth Buttons */}

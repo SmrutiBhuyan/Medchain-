@@ -45,6 +45,7 @@ function App() {
           <Route path="/report-counterfeit" element={<ReportCounterfeit/>}/>
           <Route path="/find-medicines" element={<PharmacyFinder/>}/>
           <Route path="/chatbot" element={<Chatbot/>}/>
+          <Route path="/report" element={<ReportCounterfeit/>}/>
         </Routes>
      
       </AuthProvider>

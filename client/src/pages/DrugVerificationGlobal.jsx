@@ -157,15 +157,6 @@ const DrugVerificationGlobal = () => {
     const getCameras = async () => {
       try {
         const devices = await Html5Qrcode.getCameras();
-        // if (devices && devices.length > 0) {
-        //   setAvailableCameras(devices);
-        //   // Prefer rear camera if available
-        //   const rearCamera = devices.find(device => 
-        //     device.label.toLowerCase().includes('back') || 
-        //     device.label.toLowerCase().includes('rear')
-        //   );
-        //   setCameraId(rearCamera ? rearCamera.id : devices[0].id);
-        // }
       } catch (err) {
         console.error('Error getting cameras:', err);
         onError?.('Failed to access camera');
