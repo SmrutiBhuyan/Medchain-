@@ -667,7 +667,7 @@
 }
 
 /* Shipment Details Modal (from previous code) */
-.modal {
+.pharmacy-modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -680,7 +680,7 @@
   z-index: 1050; /* Higher than sticky header */
 }
 
-.modal-dialog {
+.pharmacy-modal-dialog {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
@@ -692,10 +692,10 @@
   flex-direction: column;
 }
 
-.modal-content {
+.pharmacy-modal-content {
   border: none; /* Remove default bootstrap modal border */
   border-radius: 12px;
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 .modal-header {

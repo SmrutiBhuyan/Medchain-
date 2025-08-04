@@ -43,7 +43,7 @@ const DrugSchema = new mongoose.Schema({
     barcode: String,
     status: {
       type: String,
-      enum: ['in-stock', 'shipped', 'delivered', 'recalled', 'expired','sold'],
+      enum: ['in-stock', 'shipped', 'delivered', 'recalled', 'expired','sold','in-transit'],
       default: 'in-stock'
     },
     manufacturer: {
@@ -111,7 +111,7 @@ const DrugSchema = new mongoose.Schema({
     enum: ['in-stock', 'shipped', 'delivered', 'recalled', 'expired', 
            'in-stock with distributor', 'in-stock with wholesaler', 
            'in-stock with retailer', 'in-stock with pharmacy',
-           'shipped to wholesaler', 'shipped to retailer', 'shipped to pharmacy'],
+           'shipped to wholesaler', 'shipped to retailer', 'shipped to pharmacy','in-transit'],
     default: 'in-stock'
   },
   currentHolder: {
