@@ -20,6 +20,7 @@ import DrugVerificationGlobal from './pages/DrugVerificationGlobal.jsx';
 import ReportCounterfeit from './pages/Report.jsx';
 import PharmacyFinder from './pages/PharmacyFinder.jsx';
 import Chatbot from './pages/Chatbot.jsx'
+import About from './pages/About.jsx'
 
 function App() {
   return (
@@ -46,6 +47,7 @@ function App() {
           <Route path="/find-medicines" element={<PharmacyFinder/>}/>
           <Route path="/chatbot" element={<Chatbot/>}/>
           <Route path="/report" element={<ReportCounterfeit/>}/>
+          <Route path="/about" element={<About/>}/>
         </Routes>
      
       </AuthProvider>
