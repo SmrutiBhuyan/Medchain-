@@ -836,9 +836,9 @@ const getStatusBadge = (status) => {
           )}
            {/* Shipment Details Modal */}
           {showShipmentModal && (
-            <div className='modal' tabIndex="-1" style={{display:'block'}}>
-              <div className="modal-dialog modal-lg">
-                <div className="modal-content">
+            <div className='retailer-modal' tabIndex="-1" style={{display:'block'}}>
+              <div className="retailer-modal-dialog modal-lg">
+                <div className="retailer-modal-content">
                   <Modal.Header closeButton>
                 <Modal.Title>Shipment Details - {selectedShipment.trackingNumber}</Modal.Title>
               </Modal.Header>

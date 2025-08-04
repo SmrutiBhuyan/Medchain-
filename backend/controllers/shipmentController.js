@@ -1409,11 +1409,6 @@ export const rejectPharmacyShipment = async (req, res) => {
 
 // In your shipmentController.js file, add this new controller function:
 
-/**
- * @route GET /api/shipments/manufacturer
- * @desc Get all shipments created by the current manufacturer
- * @access Private (Manufacturer only)
- */
 export const getManufacturerShipments = async (req, res) => {
   try {
     const manufacturerId = req.user._id;
