@@ -1222,15 +1222,16 @@ const ObjectId = mongoose.Types.ObjectId;
 
 export const acceptPharmacyShipment = async (req, res) => {
   try {
-    console.log(req.user._id);
+    console.log("user:",req.user._id);
+    console.log("shipment:",req.params.shipmentId);
     
     // Find shipment with pharmacy participant matching current user
     const shipment = await Shipment.findOne({
       _id: req.params.shipmentId,
+      'participants.participantId': req.user._id,
       'participants.type': 'pharmacy',
-      'participants.participantId': new ObjectId(req.user._id),
       status: { $in: ['processing', 'in-transit'] }
-    }).populate('drugs');
+    })
 
     if (!shipment) {
       return res.status(404).json({ 
@@ -1247,12 +1248,12 @@ export const acceptPharmacyShipment = async (req, res) => {
 
     // Update shipment
     shipment.status = 'delivered';
-    shipment.currentLocation = 'pharmacy';
     shipment.actualDelivery = new Date();
+    shipment.currentLocation = 'pharmacy';
 
     // Update pharmacy participant
-    const pharmacyParticipant = shipment.participants.find(
-      p => p.type === 'pharmacy' && p.participantId.equals(req.user._id)
+      const pharmacyParticipant = shipment.participants.find(
+      p => p.type === 'distributor'
     );
     if (pharmacyParticipant) {
       pharmacyParticipant.status = 'completed';
@@ -1261,36 +1262,43 @@ export const acceptPharmacyShipment = async (req, res) => {
 
     await shipment.save();
 
-    // Update drugs (your existing logic)
-    for (const drugId of shipment.drugs) {
-      const drug = await Drug.findById(drugId);
-      if (!drug) continue;
-
-      const shippedUnits = shipment.shippedUnits.filter(
-        unit => unit.drugId.toString() === drug._id.toString()
-      );
-
-      for (const unit of shippedUnits) {
-        const unitBarcode = drug.unitBarcodes.find(
-          ub => ub.barcode === unit.barcode
-        );
-        if (unitBarcode) {
-          unitBarcode.status = 'in-stock';
-          unitBarcode.currentHolder = 'pharmacy';
-          unitBarcode.pharmacy = req.user._id;
-          unitBarcode.history.push({
-            holderType: 'pharmacy',
-            holderId: req.user._id,
-            status: 'in-stock',
-            date: new Date()
-          });
+    await Drug.updateMany(
+      { _id: { $in: shipment.drugs } },
+      { 
+        $set: { 
+          status: 'in-stock with pharmacy',
+          currentHolder: 'pharmacy',
+          distributor: req.user._id,
+          'unitBarcodes.$[].status': 'in-stock',
+      'unitBarcodes.$[].currentHolder': 'pharmacy'
         }
       }
+    );
 
-      drug.status = shippedUnits.length === drug.unitBarcodes.length 
-        ? 'in-stock with pharmacy' 
-        : 'shipped to pharmacy';
-      await drug.save();
+     for (const drugId of shipment.drugs) {
+      const drug = await Drug.findById(drugId);
+      if (drug) {
+        const updatedUnitBarcodes = drug.unitBarcodes.map(unit => ({
+          ...unit.toObject(),
+          status: 'in-stock',
+          currentHolder: 'pharmacy',
+          distributor: req.user._id,
+          history: [
+            ...(unit.history || []),
+            {
+              holderType: 'pharmacy',
+              holderId: req.user._id,
+              status: 'in-stock',
+              date: new Date()
+            }
+          ]
+        }));
+
+        await Drug.updateOne(
+          { _id: drugId },
+          { $set: { unitBarcodes: updatedUnitBarcodes } }
+        );
+      }
     }
 
     res.json({ 
