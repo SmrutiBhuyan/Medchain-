@@ -11,13 +11,16 @@ Public homepage with verification and pharmacy location features. Users can veri
 <img width="1894" height="913" alt="Screenshot 2026-01-22 225335" src="https://github.com/user-attachments/assets/9619075f-5f6c-4c1a-838c-805f7ceb69c5" />
 Counterfeit detection warning with regulatory guidance. Alerts users when a drug cannot be verified and provides steps to report to authorities like CDSCO in India.
 
+
 User Onboarding
 <img width="1920" height="1080" alt="Screenshot 2025-08-05 154549" src="https://github.com/user-attachments/assets/7b783ff0-4b9d-4c8d-a3a5-7d96be898528" />
 Role-based onboarding interface allowing users to select their position in the pharmaceutical supply chain: Manufacturer, Distributor, Wholesaler, or Retailer. Each role has specific requirements and permissions
 
+
 Manufacturer Interface
 <img width="1896" height="906" alt="Screenshot 2026-01-22 224838" src="https://github.com/user-attachments/assets/0667d357-a259-4314-b7a9-4d54859d7e65" />
 Drug creation and batch management interface. Manufacturers can bulk upload drug information via CSV, create new drugs, and manage their blockchain-tracked inventory.
+
 
 Distribution Network
 <img width="1897" height="909" alt="Screenshot 2026-01-22 224903" src="https://github.com/user-attachments/assets/151fc683-bf4f-4c3b-bf38-f3753eeedb00" />
@@ -26,6 +29,7 @@ Shipment tracking and inventory management for distributors. Shows incoming ship
 
 <img width="1898" height="901" alt="Screenshot 2026-01-22 230155" src="https://github.com/user-attachments/assets/3a4dd340-148f-48f9-addf-c19cea36ddd0" />
 Analytics and inventory visualization for distributors and wholesalers. Features inventory status distribution, monthly shipment trends, and partner network overview.
+
 
 Pharmacy Management
 <img width="1918" height="920" alt="Screenshot 2026-01-22 230355" src="https://github.com/user-attachments/assets/5eaaafc8-fc86-4bd5-b643-59dd59db85b0" />
@@ -38,9 +42,11 @@ Real-time outbreak information and medication alerts. Shows active diseases in t
 <img width="1885" height="905" alt="Screenshot 2026-01-22 225138" src="https://github.com/user-attachments/assets/e159182b-81f5-4429-8e22-3c97514dc016" />
 Inventory shortage forecasting and stock planning. Predicts potential drug shortages for the next 30 days based on current inventory and local demand patterns.
 
+
 Route Optimization
 <img width="1920" height="898" alt="rOUTE OPTIMIZATION" src="https://github.com/user-attachments/assets/2f44af38-bc0c-496c-9133-e086ae99eb71" />
 Advanced route optimization system showing distance, duration, traffic conditions, and alternate routes between origin and destination locations. Essential for efficient supply chain logistics.
+
 
 Public Safety Features
 <img width="1919" height="912" alt="Screenshot 2026-01-22 225201" src="https://github.com/user-attachments/assets/bfaee468-9b16-44ff-aa2d-eccbff52b74f" />
