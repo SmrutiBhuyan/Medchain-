@@ -1,76 +1,57 @@
-# 🧬 MedChain – Track Every Medicine at Every Step
+MedChain: Blockchain-Powered Anti-Counterfeit Medicine Platform
+MedChain is an integrated platform designed to combat counterfeit medicines through blockchain-based verification, real-time tracking, and intelligent supply chain management. The platform ensures medicine authenticity from manufacturer to patient while providing tools for epidemic preparedness, inventory management, and pharmacy route optimization.
 
-MedChain is a blockchain-powered medical tracking system designed to ensure transparency, traceability, and safety in the pharmaceutical supply chain. The application combats counterfeit drugs, stockouts, and lack of traceability—challenges that plague India's healthcare infrastructure—by enabling real-time tracking and verification of medicines.
+📷 Platform Screenshots & Flow
+Home & Public Portal
+<img width="1899" height="909" alt="Screenshot 2026-01-22 224614" src="https://github.com/user-attachments/assets/91d55d02-42f0-4d12-8bd8-d4476d3f241d" />
+<img width="1899" height="904" alt="Screenshot 2026-01-22 224652" src="https://github.com/user-attachments/assets/ec1f687c-bd72-4e37-bfc9-8ee8da53d794" />
 
----
+Public homepage with verification and pharmacy location features. Users can verify drugs, find nearby pharmacies, and access educational resources.
 
-## 🚨 Problem Statement
+<img width="1894" height="913" alt="Screenshot 2026-01-22 225335" src="https://github.com/user-attachments/assets/9619075f-5f6c-4c1a-838c-805f7ceb69c5" />
+Counterfeit detection warning with regulatory guidance. Alerts users when a drug cannot be verified and provides steps to report to authorities like CDSCO in India.
 
-India’s healthcare system faces significant challenges:
+User Onboarding
+<img width="1920" height="1080" alt="Screenshot 2025-08-05 154549" src="https://github.com/user-attachments/assets/7b783ff0-4b9d-4c8d-a3a5-7d96be898528" />
+Role-based onboarding interface allowing users to select their position in the pharmaceutical supply chain: Manufacturer, Distributor, Wholesaler, or Retailer. Each role has specific requirements and permissions
 
-- A large proportion of counterfeit drugs in circulation.
-- Lack of supply chain transparency.
-- Frequent medicine stockouts in rural areas.
-- Absence of real-time tracking mechanisms.
+Manufacturer Interface
+<img width="1896" height="906" alt="Screenshot 2026-01-22 224838" src="https://github.com/user-attachments/assets/0667d357-a259-4314-b7a9-4d54859d7e65" />
+Drug creation and batch management interface. Manufacturers can bulk upload drug information via CSV, create new drugs, and manage their blockchain-tracked inventory.
 
-MedChain aims to bridge these gaps with a secure, scalable, and intelligent solution.
+Distribution Network
+<img width="1897" height="909" alt="Screenshot 2026-01-22 224903" src="https://github.com/user-attachments/assets/151fc683-bf4f-4c3b-bf38-f3753eeedb00" />
+Shipment tracking and inventory management for distributors. Shows incoming shipments, delivery statuses, and detailed drug tracking from manufacturers.
+<img width="1897" height="907" alt="Screenshot 2026-01-22 224941" src="https://github.com/user-attachments/assets/bf3e81c2-4db6-4677-ba65-c7fe5826a3bf" />
 
----
+<img width="1898" height="901" alt="Screenshot 2026-01-22 230155" src="https://github.com/user-attachments/assets/3a4dd340-148f-48f9-addf-c19cea36ddd0" />
+Analytics and inventory visualization for distributors and wholesalers. Features inventory status distribution, monthly shipment trends, and partner network overview.
 
-## ✅ Key Features
+Pharmacy Management
+<img width="1918" height="920" alt="Screenshot 2026-01-22 230355" src="https://github.com/user-attachments/assets/5eaaafc8-fc86-4bd5-b643-59dd59db85b0" />
+Main pharmacy dashboard with outbreak preparedness guide. Pharmacists can manage shipments, inventory, verification, and access epidemic response tools.
+<img width="1899" height="905" alt="Screenshot 2026-01-22 225035" src="https://github.com/user-attachments/assets/21f5f823-888c-4039-b820-0a955ba59d2e" />
+<img width="1902" height="908" alt="Screenshot 2026-01-22 225057" src="https://github.com/user-attachments/assets/8227ddfd-62d1-4886-a05a-daa0d2d0c868" />
+<img width="1493" height="795" alt="Screenshot 2026-01-22 225117" src="https://github.com/user-attachments/assets/8c152351-dbba-43b3-b767-19cffa6bda0a" />
+Location-based outbreak analysis interface. Pharmacists can set their location by state or GPS to analyze local health situations.
+Real-time outbreak information and medication alerts. Shows active diseases in the area and critical medications needed with current stock levels.
+<img width="1885" height="905" alt="Screenshot 2026-01-22 225138" src="https://github.com/user-attachments/assets/e159182b-81f5-4429-8e22-3c97514dc016" />
+Inventory shortage forecasting and stock planning. Predicts potential drug shortages for the next 30 days based on current inventory and local demand patterns.
 
-### 1. 🔐 Blockchain-Based Drug Authentication
-- Verify the **authenticity**, **origin**, and **safety** of any drug using its **batch number** via voice or text input.
-- Prevents counterfeit drug usage and promotes trust.
+Route Optimization
+<img width="1920" height="898" alt="rOUTE OPTIMIZATION" src="https://github.com/user-attachments/assets/2f44af38-bc0c-496c-9133-e086ae99eb71" />
+Advanced route optimization system showing distance, duration, traffic conditions, and alternate routes between origin and destination locations. Essential for efficient supply chain logistics.
 
-### 2. 🔗 Supply Chain Tracking
-- **End-to-end tracking** from manufacturer to pharmacy.
-- Ensures full transparency at every stage of the medicine lifecycle.
+Public Safety Features
+<img width="1919" height="912" alt="Screenshot 2026-01-22 225201" src="https://github.com/user-attachments/assets/bfaee468-9b16-44ff-aa2d-eccbff52b74f" />
+Interactive educational quiz on counterfeit drug identification. Educates users about common signs of fake medicines through engaging Q&A format.
 
-### 3. 🏥 Locate Pharmacies
-- Find nearby pharmacies stocking **critical medicines** using **PIN code-based search**.
-- Supports timely access during emergencies.
+<img width="1900" height="907" alt="Screenshot 2026-01-22 225249" src="https://github.com/user-attachments/assets/2b980ec5-dd0b-415c-9c91-675c695b3196" />
+Form for reporting suspected counterfeit medicines. Allows anonymous reporting with auto-filled drug information when available.
 
-### 4. 📦 Smart Inventory Management
-- Real-time alerts for:
-  - Low stock levels
-  - Expiry warnings
-  - Supply chain delays
 
-### 5. 🤖 AI-Based Chatbot for Navigation
-- Seamlessly guides users through the app.
-- Answers common queries and assists in tracking or locating medicines.
 
-### 6. 🌐 Multi-Language Support
-- Designed to be inclusive with support for **multiple Indian languages**, making the platform accessible across regions.
 
----
 
-## 🚀 Tech Stack
 
-- **Frontend:** React.js
-- **Backend:** Node.js with Express
-- **Database:** MySQL / PostgreSQL
-- **Blockchain Layer:** (e.g., Ethereum, Hyperledger – specify based on your implementation)
-- **Hosting/Deployment:** AWS / Oracle Cloud / EBS (as per your actual setup)
-- **AI & Chatbot:** NLP with Dialogflow or custom ML model
 
----
-
-## 📌 How to Run Locally
-
-```bash
-# Clone the repository
-git clone https://github.com/your-username/medchain.git
-cd medchain
-
-# Install dependencies
-npm install
-
-# Run the backend server
-cd backend
-npm start
-
-# In another terminal, run the frontend
-cd frontend
-npm start
